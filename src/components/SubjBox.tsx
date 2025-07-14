@@ -1,43 +1,23 @@
-import { useState } from "react";
-
-type Subject = {
-  idx: number;
-};
-
-const subjDef = (i: number): Subject => ({
-  idx: i,
-});
+import { useSubjContext } from "../context/SubjContext";
 
 const SubjBox = () => {
-  const [infos, setInfos] = useState<Subject[]>([]);
-  const [sels, setSels] = useState<Set<number>>(new Set());
-
-  const addSubj = (): void => {
-    const pIdxs = infos.map((info) => info.idx).sort((a, b) => a - b);
-    let i = 0;
-    while (pIdxs[i] === i) i++;
-    setInfos((pInfos) => [...pInfos, subjDef(i)]);
-  };
-
-  const delSubj = (): void => {
-    setInfos((pInfos) => pInfos.filter((info) => !sels.has(info.idx)));
-    setSels(new Set());
-  };
-
-  const clrSel = (...idxs: number[]): void => setSels(new Set(idxs));
+  const { state, dispatch } = useSubjContext();
 
   return (
     <div className="SubjBox">
       <div>
-        <button onClick={addSubj}>Add</button>
-        <button onClick={delSubj}>Del</button>
+        <button onClick={() => dispatch({ type: "ADD_SUBJ" })}>Add</button>
+        <button onClick={() => dispatch({ type: "DEL_SUBJ" })}>Del</button>
       </div>
       <div>
-        {infos.map((info) => (
+        {state.infos.map((info) => (
           <div
-            onClick={() => clrSel(info.idx)}
+            key={`Subj-${info.idx}`}
+            onClick={() => dispatch({ type: "CLR_SELS", idxs: [info.idx] })}
             style={{
-              backgroundColor: sels.has(info.idx) ? "blue" : "transparent",
+              backgroundColor: state.sels.has(info.idx)
+                ? "blue"
+                : "transparent",
             }}
           >
             {info.idx}
