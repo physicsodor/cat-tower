@@ -1,7 +1,9 @@
 import type { SubjAct, Subject, SubjState } from "../types/SubjType";
 
-export const SubjDef = (i: number): Subject => ({
+const SubjDef = (i: number, m = -1, b = -1): Subject => ({
   idx: i,
+  mom: m,
+  bro: b,
 });
 
 export const SubjIni: SubjState = {
@@ -20,10 +22,21 @@ export function subjReducer(state: SubjState, action: SubjAct): SubjState {
         sels: new Set(action.idxs),
       };
     case "ADD_SUBJ":
-      const pIdxs = pInfos.map((info) => info.idx).sort((a, b) => a - b);
       let i = 0;
-      while (pIdxs[i] === i) i++;
-      return { ...state, infos: [...pInfos, SubjDef(i)], sels: new Set([i]) };
+      while (pInfos[i].idx === i) i++;
+      const pBroInfos = pInfos.filter((info) => info.mom === -1);
+      let b = -1;
+      let pBro: Subject | undefined = pBroInfos[0];
+      while (pBro) {
+        b = pBro.idx;
+        pBro = pBroInfos.find((info) => info.bro === b);
+      }
+
+      return {
+        ...state,
+        infos: [...pInfos, SubjDef(i, -1, b)].sort((a, b) => a.idx - b.idx),
+        sels: new Set([i]),
+      };
     case "DEL_SUBJ":
       return {
         ...state,

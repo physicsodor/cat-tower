@@ -1,5 +1,7 @@
 export type Subject = {
   idx: number;
+  mom: number;
+  bro: number;
 };
 
 export type SubjState = {
