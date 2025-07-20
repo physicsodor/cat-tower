@@ -8,15 +8,15 @@ const SubjDef = (i: number, m = -1, b = -1): Subject => ({
 });
 
 export const SubjIni: SubjState = {
-  // infos: [],
-  infos: testForMom([
-    { idx: 0, mom: -1, bro: -1 },
-    { idx: 1, mom: 7, bro: -1 },
-    { idx: 3, mom: 4, bro: -1 },
-    { idx: 7, mom: 4, bro: -1 },
-    { idx: 8, mom: 4, bro: -1 },
-    { idx: 9, mom: 4, bro: -1 },
-  ]), // for test
+  infos: [],
+  // infos: testForMom([
+  //   { idx: 0, mom: -1, bro: -1 },
+  //   { idx: 1, mom: 7, bro: -1 },
+  //   { idx: 3, mom: 4, bro: -1 },
+  //   { idx: 7, mom: 4, bro: -1 },
+  //   { idx: 8, mom: 4, bro: -1 },
+  //   { idx: 9, mom: 4, bro: -1 },
+  // ]), // for test
   sels: new Set(),
 };
 
