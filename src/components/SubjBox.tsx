@@ -8,6 +8,7 @@ const SubjBox = () => {
       <div>
         <button onClick={() => dispatch({ type: "ADD_SUBJ" })}>Add</button>
         <button onClick={() => dispatch({ type: "DEL_SUBJ" })}>Del</button>
+        <div>{JSON.stringify(state.infos)}</div>
       </div>
       <div>
         {state.infos.map((info) => (
