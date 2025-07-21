@@ -1,5 +1,4 @@
 import type { SubjAct, Subject, SubjState } from "../types/SubjType";
-import { testForIdx, testForMom } from "../utils/SubjTester";
 
 const SubjDef = (i: number, m = -1, b = -1): Subject => ({
   idx: i,

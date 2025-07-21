@@ -38,3 +38,5 @@ export const testForMom = (pInfos: Subject[]) => {
   }
   return pInfos;
 };
+
+export const testForBro = (pInfos: Subject[]) => {};
