@@ -4,3 +4,10 @@ export type Subject = {
   cnt: string;
   dsc: string;
 };
+
+export const DefSbj = (i: number): Subject => ({
+  idx: i,
+  ttl: "",
+  cnt: "",
+  dsc: "",
+});
