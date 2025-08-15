@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./App.css";
 import { DefSbj, type Subject } from "./types/Subject";
+import { type SelectMode } from "./types/SelectMode";
+import { setAdd, setDel } from "./utils/setOp";
 
 function App() {
   const [sbjList, setSbjList] = useState<Subject[]>([]);
@@ -19,6 +21,16 @@ function App() {
   const delSbj = () => {
     setSbjList((pSbjList) => pSbjList.filter((sbj) => !slcSet.has(sbj.idx)));
     setSlcSet(new Set());
+  };
+
+  const slcSbj = (idxSet: Set<number>, mode: SelectMode) => {
+    if (mode === "ADD") {
+      setSlcSet((pSlcSet) => setAdd(pSlcSet, idxSet));
+    } else if (mode === "REPLACE") {
+      setSlcSet(idxSet);
+    } else if (mode === "REMOVE") {
+      setSlcSet((pSlcSet) => setDel(pSlcSet, idxSet));
+    }
   };
 
   return (
