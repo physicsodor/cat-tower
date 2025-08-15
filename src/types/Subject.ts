@@ -6,7 +6,7 @@ export type Subject = {
   mom: number;
 };
 
-export const DefSbj = (i: number, m = -1): Subject => ({
+export const DefSbj = (i = 0, m = -1): Subject => ({
   idx: i,
   ttl: "",
   cnt: "",

@@ -1,5 +1,6 @@
 import type { Subject } from "../types/Subject";
 import { setAdd } from "./setOp";
+import { sbjByIdx } from "./subjectOp";
 
 export const testSubjectList = (sbjList: Subject[]) => {
   const pSbjList = [...sbjList];
@@ -32,26 +33,18 @@ const _testMom = (sbjList: Subject[]) => {
   const usedSet = new Set<number>();
   const tempSet = new Set<number>();
 
-  const ordByIdx = (idx: number) => {
-    for (let i = 0; i < sbjList.length; i++) {
-      if (sbjList[i].idx === idx) return i;
-    }
-    return -1;
-  };
-
   for (let i = 0; i < sbjList.length; i++) {
     if (usedSet.has(sbjList[i].idx)) continue;
 
     tempSet.clear();
-    let j = i;
+    let sbj = sbjList[i];
     while (true) {
-      const sbj = sbjList[j];
       const mom = sbj.mom;
       const idx = sbj.idx;
 
       tempSet.add(idx);
       if (mom >= 0 && idxSet.has(mom) && !tempSet.has(mom)) {
-        j = ordByIdx(mom);
+        sbj = sbjByIdx(sbjList, mom);
       } else {
         sbj.mom = -1;
         setAdd(usedSet, tempSet);

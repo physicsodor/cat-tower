@@ -3,6 +3,8 @@ import "./App.css";
 import { DefSbj, type Subject } from "./types/Subject";
 import { type SelectMode } from "./types/SelectMode";
 import { setDif, setUni } from "./utils/setOp";
+import { sbjByIdx } from "./utils/subjectOp";
+import { testSubjectList } from "./utils/testSubjectList";
 
 function App() {
   const [sbjList, setSbjList] = useState<Subject[]>([]);
@@ -19,7 +21,15 @@ function App() {
   };
 
   const delSbj = () => {
-    setSbjList((pSbjList) => pSbjList.filter((sbj) => !slcSet.has(sbj.idx)));
+    setSbjList((pSbjList) =>
+      pSbjList
+        .filter((sbj) => !slcSet.has(sbj.idx))
+        .map((sbj) => {
+          if (slcSet.has(sbj.mom))
+            return { ...sbj, mom: sbjByIdx(sbjList, sbj.mom).mom };
+          return sbj;
+        })
+    );
     setSlcSet(new Set());
   };
 
