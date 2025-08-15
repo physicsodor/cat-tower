@@ -33,13 +33,14 @@ function App() {
     }
   };
 
-  const handle_Sbj_onClick = (idx: number) => (e) => {
-    let mode: SelectMode = "REPLACE";
-    if (e.ctrlKey) mode = "ADD";
-    else if (e.shiftKey) mode = "REMOVE";
-    else if (slcSet.has(idx)) mode = "NONE";
-    slcSbj(new Set([idx]), mode);
-  };
+  const handle_sbj_onClick =
+    (idx: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+      let mode: SelectMode = "REPLACE";
+      if (e.ctrlKey) mode = "ADD";
+      else if (e.shiftKey) mode = "REMOVE";
+      else if (slcSet.has(idx)) mode = "NONE";
+      slcSbj(new Set([idx]), mode);
+    };
 
   return (
     <div className="App">
@@ -48,7 +49,7 @@ function App() {
       <div>
         {sbjList.map((sbj) => (
           <div
-            onClick={handle_Sbj_onClick(sbj.idx)}
+            onClick={handle_sbj_onClick(sbj.idx)}
             style={{
               backgroundColor: slcSet.has(sbj.idx) ? "red" : "transparent",
             }}
