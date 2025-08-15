@@ -54,7 +54,9 @@ function App() {
               backgroundColor: slcSet.has(sbj.idx) ? "red" : "transparent",
             }}
           >
-            <div>{sbj.idx}</div>
+            <div>
+              {sbj.idx}, {sbj.mom}
+            </div>
           </div>
         ))}
       </div>
