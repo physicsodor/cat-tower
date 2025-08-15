@@ -1,1 +1,1 @@
-export type SelectMode = "ADD" | "REMOVE" | "REPLACE";
+export type SelectMode = "ADD" | "REMOVE" | "REPLACE" | "NONE";

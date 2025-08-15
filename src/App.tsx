@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import { DefSbj, type Subject } from "./types/Subject";
 import { type SelectMode } from "./types/SelectMode";
-import { setAdd, setDel } from "./utils/setOp";
+import { setDif, setUni } from "./utils/setOp";
 
 function App() {
   const [sbjList, setSbjList] = useState<Subject[]>([]);
@@ -25,19 +25,38 @@ function App() {
 
   const slcSbj = (idxSet: Set<number>, mode: SelectMode) => {
     if (mode === "ADD") {
-      setSlcSet((pSlcSet) => setAdd(pSlcSet, idxSet));
+      setSlcSet((pSlcSet) => setUni(pSlcSet, idxSet));
     } else if (mode === "REPLACE") {
       setSlcSet(idxSet);
     } else if (mode === "REMOVE") {
-      setSlcSet((pSlcSet) => setDel(pSlcSet, idxSet));
+      setSlcSet((pSlcSet) => setDif(pSlcSet, idxSet));
     }
+  };
+
+  const handle_Sbj_onClick = (idx: number) => (e) => {
+    let mode: SelectMode = "REPLACE";
+    if (e.ctrlKey) mode = "ADD";
+    else if (e.shiftKey) mode = "REMOVE";
+    else if (slcSet.has(idx)) mode = "NONE";
+    slcSbj(new Set([idx]), mode);
   };
 
   return (
     <div className="App">
       <button onClick={addSbj}>추가</button>
       <button onClick={delSbj}>제거</button>
-      <div>{JSON.stringify(sbjList)}</div>
+      <div>
+        {sbjList.map((sbj) => (
+          <div
+            onClick={handle_Sbj_onClick(sbj.idx)}
+            style={{
+              backgroundColor: slcSet.has(sbj.idx) ? "red" : "transparent",
+            }}
+          >
+            <div>{sbj.idx}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
