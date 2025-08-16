@@ -6,6 +6,6 @@ export type Course = {
 
 export const DefCrs = (i = 0, m = -1): Course => ({
   idx: i,
-  ttl: "",
+  ttl: `Course ${i}`,
   mom: m,
 });

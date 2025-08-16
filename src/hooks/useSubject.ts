@@ -1,46 +1,28 @@
 import { useState } from "react";
-import { DefCrs, type Course } from "../types/Course";
 import { DefSbj, type Subject } from "../types/Subject";
-import { getNewIdx, itemByIdx } from "../utils/idxOperation";
+import { getNewIdx } from "../utils/idxOperation";
 import { useSelect } from "./useSelect";
 
 export const useSubject = () => {
-  const [crsList, setCrsList] = useState<Course[]>([]);
   const [sbjList, setSbjList] = useState<Subject[]>([]);
-  const { slcSet, select } = useSelect();
+  const S = useSelect();
 
   const addSbj = () => {
     const i = getNewIdx(sbjList);
-    setSbjList((pSbjList) => [...pSbjList, DefSbj(i)]);
-    select("REPLACE", i);
+    setSbjList((prev) => [...prev, DefSbj(i)]);
+    S.select("REPLACE", i);
   };
 
   const delSbj = () => {
-    setSbjList((pSbjList) => pSbjList.filter((sbj) => !slcSet.has(sbj.idx)));
-    select("REPLACE");
+    setSbjList((prev) => prev.filter((sbj) => !S.slcSet.has(sbj.idx)));
+    S.select("REPLACE");
   };
 
-  const addCrs = () => {
-    const i = getNewIdx(crsList);
-    setCrsList((pCrsList) => [...pCrsList, DefCrs(i)]);
-    select("REPLACE");
+  const fixSbjMom = (pMom: number, nMom: number) => {
+    setSbjList((prev) =>
+      prev.map((sbj) => (sbj.mom === pMom ? { ...sbj, mom: nMom } : sbj))
+    );
   };
 
-  const delCrs = (i: number) => () => {
-    const mom = itemByIdx(crsList, crsList[i].mom);
-    if (mom) {
-      const nMom = mom.mom;
-      setCrsList((pCrsList) =>
-        pCrsList
-          .filter((crs) => crs.idx !== i)
-          .map((crs) => (crs.mom === i ? { ...crs, mom: nMom } : crs))
-      );
-      setSbjList((pSbjList) =>
-        pSbjList.map((sbj) => (sbj.mom === i ? { ...sbj, mom: nMom } : sbj))
-      );
-    }
-    select("REPLACE");
-  };
-
-  return { crsList, sbjList, addSbj, delSbj, addCrs, delCrs, slcSet, select };
+  return { sbjList, addSbj, delSbj, fixSbjMom, ...S };
 };

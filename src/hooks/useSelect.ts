@@ -8,11 +8,11 @@ export const useSelect = () => {
   const select = useCallback((mode: SelectMode, ...idxList: number[]) => {
     const idxSet = new Set(idxList);
     if (mode === "ADD") {
-      setSlcSet((pSlcSet) => setUni(pSlcSet, idxSet));
+      setSlcSet((prev) => setUni(prev, idxSet));
     } else if (mode === "REPLACE") {
       setSlcSet(idxSet);
     } else if (mode === "REMOVE") {
-      setSlcSet((pSlcSet) => setDif(pSlcSet, idxSet));
+      setSlcSet((prev) => setDif(prev, idxSet));
     }
   }, []);
 
