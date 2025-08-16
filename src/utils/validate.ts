@@ -1,15 +1,18 @@
+import { DefCrs, type Course } from "../types/Course";
 import type { Subject } from "../types/Subject";
 import { setAdd } from "./setOp";
-import { sbjByIdx } from "./subjectOp";
+import { itmByIdx } from "./getByIdx";
 
-export const testSubjectList = (sbjList: Subject[]) => {
+export const validate = (sbjList: Subject[], crsList: Course[]) => {
   const pSbjList = [...sbjList];
+  const pCrsList = [...crsList];
   _testIdx(pSbjList);
-  _testMom(pSbjList);
+  _testIdx(pCrsList);
+  _testMom(pSbjList, pCrsList);
   return pSbjList;
 };
 
-const _testIdx = (sbjList: Subject[]) => {
+const _testIdx = (sbjList: Subject[] | Course[]) => {
   const idxSet = new Set(sbjList.map((sbj) => sbj.idx));
   const usedSet = new Set<number>();
   let n = 0;
@@ -28,28 +31,33 @@ const _testIdx = (sbjList: Subject[]) => {
   }
 };
 
-const _testMom = (sbjList: Subject[]) => {
-  const idxSet = new Set(sbjList.map((sbj) => sbj.idx));
+const _testMom = (sbjList: Subject[], crsList: Course[]) => {
+  const idxSet = new Set(crsList.map((crs) => crs.idx));
   const usedSet = new Set<number>();
   const tempSet = new Set<number>();
 
-  for (let i = 0; i < sbjList.length; i++) {
-    if (usedSet.has(sbjList[i].idx)) continue;
+  for (let i = 0; i < crsList.length; i++) {
+    if (usedSet.has(crsList[i].idx)) continue;
 
     tempSet.clear();
-    let sbj = sbjList[i];
+    let crs = crsList[i];
     while (true) {
-      const mom = sbj.mom;
-      const idx = sbj.idx;
+      const mom = crs.mom;
+      const idx = crs.idx;
 
       tempSet.add(idx);
       if (mom >= 0 && idxSet.has(mom) && !tempSet.has(mom)) {
-        sbj = sbjByIdx(sbjList, mom);
+        crs = itmByIdx(crsList, mom) || DefCrs();
       } else {
-        sbj.mom = -1;
+        crs.mom = -1;
         setAdd(usedSet, tempSet);
         break;
       }
     }
+  }
+
+  for (let i = 0; i < sbjList.length; i++) {
+    let sbj = sbjList[i];
+    if (!idxSet.has(sbj.mom)) sbj.mom = -1;
   }
 };
