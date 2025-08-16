@@ -1,7 +1,7 @@
 import { DefCrs, type Course } from "../types/Course";
 import type { Subject } from "../types/Subject";
-import { setAdd } from "./setOp";
-import { itmByIdx } from "./getByIdx";
+import { setAdd } from "./setOperation";
+import { itemByIdx } from "./idxOperation";
 
 export const validate = (sbjList: Subject[], crsList: Course[]) => {
   const pSbjList = [...sbjList];
@@ -12,18 +12,18 @@ export const validate = (sbjList: Subject[], crsList: Course[]) => {
   return pSbjList;
 };
 
-const _testIdx = (sbjList: Subject[] | Course[]) => {
-  const idxSet = new Set(sbjList.map((sbj) => sbj.idx));
+const _testIdx = <T extends { idx: number }>(TList: T[]) => {
+  const idxSet = new Set(TList.map((sbj) => sbj.idx));
   const usedSet = new Set<number>();
   let n = 0;
   while (idxSet.has(n)) n++;
-  for (let i = 0; i < sbjList.length; i++) {
-    const sbj = sbjList[i];
-    const idx = sbj.idx;
+  for (let i = 0; i < TList.length; i++) {
+    const t = TList[i];
+    const idx = t.idx;
     if (idx >= 0 && !usedSet.has(idx) && Number.isInteger(idx)) {
       usedSet.add(idx);
     } else {
-      sbj.idx = n;
+      t.idx = n;
       idxSet.add(n);
       do n++;
       while (idxSet.has(n));
@@ -47,7 +47,7 @@ const _testMom = (sbjList: Subject[], crsList: Course[]) => {
 
       tempSet.add(idx);
       if (mom >= 0 && idxSet.has(mom) && !tempSet.has(mom)) {
-        crs = itmByIdx(crsList, mom) || DefCrs();
+        crs = itemByIdx(crsList, mom) || DefCrs();
       } else {
         crs.mom = -1;
         setAdd(usedSet, tempSet);
