@@ -1,7 +1,7 @@
 import { useCourseStore } from "../context/CourseProvider";
-import CourseTree from "./CourseTree";
+import CourseItem from "./CourseItem";
 
-const SbjContainer = () => {
+const SubjectContainer = () => {
   const S = useCourseStore();
 
   return (
@@ -9,10 +9,10 @@ const SbjContainer = () => {
       <button onClick={S.addSbj}>추가</button>
       <button onClick={S.delSbj}>제거</button>
       <button onClick={S.addCrs}>그룹 추가</button>
-      <CourseTree />
-      <div>{JSON.stringify([...S.slcSet])}</div>
+      <CourseItem />
+      <div>{JSON.stringify([...S.crsList])}</div>
     </div>
   );
 };
 
-export default SbjContainer;
+export default SubjectContainer;

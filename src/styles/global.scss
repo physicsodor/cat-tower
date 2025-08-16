@@ -1,6 +1,21 @@
-.sbj-itm {
+.course-tree {
+  // padding-left: 1rem;
+}
+
+.course-item {
+  .title {
+    margin-left: -1rem;
+    background-color: lightgray;
+  }
+
+  .contents {
+    margin-left: 1rem;
+  }
+}
+
+.subject-item {
   background-color: transparent;
-  &.slc {
+  &.selected {
     background-color: red;
   }
 }

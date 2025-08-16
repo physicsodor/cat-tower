@@ -9,21 +9,21 @@ export const useCourse = () => {
 
   const addCrs = () => {
     const i = getNewIdx(crsList);
-    setCrsList((pCrsList) => [...pCrsList, DefCrs(i)]);
+    setCrsList((prev) => [...prev, DefCrs(i)]);
     S.select("REPLACE");
   };
 
-  const delCrs = (i: number) => () => {
-    const mom = itemByIdx(crsList, crsList[i].mom);
-    if (mom) {
-      const nMom = mom.mom;
-      setCrsList((pCrsList) =>
-        pCrsList
-          .filter((crs) => crs.idx !== i)
-          .map((crs) => (crs.mom === i ? { ...crs, mom: nMom } : crs))
-      );
-      S.fixSbjMom(i, nMom);
-    }
+  const delCrs = (idx: number) => () => {
+    const trg = itemByIdx(crsList, idx);
+    if (!trg) return undefined;
+
+    const nMom = itemByIdx(crsList, trg.mom)?.mom || -1;
+    setCrsList((prev) =>
+      prev
+        .filter((crs) => crs.idx !== idx)
+        .map((crs) => (crs.mom === idx ? { ...crs, mom: nMom } : crs))
+    );
+    S.fixSbjMom(idx, nMom);
     S.select("REPLACE");
   };
 

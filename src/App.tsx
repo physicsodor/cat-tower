@@ -1,12 +1,12 @@
 import { type SelectMode } from "./types/SelectMode";
-import SbjItm from "./components/SbjItm";
+import SubjectItem from "./components/SubjectItem";
 import { CourseProvider } from "./context/CourseProvider";
-import SbjContainer from "./components/SbjContainer";
+import SubjectContainer from "./components/SubjectContainer";
 
 function App() {
   return (
     <CourseProvider>
-      <SbjContainer />
+      <SubjectContainer />
     </CourseProvider>
   );
 }
