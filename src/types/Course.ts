@@ -1,11 +1,10 @@
-export type Course = {
-  idx: number;
+import { DefFam, type Family } from "./Family";
+
+export interface Course extends Family {
   ttl: string;
-  mom: number;
-};
+}
 
 export const DefCrs = (i = 0, m = -1): Course => ({
-  idx: i,
+  ...DefFam(i, m),
   ttl: `Course ${i}`,
-  mom: m,
 });

@@ -1,15 +1,14 @@
-export type Subject = {
-  idx: number;
+import { DefFam, type Family } from "./Family";
+
+export interface Subject extends Family {
   ttl: string;
   cnt: string;
   dsc: string;
-  mom: number;
-};
+}
 
 export const DefSbj = (i = 0, m = -1): Subject => ({
-  idx: i,
+  ...DefFam(i, m),
   ttl: `Subject ${i}`,
   cnt: "",
   dsc: "",
-  mom: m,
 });

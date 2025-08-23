@@ -8,8 +8,8 @@ const CourseItem = ({ info }: { info?: Course }) => {
   const { ref, down } = useDragGhost<HTMLDivElement>();
   const idx = info ? info.idx : -1;
 
-  const onPointerUp = () => setCrsMom(idx);
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onUp = () => setCrsMom(idx);
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
     down(e);
     addCrsDrg(idx);
   };
@@ -20,8 +20,8 @@ const CourseItem = ({ info }: { info?: Course }) => {
         <div
           ref={ref}
           className="title"
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
+          onPointerDown={onDown}
+          onPointerUp={onUp}
         >
           <button>+</button>
           {info.ttl}
