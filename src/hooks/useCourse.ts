@@ -5,6 +5,7 @@ import { getNewIdx, itemByIdx } from "../utils/idxOperation";
 
 export const useCourse = () => {
   const [crsList, setCrsList] = useState<Course[]>([]);
+  const [crsDrg, setCrsDrg] = useState<number>(-1);
   const S = useSubject();
 
   const addCrs = () => {
@@ -27,5 +28,33 @@ export const useCourse = () => {
     S.select("REPLACE");
   };
 
-  return { crsList, addCrs, delCrs, ...S };
+  const setCrsMom = (nMom: number) => {
+    const visited: Set<number> = new Set([crsDrg]);
+    let target: Course | undefined = itemByIdx(crsList, nMom);
+
+    while (true) {
+      if (!target || visited.has(target.idx)) break;
+      if (target.mom === -1) {
+        setCrsList((prev) =>
+          prev.map((crs) => (crs.idx === crsDrg ? { ...crs, mom: nMom } : crs))
+        );
+        break;
+      }
+      target = itemByIdx(crsList, target.mom);
+    }
+    setCrsDrg(-1);
+  };
+  const addCrsDrg = (idx: number) => setCrsDrg(idx);
+  const delCrsDrg = () => setCrsDrg(-1);
+
+  return {
+    crsList,
+    addCrs,
+    delCrs,
+    ...S,
+    setCrsMom,
+    crsDrg,
+    addCrsDrg,
+    delCrsDrg,
+  };
 };

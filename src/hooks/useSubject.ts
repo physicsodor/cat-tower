@@ -5,7 +5,6 @@ import { useSelect } from "./useSelect";
 
 export const useSubject = () => {
   const [sbjList, setSbjList] = useState<Subject[]>([]);
-
   const S = useSelect();
 
   const addSbj = () => {
