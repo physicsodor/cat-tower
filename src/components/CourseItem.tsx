@@ -4,7 +4,7 @@ import { type Course } from "../types/Course";
 import SubjectItem from "./SubjectItem";
 
 const CourseItem = ({ info }: { info?: Course }) => {
-  const { sbjList, crsList, delCrs, addCrsDrg, setCrsMom } = useCourseStore();
+  const { addCrsDrg, crsList, delCrs, sbjList, setCrsMom } = useCourseStore();
   const { ref, down } = useDragGhost<HTMLDivElement>();
   const idx = info ? info.idx : -1;
 

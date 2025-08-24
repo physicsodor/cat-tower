@@ -5,7 +5,7 @@ import type { Subject } from "../types/Subject";
 
 const SubjectItem = ({ info }: { info: Subject }) => {
   const [dxy, setDxy] = useState([0, 0]);
-  const { slcSet, select } = useCourseStore();
+  const { slcSet, slcSbj } = useCourseStore();
 
   const handle_onMouseDown =
     (idx: number) => (e: React.MouseEvent<HTMLDivElement>) => {
@@ -15,7 +15,7 @@ const SubjectItem = ({ info }: { info: Subject }) => {
       if (e.ctrlKey) mode = "ADD";
       else if (e.shiftKey) mode = "REMOVE";
       else if (slcSet.has(idx)) mode = "NONE";
-      select(mode, idx);
+      slcSbj(mode, idx);
 
       const pxy = [e.clientX, e.clientY];
 

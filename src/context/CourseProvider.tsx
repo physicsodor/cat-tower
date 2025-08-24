@@ -1,11 +1,12 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { useCourse } from "../hooks/useCourse";
+import { useSubject } from "../hooks/useSubject";
+// import { useCourse } from "../hooks/useCourse";
 
-type CourseContextValue = ReturnType<typeof useCourse>;
+type CourseContextValue = ReturnType<typeof useSubject>;
 const CourseContext = createContext<CourseContextValue | null>(null);
 
 export function CourseProvider({ children }: { children: ReactNode }) {
-  const S = useCourse();
+  const S = useSubject();
   return <CourseContext.Provider value={S}>{children}</CourseContext.Provider>;
 }
 
