@@ -1,5 +1,19 @@
 .sbj-tree {
-  padding-left: 1rem;
+}
+
+.sbj-tree-contents {
+  margin-left: 1rem;
+  overflow: hidden;
+  &.hidden {
+    display: none;
+  }
+}
+
+.sbj-tree-title {
+  button,
+  div {
+    display: inline-block;
+  }
 }
 
 .sbj-tree-item {
@@ -12,7 +26,7 @@
 .ghost {
   position: fixed;
   pointer-events: none;
-  background-color: red;
+  background-color: blue;
   opacity: 0.5;
   z-index: 999;
 }

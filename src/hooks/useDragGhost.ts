@@ -25,20 +25,17 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
       e.preventDefault();
 
       if (e.button !== 0) return;
-      const target = targetRef.current;
-      if (!target) return;
-
       pxyRef.current = [e.clientX, e.clientY];
 
+      const target = targetRef.current;
+      if (!target) return;
       const rect = target.getBoundingClientRect();
-
       const ghost = target.cloneNode(true) as HTMLElement;
       ghost.className = "ghost";
       ghost.style.left = `${pxyRef.current[0]}px`;
       ghost.style.top = `${pxyRef.current[1]}px`;
       ghost.style.width = `${rect.width}px`;
       ghost.style.height = `${rect.height}px`;
-
       document.body.appendChild(ghost);
       ghostRef.current = ghost;
 
@@ -51,6 +48,5 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
   return {
     ref: targetRef,
     down: onPointerDown,
-    isDragging: true,
   };
 };

@@ -52,13 +52,13 @@ export const useSubject = () => {
       visited.add(momSbj.mom);
       momSbj = getItemByIdx(sbjList, momSbj.mom);
     }
-    console.log(trgSet, visited);
     setDel(trgSet, visited);
-    console.log(trgSet);
-    setSbjList((prev) =>
-      prev.map((sbj) => (trgSet.has(sbj.idx) ? { ...sbj, mom: nMom } : sbj))
-    );
-    setSlcSet(trgSet);
+    if (trgSet.size > 0) {
+      setSbjList((prev) =>
+        prev.map((sbj) => (trgSet.has(sbj.idx) ? { ...sbj, mom: nMom } : sbj))
+      );
+      setSlcSet(trgSet);
+    }
   };
 
   return {
