@@ -1,15 +1,8 @@
-.course-item {
-  .title {
-    margin-left: -1rem;
-    background-color: lightgray;
-  }
-
-  .contents {
-    margin-left: 1rem;
-  }
+.sbj-tree {
+  padding-left: 1rem;
 }
 
-.subject-item {
+.sbj-tree-item {
   background-color: transparent;
   &.selected {
     background-color: red;

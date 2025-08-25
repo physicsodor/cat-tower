@@ -1,16 +1,15 @@
-import { useCourseStore } from "../context/CourseProvider";
-import CourseItem from "./CourseItem";
+import { useSubjectStore } from "../context/SubjectProvider";
+import SbjTree from "./SbjTree";
 
 const SubjectContainer = () => {
-  const { addCrs, addSbj, crsList, delSbj } = useCourseStore();
+  const { addSbj, deleteSbj } = useSubjectStore();
 
   return (
     <div>
-      <button onClick={addSbj}>추가</button>
-      <button onClick={delSbj}>제거</button>
-      <button onClick={addCrs}>그룹 추가</button>
-      <CourseItem />
-      <div>{JSON.stringify([...crsList])}</div>
+      <button onClick={addSbj(false)}>추가</button>
+      <button onClick={deleteSbj}>제거</button>
+      <button onClick={addSbj(true)}>그룹 추가</button>
+      <SbjTree />
     </div>
   );
 };

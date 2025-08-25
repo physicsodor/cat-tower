@@ -1,7 +1,7 @@
 import { DefCrs, type Course } from "../types/Course";
 import type { Subject } from "../types/Subject";
 import { setAdd } from "./setOperation";
-import { itemByIdx } from "./idxOperation";
+import { getItemByIdx } from "./familyOperation";
 
 export const validate = (sbjList: Subject[], crsList: Course[]) => {
   const pSbjList = [...sbjList];
@@ -47,7 +47,7 @@ const _testMom = (sbjList: Subject[], crsList: Course[]) => {
 
       tempSet.add(idx);
       if (mom >= 0 && idxSet.has(mom) && !tempSet.has(mom)) {
-        crs = itemByIdx(crsList, mom) || DefCrs();
+        crs = getItemByIdx(crsList, mom) || DefCrs();
       } else {
         crs.mom = -1;
         setAdd(usedSet, tempSet);
