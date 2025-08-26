@@ -15,7 +15,7 @@ export const useSubject = () => {
     setSbjList((prev) => {
       const i = getNewIdx(prev);
       const b = getNewBro(prev);
-      selectSbj("REPLACE", i);
+      setSlcSet(new Set([i]));
       return [...prev, DefSbj(i, b)];
     });
   };
@@ -25,7 +25,6 @@ export const useSubject = () => {
     setSbjList((prev) => {
       const i = getNewIdx(prev);
       const b = getNewBro(prev);
-      selectSbj("REPLACE", i);
       return [...prev, DefCrs(i, b)];
     });
   };
@@ -72,13 +71,9 @@ export const useSubject = () => {
         return trg ? !isCourse(trg) : false;
       })
     );
-    if (mode === "ADD") {
-      setSlcSet((prev) => setUni(prev, idxSet));
-    } else if (mode === "REPLACE") {
-      setSlcSet(idxSet);
-    } else if (mode === "REMOVE") {
-      setSlcSet((prev) => setDif(prev, idxSet));
-    }
+    if (mode === "ADD") setSlcSet((prev) => setUni(prev, idxSet));
+    else if (mode === "REPLACE") setSlcSet(idxSet);
+    else if (mode === "REMOVE") setSlcSet((prev) => setDif(prev, idxSet));
   };
 
   /** Set mom of the selected Subjects to nMom. */
@@ -88,25 +83,29 @@ export const useSubject = () => {
     if (!momCrs || !isCourse(momCrs)) return;
 
     setSbjList((prev) => {
-      const broList = prev.filter((sbj) => slcSet.has(sbj.idx));
+      const sbjMap = new Map(prev.map((x) => [x.idx, x] as const));
+      const slcList = prev.filter((sbj) => slcSet.has(sbj.idx));
       const broMap = new Map<number, number>();
-      for (const x of broList) {
+      for (const x of slcList) {
         let b = x.bro;
         while (slcSet.has(b) && b >= 0) {
-          b = broList.find((sbj) => sbj.idx === b)?.bro ?? -1;
+          b = sbjMap.get(b)?.bro ?? -1;
         }
         broMap.set(x.idx, b);
       }
-      let nBro = getNewBro(prev, nMom);
+
+      let nBro = getNewBro(prev, nMom, slcSet);
+
       return prev.map((sbj) => {
-        let nSbj: Subject | Course;
         if (slcSet.has(sbj.idx) && !isCourse(sbj)) {
-          nSbj = { ...sbj, mom: nMom, bro: nBro };
+          const nSbj = { ...sbj, mom: nMom, bro: nBro };
           nBro = sbj.idx;
-        } else if (slcSet.has(sbj.bro)) {
-          nSbj = { ...sbj, bro: broMap.get(sbj.bro) ?? -1 };
-        } else nSbj = sbj;
-        return nSbj;
+          return nSbj;
+        }
+        if (slcSet.has(sbj.bro)) {
+          return { ...sbj, bro: broMap.get(sbj.bro) ?? -1 };
+        }
+        return sbj;
       });
     });
   };

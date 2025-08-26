@@ -1,4 +1,4 @@
-import type { JSX, ReactElement } from "react";
+import type { JSX } from "react";
 import { useSubjectStore } from "../context/SubjectProvider";
 import { DefCrs, isCourse, type Course } from "../types/Course";
 import SbjTreeItem from "./SbjTreeItem";
