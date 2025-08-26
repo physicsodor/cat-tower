@@ -1,33 +1,29 @@
-import { useState } from "react";
+import type { JSX, ReactElement } from "react";
 import { useSubjectStore } from "../context/SubjectProvider";
-import { DefCrs, type Course } from "../types/Course";
-import type { Subject } from "../types/Subject";
+import { DefCrs, isCourse, type Course } from "../types/Course";
 import SbjTreeItem from "./SbjTreeItem";
+import SbjTreeTitle from "./SbjTreeTitle";
 
-const SbjTree = ({ info }: { info?: Course | Subject }) => {
+const SbjTree = ({ info }: { info?: Course }) => {
   const { sbjList } = useSubjectStore();
-  const [isOpen, setIsOpen] = useState(true);
-  const idx = info?.idx ?? -1;
-  const flipOpen = () => setIsOpen((b) => !b);
-  const childrenList = sbjList.filter((sbj) => sbj.mom === idx);
+  const pInfo: Course = info ?? { ...DefCrs(-1), ttl: "Subject Tree:" };
+  const broList = sbjList.filter((sbj) => sbj.mom === pInfo.idx);
+
+  const MakeContents = (bro: number): JSX.Element | null => {
+    const trg = broList.find((sbj) => sbj.bro === bro);
+    if (!trg) return null;
+    return (
+      <>
+        {isCourse(trg) ? <SbjTree info={trg} /> : <SbjTreeItem info={trg} />}
+        {MakeContents(trg.idx)}
+      </>
+    );
+  };
 
   return (
     <div className={`sbj-tree`}>
-      <div className="sbj-tree-title">
-        <SbjTreeItem info={info ?? DefCrs(-1, -1)} />
-        {childrenList.length > 0 ? (
-          <button onClick={flipOpen}>{isOpen ? "-" : "+"}</button>
-        ) : null}
-      </div>
-      <div className={`sbj-tree-contents${isOpen ? "" : " hidden"}`}>
-        {childrenList.map((sbj) =>
-          "Course" in sbj ? (
-            <SbjTree key={`crs-${sbj.idx}`} info={sbj} />
-          ) : (
-            <SbjTreeItem key={`sbj-${sbj.idx}`} info={sbj} />
-          )
-        )}
-      </div>
+      <SbjTreeTitle info={pInfo} />
+      <div className="sbj-tree-contents">{MakeContents(-1)}</div>
     </div>
   );
 };

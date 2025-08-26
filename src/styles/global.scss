@@ -1,15 +1,14 @@
-.sbj-tree {
-}
-
 .sbj-tree-contents {
   margin-left: 1rem;
   overflow: hidden;
+
   &.hidden {
     display: none;
   }
 }
 
 .sbj-tree-title {
+  background-color: lightgray;
   button,
   div {
     display: inline-block;
@@ -17,7 +16,9 @@
 }
 
 .sbj-tree-item {
+  width: fit-content;
   background-color: transparent;
+
   &.selected {
     background-color: red;
   }

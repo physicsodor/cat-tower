@@ -8,11 +8,21 @@ export const getNewIdx = <T extends Family>(TList: T[], start = 0) => {
 };
 
 export const getItemByIdx = <T extends Family>(TList: T[], idx: number) => {
-  for (const t of TList) if (t.idx === idx) return t;
-  return undefined;
+  return TList.find((t) => t.idx === idx);
 };
 
 export const getMomByIdx = <T extends Family>(TList: T[], idx: number) => {
-  for (const t of TList) if (t.idx === idx) return t.mom;
-  return -1;
+  return TList.find((t) => t.idx === idx)?.mom ?? -1;
+};
+
+export const getNewBro = <T extends Family>(TList: T[], mom = -1) => {
+  const broList = TList.filter((t) => t.mom === mom);
+  const broMap = new Map<number, number>();
+  for (const x of broList) broMap.set(x.bro, x.idx);
+
+  let nBro = -1;
+  while (broMap.has(nBro)) {
+    nBro = broMap.get(nBro) as number;
+  }
+  return nBro;
 };

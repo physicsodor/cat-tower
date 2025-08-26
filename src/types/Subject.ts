@@ -6,8 +6,8 @@ export interface Subject extends Family {
   dsc: string;
 }
 
-export const DefSbj = (i = 0, m = -1): Subject => ({
-  ...DefFam(i, m),
+export const DefSbj = (i = 0, b = -1): Subject => ({
+  ...DefFam(i, b),
   ttl: `Subject ${i}`,
   cnt: "",
   dsc: "",

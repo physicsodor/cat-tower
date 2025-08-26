@@ -1,9 +1,11 @@
 export interface Family {
   idx: number;
   mom: number;
+  bro: number;
 }
 
-export const DefFam = (i = 0, m = -1): Family => ({
+export const DefFam = (i = 0, b = -1): Family => ({
   idx: i,
-  mom: m,
+  mom: -1,
+  bro: b,
 });
