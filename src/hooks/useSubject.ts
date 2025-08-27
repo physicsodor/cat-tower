@@ -1,33 +1,19 @@
 import { useState } from "react";
-import { DefSbj, type Subject } from "../types/Subject";
-import { getNewIdx, getItemByIdx, getNewBro } from "../utils/familyOperation";
+import { type Course, type Subject } from "../types/Subject";
 import type { SelectMode } from "../types/SelectMode";
-import { setDif, setUni } from "../utils/setOperation";
-import { DefCrs, isCourse, type Course } from "../types/Course";
+import { setDif, setUni } from "../utils/setOp";
+import { getItemByIdx } from "../utils/idxItemOp";
+import { getNewBro } from "../utils/familyOp";
+import { addCourse, addSubject } from "../utils/subjectOp";
 
 export const useSubject = () => {
   const [sbjList, setSbjList] = useState<(Subject | Course)[]>([]);
   const [slcSet, setSlcSet] = useState<Set<number>>(new Set());
   const [crsDrag, setCrsDrag] = useState(-1);
 
-  /** Add a Subject. */
-  const addSbj = () => {
-    setSbjList((prev) => {
-      const i = getNewIdx(prev);
-      const b = getNewBro(prev);
-      setSlcSet(new Set([i]));
-      return [...prev, DefSbj(i, b)];
-    });
-  };
-
-  /** Add a Course */
-  const addCrs = () => {
-    setSbjList((prev) => {
-      const i = getNewIdx(prev);
-      const b = getNewBro(prev);
-      return [...prev, DefCrs(i, b)];
-    });
-  };
+  /** Add a Subject or a */
+  const addSbj = () => setSbjList((prev) => addSubject(prev));
+  const addCrs = () => setSbjList((prev) => addCourse(prev));
 
   /** Delete the selected Subjects. */
   const deleteSbj = () => {
@@ -35,7 +21,7 @@ export const useSubject = () => {
       const broMap = new Map<number, number>();
       for (const x of prev) broMap.set(x.idx, x.bro);
       return prev
-        .filter((sbj) => !slcSet.has(sbj.idx) || isCourse(sbj))
+        .filter((sbj) => !slcSet.has(sbj.idx) || sbj.isMom)
         .map((sbj) =>
           slcSet.has(sbj.bro)
             ? { ...sbj, bro: broMap.get(sbj.bro) as number }
@@ -48,7 +34,7 @@ export const useSubject = () => {
   /** Delete the Course by idx */
   const deleteCrs = (idx: number) => () => {
     const trg = getItemByIdx(sbjList, idx);
-    if (!trg || !isCourse(trg)) return;
+    if (!trg || !trg.isMom) return;
 
     setSbjList((prev) =>
       prev
@@ -68,7 +54,7 @@ export const useSubject = () => {
     const idxSet = new Set(
       idxList.filter((idx) => {
         const trg = getItemByIdx(sbjList, idx);
-        return trg ? !isCourse(trg) : false;
+        return trg ? !trg.isMom : false;
       })
     );
     if (mode === "ADD") setSlcSet((prev) => setUni(prev, idxSet));
@@ -80,7 +66,7 @@ export const useSubject = () => {
   const setSbjMom = (nMom: number) => {
     if (slcSet.size === 0) return;
     const momCrs = getItemByIdx(sbjList, nMom);
-    if (!momCrs || !isCourse(momCrs)) return;
+    if (!momCrs || !momCrs.isMom) return;
 
     setSbjList((prev) => {
       const sbjMap = new Map(prev.map((x) => [x.idx, x] as const));
@@ -97,7 +83,7 @@ export const useSubject = () => {
       let nBro = getNewBro(prev, nMom, slcSet);
 
       return prev.map((sbj) => {
-        if (slcSet.has(sbj.idx) && !isCourse(sbj)) {
+        if (slcSet.has(sbj.idx) && !sbj.isMom) {
           const nSbj = { ...sbj, mom: nMom, bro: nBro };
           nBro = sbj.idx;
           return nSbj;
@@ -113,10 +99,10 @@ export const useSubject = () => {
   /** Set mom of the Course by idx to nMom. */
   const setCrsMom = (nMom: number) => {
     const trg = getItemByIdx(sbjList, crsDrag);
-    if (!trg || !isCourse(trg)) return;
+    if (!trg || !trg.isMom) return;
 
     let momSbj = getItemByIdx(sbjList, nMom);
-    if (!momSbj || !isCourse(momSbj)) return;
+    if (!momSbj || !momSbj.isMom) return;
 
     const visited = new Set([nMom]);
     while (momSbj && momSbj.mom >= -1 && !visited.has(momSbj.mom)) {
@@ -138,7 +124,7 @@ export const useSubject = () => {
 
   const selectCrsDrag = (i: number) => {
     const trg = getItemByIdx(sbjList, i);
-    if (!trg || !isCourse(trg)) return;
+    if (!trg || !trg.isMom) return;
     setCrsDrag(i);
   };
 

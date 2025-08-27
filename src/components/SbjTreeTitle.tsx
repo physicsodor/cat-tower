@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSubjectStore } from "../context/SubjectProvider";
 import { useDragGhost } from "../hooks/useDragGhost";
-import type { Course } from "../types/Course";
+import type { Course } from "../types/Subject";
 
 const SbjTreeTitle = ({ info }: { info: Course }) => {
   const { crsDrag, selectCrsDrag, setCrsMom, setSbjMom } = useSubjectStore();

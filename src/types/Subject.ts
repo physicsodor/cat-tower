@@ -1,4 +1,4 @@
-import { DefFam, type Family } from "./Family";
+import { type Family } from "./Family";
 
 export interface Subject extends Family {
   ttl: string;
@@ -6,9 +6,18 @@ export interface Subject extends Family {
   dsc: string;
 }
 
-export const DefSbj = (i = 0, b = -1): Subject => ({
-  ...DefFam(i, b),
-  ttl: `Subject ${i}`,
+export interface Course extends Family {
+  ttl: string;
+}
+
+export const newSubject = (x: Family): Subject => ({
+  ...x,
+  ttl: `Subject ${x.idx}`,
   cnt: "",
   dsc: "",
+});
+
+export const newCourse = (x: Family): Course => ({
+  ...x,
+  ttl: `Course ${x.idx}`,
 });

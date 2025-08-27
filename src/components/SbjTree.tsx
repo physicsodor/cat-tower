@@ -1,12 +1,15 @@
 import type { JSX } from "react";
 import { useSubjectStore } from "../context/SubjectProvider";
-import { DefCrs, isCourse, type Course } from "../types/Course";
 import SbjTreeItem from "./SbjTreeItem";
 import SbjTreeTitle from "./SbjTreeTitle";
+import { newCourse, type Course, type Subject } from "../types/Subject";
 
 const SbjTree = ({ info }: { info?: Course }) => {
   const { sbjList } = useSubjectStore();
-  const pInfo: Course = info ?? { ...DefCrs(-1), ttl: "Subject Tree:" };
+  const pInfo: Course = info ?? {
+    ...newCourse({ idx: -1, mom: -1, bro: -1, isMom: true }),
+    ttl: "Subject Tree:",
+  };
   const broList = sbjList.filter((sbj) => sbj.mom === pInfo.idx);
 
   const MakeContents = (bro: number): JSX.Element | null => {
@@ -14,7 +17,11 @@ const SbjTree = ({ info }: { info?: Course }) => {
     if (!trg) return null;
     return (
       <>
-        {isCourse(trg) ? <SbjTree info={trg} /> : <SbjTreeItem info={trg} />}
+        {trg.isMom ? (
+          <SbjTree info={trg as Course} />
+        ) : (
+          <SbjTreeItem info={trg as Subject} />
+        )}
         {MakeContents(trg.idx)}
       </>
     );
