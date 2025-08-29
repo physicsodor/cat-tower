@@ -5,7 +5,7 @@ import { useDragGhost } from "../hooks/useDragGhost";
 import { useRef } from "react";
 
 const SbjTreeItem = ({ info }: { info: Subject }) => {
-  const { slcSet, selectSbj } = useSubjectStore();
+  const { selSet, selSbj } = useSubjectStore();
   const { ref, down } = useDragGhost<HTMLDivElement>();
   const modeRef = useRef<SelectMode>("NONE");
 
@@ -15,15 +15,15 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
     modeRef.current = "REPLACE";
     if (e.ctrlKey) modeRef.current = "ADD";
     else if (e.shiftKey) modeRef.current = "REMOVE";
-    else if (slcSet.has(info.idx)) modeRef.current = "NONE";
-    selectSbj(modeRef.current, info.idx);
+    else if (selSet.has(info.idx)) modeRef.current = "NONE";
+    selSbj(modeRef.current, info.idx);
     if (modeRef.current !== "REMOVE") down(e);
   };
 
   return (
     <div
       ref={ref}
-      className={`sbj-tree-item${slcSet.has(info.idx) ? " selected" : ""}`}
+      className={`sbj-tree-item${selSet.has(info.idx) ? " selected" : ""}`}
       onPointerDown={onDown}
     >
       {info.idx < 0 ? "Subject Tree:" : info.ttl}

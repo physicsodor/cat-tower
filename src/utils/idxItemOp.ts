@@ -17,6 +17,16 @@ export const getItemByIdx = <T extends IdxItem>(TList: T[], idx: number) => {
 export const addIdxItem = <T extends IdxItem>(
   TList: T[],
   newT: (idx: number) => T
-): T[] => {
-  return [...TList, newT(getNewIdx(TList))];
+): { newIdx: number; newList: T[] } => {
+  const newIdx = getNewIdx(TList);
+  const newList = [...TList, newT(newIdx)];
+  return { newIdx, newList };
+};
+
+export const deleteIdxItem = <T extends IdxItem>(
+  TList: T[],
+  targetSet: Set<number>
+): { newList: T[] } => {
+  const newList = TList.filter((t) => !targetSet.has(t.idx));
+  return { newList };
 };

@@ -1,27 +1,24 @@
-import {
-  newCourse,
-  newSubject,
-  type Course,
-  type Subject,
-} from "../types/Subject";
-import { addFamily, makeIdx2BroMap } from "./familyOp";
+import { newSubject, type Course, type Subject } from "../types/Subject";
+import { addFamily, deleteFamily } from "./familyOp";
 
-type SubjectList = (Subject | Course)[];
+type TheList = (Subject | Course)[];
+type TheAdd = { newIdx: number; newList: TheList; newIsMom: boolean };
 
-export const addSubject = (SList: SubjectList): SubjectList => {
-  return addFamily(SList, newSubject, -1, false);
+export const addSubject = (SList: TheList): TheAdd => {
+  const newIsMom = false;
+  return { ...addFamily(SList, newSubject, -1, newIsMom), newIsMom: newIsMom };
 };
 
-export const addCourse = (SList: SubjectList): SubjectList => {
-  return addFamily(SList, newCourse, -1, true);
+export const addCourse = (SList: TheList): TheAdd => {
+  const newIsMom = true;
+  const result = addFamily(SList, newSubject, -1, newIsMom);
+  return { ...result, newIsMom: newIsMom };
 };
 
 export const deleteSubject = (
-  SList: SubjectList,
+  SList: TheList,
   targetSet: Set<number>
-): SubjectList => {
-  const idx2bro = makeIdx2BroMap(SList, targetSet);
-  return SList.filter((x) => !targetSet.has(x.idx) || x.isMom).map((x) =>
-    targetSet.has(x.bro) ? { ...x, bro: idx2bro.get(x.bro) ?? -1 } : x
-  );
+): { newList: TheList } => {
+  const result = deleteFamily(SList, targetSet);
+  return result;
 };
