@@ -3,7 +3,7 @@ import { type Course, type Subject } from "../types/Subject";
 import type { SelectMode } from "../types/SelectMode";
 import { setDif, setUni } from "../utils/setOp";
 import { getItemByIdx } from "../utils/idxItemOp";
-import { setBro, setMom } from "../utils/familyOp";
+import { setMom } from "../utils/familyOp";
 import { addCourse, addSubject, deleteSubject } from "../utils/subjectOp";
 
 export const useSubject = () => {
@@ -43,14 +43,6 @@ export const useSubject = () => {
     setCrsDrag(-1);
   };
 
-  const setSbjBro = (newBro: number) => {
-    setSbjList((prev) => setBro(prev, selSet, newBro).newList);
-  };
-  const setCrsBro = (newBro: number) => {
-    setSbjList((prev) => setBro(prev, new Set([crsDrag]), newBro).newList);
-    setCrsDrag(-1);
-  };
-
   const selSbj = (mode: SelectMode, ...idxList: number[]) => {
     const idxSet = new Set(
       idxList.filter((idx) => {
@@ -79,8 +71,6 @@ export const useSubject = () => {
     delCrs,
     setSbjMom,
     setCrsMom,
-    setSbjBro,
-    setCrsBro,
     selCrsDrag,
     selSbj,
   };
