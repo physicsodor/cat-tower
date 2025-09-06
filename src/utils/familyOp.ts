@@ -4,21 +4,23 @@ import {
   addIdxItem,
   deleteIdxItem,
   getItemByIdx,
-  makeIdx2ItemMap,
+  makeIdx2Item,
 } from "./idxItemOp";
 
-const _cmpBro = <T extends Family>(a: T, b: T) =>
+type Dir = "PREVIOUS" | "NEXT";
+
+const compareBro = <T extends Family>(a: T, b: T) =>
   a.bro < b.bro ? -1 : a.bro > b.bro ? 1 : 0;
 
-export const getItemsByMom = <T extends Family>(TList: T[], mom: number) => {
-  return TList.filter((t) => t.mom === mom).sort(_cmpBro);
+const getItemsByMom = <T extends Family>(TList: T[], mom: number) => {
+  return TList.filter((t) => t.mom === mom).sort(compareBro);
 };
 
-export const getLastBro = <T extends Family>(
+const getLastBro = <T extends Family>(
   TList: T[],
   mom: number = -1,
   ignore: Set<number> = new Set()
-) => {
+): string | null => {
   const broList = getItemsByMom(TList, mom);
   for (let i = broList.length - 1; i >= 0; i--) {
     if (!ignore.has(broList[i].idx)) return broList[i].bro;
@@ -26,45 +28,92 @@ export const getLastBro = <T extends Family>(
   return null;
 };
 
-export const getPreBro = <T extends Family>(
+const getAdjacentBro = <T extends Family>(
   TList: T[],
-  nxtIdx: number,
+  pivotItem: T,
+  dir: Dir,
   ignore: Set<number> = new Set()
-) => {
-  const nxtItem = getItemByIdx(TList, nxtIdx);
-  if (!nxtItem) return null;
+): string | null => {
+  const broList = getItemsByMom(TList, pivotItem.mom);
+  const i = broList.findIndex((t) => t.idx === pivotItem.idx);
+  if (i < 0) return null;
 
-  const broList = getItemsByMom(TList, nxtItem.mom);
-  const nxt_i = broList.findIndex((t) => t.idx === nxtIdx);
-  if (nxt_i < 0) return null;
-  for (let i = nxt_i - 1; i >= 0; i--) {
-    if (!ignore.has(broList[i].idx)) return broList[i].bro;
+  if (dir === "PREVIOUS") {
+    for (let k = i - 1; k >= 0; k--) {
+      if (!ignore.has(broList[k].idx)) return broList[k].bro;
+    }
+  } else {
+    for (let k = i + 1; k < broList.length; k++) {
+      if (!ignore.has(broList[k].idx)) return broList[k].bro;
+    }
   }
   return null;
 };
 
-export const getNxtBro = <T extends Family>(
-  TList: T[],
-  preIdx: number,
-  ignore: Set<number> = new Set()
+const isMomCyclic = <T extends Family>(
+  idx2Item: Map<number, T>,
+  targetSet: Set<number>,
+  startMom: number
 ) => {
-  const preItem = getItemByIdx(TList, preIdx);
-  if (!preItem) return null;
-  const broList = getItemsByMom(TList, preItem.mom);
-  const pre_i = broList.findIndex((t) => t.idx === preIdx);
-  if (pre_i < 0) return null;
-  for (let i = pre_i + 1; i < broList.length; i++) {
-    if (!ignore.has(broList[i].idx)) return broList[i].bro;
+  let testMom = startMom;
+  while (testMom >= 0) {
+    if (targetSet.has(testMom)) return true;
+    testMom = idx2Item.get(testMom)?.mom ?? -1;
   }
-  return null;
+  return false;
 };
 
-export const makeIdx2MomMap = <T extends Family>(
+const makeFamilyList = <T extends Family>(
+  TList: T[],
+  targetSet: Set<number> = new Set(TList.map((t) => t.idx))
+): number[] => {
+  if (targetSet.size === 0) return [];
+
+  const idx2Item = makeIdx2Item(TList);
+  const targetMomSet = new Set<number>();
+  for (const idx of targetSet) {
+    let mom = idx2Item.get(idx)?.mom ?? -1;
+    while (mom >= 0 && !targetMomSet.has(mom)) {
+      targetMomSet.add(mom);
+      mom = idx2Item.get(mom)?.mom ?? -1;
+    }
+  }
+  targetMomSet.add(-1);
+
+  const mom2items = new Map<number, T[]>();
+  for (const t of TList) {
+    if (!targetMomSet.has(t.mom)) continue;
+    const arr = mom2items.get(t.mom);
+    if (arr) arr.push(t);
+    else mom2items.set(t.mom, [t]);
+  }
+
+  for (const arr of mom2items.values())
+    if (arr.length > 1) arr.sort(compareBro);
+
+  const result: number[] = [];
+  const visited = new Set<number>();
+  const pushItems = (mom: number) => {
+    const arr = mom2items.get(mom);
+    if (!arr) return;
+    for (const x of arr) {
+      if (visited.has(x.idx)) continue;
+      visited.add(x.idx);
+      if (targetSet.has(x.idx)) result.push(x.idx);
+      pushItems(x.idx);
+    }
+  };
+  pushItems(-1);
+
+  return result;
+};
+
+const makeIdx2Mom = <T extends Family>(
   TList: T[],
   ignore: Set<number> = new Set()
 ): Map<number, number> => {
   const result = new Map<number, number>();
-  const idx2Item = makeIdx2ItemMap(TList);
+  const idx2Item = makeIdx2Item(TList);
 
   for (const x of TList) {
     if (!ignore.has(x.idx)) continue;
@@ -74,6 +123,30 @@ export const makeIdx2MomMap = <T extends Family>(
     }
     result.set(x.idx, m);
   }
+  return result;
+};
+
+const relocateFamily = <T extends Family>(
+  TList: T[],
+  targetSet: Set<number>,
+  newMom: number,
+  leftBro: string | null,
+  rightBro: string | null
+): { newList: T[]; isErr: boolean } => {
+  const result = { newList: TList, isErr: true };
+  if (targetSet.size === 0) return result;
+
+  const idx2Item = makeIdx2Item(TList);
+  if (isMomCyclic(idx2Item, targetSet, newMom)) return result;
+
+  const idxList = makeFamilyList(TList, targetSet);
+  const newBroList = generateNKeysBetween(leftBro, rightBro, targetSet.size);
+  const idx2bro = new Map<number, string>();
+  idxList.forEach((idx, i) => idx2bro.set(idx, newBroList[i]));
+  result.newList = TList.map((t) =>
+    targetSet.has(t.idx) ? { ...t, mom: newMom, bro: idx2bro.get(t.idx)! } : t
+  );
+  result.isErr = false;
   return result;
 };
 
@@ -97,7 +170,7 @@ export const deleteFamily = <T extends Family>(
   TList: T[],
   targetSet: Set<number>
 ): { newList: T[] } => {
-  const idx2mom = makeIdx2MomMap(TList, targetSet);
+  const idx2mom = makeIdx2Mom(TList, targetSet);
   const result = deleteIdxItem(TList, targetSet);
   result.newList = result.newList.map((t) =>
     targetSet.has(t.mom) ? { ...t, mom: idx2mom.get(t.mom) ?? -1 } : t
@@ -105,128 +178,35 @@ export const deleteFamily = <T extends Family>(
   return result;
 };
 
-const _isMomCyclic = <T extends Family>(
-  idx2Item: Map<number, T>,
-  targetSet: Set<number>,
-  startMom: number
-) => {
-  let testMom = startMom;
-  while (testMom >= 0) {
-    if (targetSet.has(testMom)) return true;
-    testMom = idx2Item.get(testMom)?.mom ?? -1;
-  }
-  return false;
-};
-
-const makeFamilySublist = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number> = new Set()
-) => {
-  const mom2items = new Map<number, T[]>();
-  for (const t of TList) {
-    if (targetSet.size > 0 && !targetSet.has(t.idx)) continue;
-    const tempItems = mom2items.get(t.mom) ?? [];
-    tempItems.push(t);
-    mom2items.set(t.mom, tempItems);
-  }
-  const momList: number[] = [];
-  const visited = new Set<number>();
-  for (const t of TList) {
-    if (!mom2items.has(t.mom) || visited.has(t.mom)) continue;
-    visited.add(t.mom);
-    momList.push(t.mom);
-  }
-
-  const result: number[] = [];
-  for (const m of momList) {
-    const tempItems = mom2items.get(m)!;
-    tempItems.sort(_cmpBro);
-    for (const x of tempItems) result.push(x.idx);
-  }
-  return result;
-};
-
 export const setMom = <T extends Family>(
   TList: T[],
   targetSet: Set<number>,
   newMom: number
-): { newList: T[]; isErr: boolean } => {
-  // Test //
-  const result = { newList: TList, isErr: true };
-  if (targetSet.size === 0) return result;
-  const idx2Item = makeIdx2ItemMap(TList);
-  if (_isMomCyclic(idx2Item, targetSet, newMom)) return result;
-
-  // Operation //
-  const newBroList = generateNKeysBetween(
+) => {
+  return relocateFamily(
+    TList,
+    targetSet,
+    newMom,
     getLastBro(TList, newMom, targetSet),
-    null,
-    targetSet.size
+    null
   );
-  const targetIdxList = makeFamilySublist(TList, targetSet);
-  const idx2bro = new Map<number, string>();
-  targetIdxList.forEach((idx, i) => idx2bro.set(idx, newBroList[i]));
-  result.newList = TList.map((t) =>
-    targetSet.has(t.idx) ? { ...t, mom: newMom, bro: idx2bro.get(t.idx)! } : t
-  );
-  result.isErr = false;
-  return result;
 };
 
-export const setPreBro = <T extends Family>(
+export const setBro = <T extends Family>(
   TList: T[],
   targetSet: Set<number>,
-  preIdx: number
+  pivotIdx: number,
+  dir: Dir
 ): { newList: T[]; isErr: boolean } => {
-  const result = { newList: TList, isErr: true };
-  if (targetSet.size === 0 || targetSet.has(preIdx)) return result;
-  const preItem = getItemByIdx(TList, preIdx);
-  if (!preItem) return result;
-  const idx2Item = makeIdx2ItemMap(TList);
-  if (_isMomCyclic(idx2Item, targetSet, preItem.mom)) return result;
+  const pivot = getItemByIdx(TList, pivotIdx);
+  if (!pivot || targetSet.has(pivotIdx)) return { newList: TList, isErr: true };
+  const adjacentBro = getAdjacentBro(TList, pivot, dir, targetSet);
 
-  const newBroList = generateNKeysBetween(
-    preItem.bro,
-    getNxtBro(TList, preIdx, targetSet),
-    targetSet.size
+  return relocateFamily(
+    TList,
+    targetSet,
+    pivot.mom,
+    dir === "PREVIOUS" ? adjacentBro : pivot.bro,
+    dir === "PREVIOUS" ? pivot.bro : adjacentBro
   );
-  const targetIdxList = makeFamilySublist(TList, targetSet);
-  const idx2bro = new Map<number, string>();
-  targetIdxList.forEach((idx, i) => idx2bro.set(idx, newBroList[i]));
-  result.newList = TList.map((t) =>
-    targetSet.has(t.idx)
-      ? { ...t, mom: preItem.mom, bro: idx2bro.get(t.idx)! }
-      : t
-  );
-  result.isErr = false;
-  return result;
-};
-
-export const setNxtBro = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number>,
-  nxtIdx: number
-): { newList: T[]; isErr: boolean } => {
-  const result = { newList: TList, isErr: true };
-  if (targetSet.size === 0 || targetSet.has(nxtIdx)) return result;
-  const nxtItem = getItemByIdx(TList, nxtIdx);
-  if (!nxtItem) return result;
-  const idx2Item = makeIdx2ItemMap(TList);
-  if (_isMomCyclic(idx2Item, targetSet, nxtItem.mom)) return result;
-
-  const newBroList = generateNKeysBetween(
-    getPreBro(TList, nxtIdx, targetSet),
-    nxtItem.bro,
-    targetSet.size
-  );
-  const targetIdxList = makeFamilySublist(TList, targetSet);
-  const idx2bro = new Map<number, string>();
-  targetIdxList.forEach((idx, i) => idx2bro.set(idx, newBroList[i]));
-  result.newList = TList.map((t) =>
-    targetSet.has(t.idx)
-      ? { ...t, mom: nxtItem.mom, bro: idx2bro.get(t.idx)! }
-      : t
-  );
-  result.isErr = false;
-  return result;
 };

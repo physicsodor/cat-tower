@@ -1,6 +1,6 @@
 import { type IdxItem } from "../types/IdxItem";
 
-export const makeIdx2ItemMap = <T extends IdxItem>(TList: T[]) =>
+export const makeIdx2Item = <T extends IdxItem>(TList: T[]) =>
   new Map(TList.map((x) => [x.idx, x] as const));
 
 export const getNewIdx = <T extends IdxItem>(TList: T[], start = 0) => {
