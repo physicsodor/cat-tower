@@ -21,3 +21,11 @@ export const newCourse = (x: Family): Course => ({
   ...x,
   ttl: `Course ${x.idx}`,
 });
+
+export const defaultCourse: Course = {
+  idx: -1,
+  ttl: "",
+  bro: "",
+  mom: -1,
+  isMom: true,
+};

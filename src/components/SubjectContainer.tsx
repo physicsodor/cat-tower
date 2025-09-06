@@ -1,5 +1,5 @@
 import { useSubjectStore } from "../context/SubjectProvider";
-import SbjTree from "./SbjTree";
+import SbjTree from "./SbjTree/SbjTree";
 
 const SubjectContainer = () => {
   const { sbjList, addCrs, addSbj, delSbj } = useSubjectStore();

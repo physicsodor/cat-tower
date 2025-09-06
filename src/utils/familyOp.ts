@@ -6,14 +6,25 @@ import {
   getItemByIdx,
   makeIdx2Item,
 } from "./idxItemOp";
-
-type Dir = "PREVIOUS" | "NEXT";
+import type { InsertMode } from "../types/InsertMode";
 
 const compareBro = <T extends Family>(a: T, b: T) =>
   a.bro < b.bro ? -1 : a.bro > b.bro ? 1 : 0;
 
-const getItemsByMom = <T extends Family>(TList: T[], mom: number) => {
+export const getItemsByMom = <T extends Family>(TList: T[], mom: number) => {
   return TList.filter((t) => t.mom === mom).sort(compareBro);
+};
+
+const getFirstBro = <T extends Family>(
+  TList: T[],
+  mom: number = -1,
+  ignore: Set<number> = new Set()
+): string | null => {
+  const broList = getItemsByMom(TList, mom);
+  for (let i = 0; i < broList.length; i++) {
+    if (!ignore.has(broList[i].idx)) return broList[i].bro;
+  }
+  return null;
 };
 
 const getLastBro = <T extends Family>(
@@ -31,7 +42,7 @@ const getLastBro = <T extends Family>(
 const getAdjacentBro = <T extends Family>(
   TList: T[],
   pivotItem: T,
-  dir: Dir,
+  dir: InsertMode,
   ignore: Set<number> = new Set()
 ): string | null => {
   const broList = getItemsByMom(TList, pivotItem.mom);
@@ -187,8 +198,8 @@ export const setMom = <T extends Family>(
     TList,
     targetSet,
     newMom,
-    getLastBro(TList, newMom, targetSet),
-    null
+    null,
+    getFirstBro(TList, newMom, targetSet)
   );
 };
 
@@ -196,7 +207,7 @@ export const setBro = <T extends Family>(
   TList: T[],
   targetSet: Set<number>,
   pivotIdx: number,
-  dir: Dir
+  dir: InsertMode
 ): { newList: T[]; isErr: boolean } => {
   const pivot = getItemByIdx(TList, pivotIdx);
   if (!pivot || targetSet.has(pivotIdx)) return { newList: TList, isErr: true };

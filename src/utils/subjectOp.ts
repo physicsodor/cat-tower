@@ -1,24 +1,30 @@
-import { newSubject, type Course, type Subject } from "../types/Subject";
+import {
+  newCourse,
+  newSubject,
+  type Course,
+  type Subject,
+} from "../types/Subject";
 import { addFamily, deleteFamily } from "./familyOp";
 
-type TheList = (Subject | Course)[];
-type TheAdd = { newIdx: number; newList: TheList; newIsMom: boolean };
-
-export const addSubject = (SList: TheList): TheAdd => {
+export const addSubject = (
+  SList: (Subject | Course)[]
+): { newIdx: number; newList: (Subject | Course)[]; newIsMom: boolean } => {
   const newIsMom = false;
   return { ...addFamily(SList, newSubject, -1, newIsMom), newIsMom: newIsMom };
 };
 
-export const addCourse = (SList: TheList): TheAdd => {
+export const addCourse = (
+  SList: (Subject | Course)[]
+): { newIdx: number; newList: (Subject | Course)[]; newIsMom: boolean } => {
   const newIsMom = true;
-  const result = addFamily(SList, newSubject, -1, newIsMom);
+  const result = addFamily(SList, newCourse, -1, newIsMom);
   return { ...result, newIsMom: newIsMom };
 };
 
 export const deleteSubject = (
-  SList: TheList,
+  SList: (Subject | Course)[],
   targetSet: Set<number>
-): { newList: TheList } => {
+): { newList: (Subject | Course)[] } => {
   const result = deleteFamily(SList, targetSet);
   return result;
 };

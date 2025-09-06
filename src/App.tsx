@@ -1,5 +1,5 @@
 import { type SelectMode } from "./types/SelectMode";
-import SbjTreeItem from "./components/SbjTreeItem";
+import SbjTreeItem from "./components/SbjTree/SbjTreeItem";
 import { SubjectProvider } from "./context/SubjectProvider";
 import SubjectContainer from "./components/SubjectContainer";
 

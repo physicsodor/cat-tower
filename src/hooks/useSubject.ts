@@ -3,12 +3,14 @@ import { type Course, type Subject } from "../types/Subject";
 import type { SelectMode } from "../types/SelectMode";
 import { setDif, setUni } from "../utils/setOp";
 import { getItemByIdx } from "../utils/idxItemOp";
-import { setMom } from "../utils/familyOp";
+import { setBro, setMom } from "../utils/familyOp";
 import { addCourse, addSubject, deleteSubject } from "../utils/subjectOp";
+import type { InsertMode } from "../types/InsertMode";
 
 export const useSubject = () => {
   const [sbjList, setSbjList] = useState<(Subject | Course)[]>([]);
   const [selSet, setSelSet] = useState<Set<number>>(new Set());
+  const [sbjDrag, setSbjDrag] = useState(false);
   const [crsDrag, setCrsDrag] = useState(-1);
 
   const addSbj = () => {
@@ -36,11 +38,21 @@ export const useSubject = () => {
   };
 
   const setSbjMom = (newMom: number) => {
-    setSbjList((prev) => setMom(prev, selSet, newMom).newList);
+    const targetSet =
+      crsDrag >= 0 ? new Set([crsDrag]) : sbjDrag ? selSet : new Set<number>();
+    if (targetSet.size > 0)
+      setSbjList((prev) => setMom(prev, targetSet, newMom).newList);
+    if (crsDrag >= 0) setCrsDrag(-1);
+    if (sbjDrag) setSbjDrag(false);
   };
-  const setCrsMom = (newMom: number) => {
-    setSbjList((prev) => setMom(prev, new Set([crsDrag]), newMom).newList);
-    setCrsDrag(-1);
+
+  const setSbjBro = (pivotIdx: number, dir: InsertMode) => {
+    const targetSet =
+      crsDrag >= 0 ? new Set([crsDrag]) : sbjDrag ? selSet : new Set<number>();
+    if (targetSet.size > 0)
+      setSbjList((prev) => setBro(prev, targetSet, pivotIdx, dir).newList);
+    if (crsDrag >= 0) setCrsDrag(-1);
+    if (sbjDrag) setSbjDrag(false);
   };
 
   const selSbj = (mode: SelectMode, ...idxList: number[]) => {
@@ -55,23 +67,32 @@ export const useSubject = () => {
     else if (mode === "REMOVE") setSelSet((prev) => setDif(prev, idxSet));
   };
 
+  const selSbjDrag = (b: boolean) => setSbjDrag(selSet.size === 0 ? false : b);
+
   const selCrsDrag = (i: number) => {
     const trg = getItemByIdx(sbjList, i);
     if (!trg || !trg.isMom) return;
     setCrsDrag(i);
   };
 
+  const clearDrag = () => {
+    setCrsDrag(-1);
+    setSbjDrag(false);
+  };
+
   return {
+    isDrag: sbjDrag === true || crsDrag >= 0,
     sbjList,
     selSet,
-    crsDrag,
     addSbj,
     addCrs,
+    clearDrag,
     delSbj,
     delCrs,
+    setSbjBro,
     setSbjMom,
-    setCrsMom,
     selCrsDrag,
     selSbj,
+    selSbjDrag,
   };
 };

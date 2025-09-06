@@ -1,3 +1,23 @@
+.sbj-tree-title {
+  background-color: lightgray;
+  * {
+    display: inline-block;
+  }
+}
+
+.sbj-tree-next {
+  height: 0.3rem;
+}
+
+.sbj-tree-up {
+  &.pre {
+    border-top: 1pt solid black;
+  }
+  &.nxt {
+    border-bottom: 1pt solid black;
+  }
+}
+
 .sbj-tree-contents {
   margin-left: 1rem;
   overflow: hidden;
@@ -7,17 +27,10 @@
   }
 }
 
-.sbj-tree-title {
-  background-color: lightgray;
-  button,
-  div {
-    display: inline-block;
-  }
-}
-
 .sbj-tree-item {
   width: fit-content;
   background-color: transparent;
+  border: none;
 
   &.selected {
     background-color: red;
