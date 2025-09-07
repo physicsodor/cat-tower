@@ -1,3 +1,7 @@
+.sbj-tree {
+  width: fit-content;
+}
+
 .sbj-tree-title {
   background-color: lightgray;
   * {
@@ -28,7 +32,6 @@
 }
 
 .sbj-tree-item {
-  width: fit-content;
   background-color: transparent;
   border: none;
 
@@ -40,7 +43,6 @@
 .ghost {
   position: fixed;
   pointer-events: none;
-  background-color: blue;
   opacity: 0.5;
   z-index: 999;
 }

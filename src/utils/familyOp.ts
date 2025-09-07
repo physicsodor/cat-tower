@@ -5,6 +5,7 @@ import {
   deleteIdxItem,
   getItemByIdx,
   makeIdx2Item,
+  replaceIdxItem,
 } from "./idxItemOp";
 import type { InsertMode } from "../types/InsertMode";
 
@@ -164,17 +165,19 @@ const relocateFamily = <T extends Family>(
 export const addFamily = <T extends Family>(
   TList: T[],
   newT: (s: Family) => T,
-  mom: number,
-  isMom: boolean
+  mom: number
 ): { newIdx: number; newList: T[] } => {
-  return addIdxItem(TList, (idx) =>
-    newT({
-      idx,
-      mom,
-      bro: generateKeyBetween(getLastBro(TList, mom), null),
-      isMom,
-    })
-  );
+  const bro = generateKeyBetween(getLastBro(TList, mom), null);
+  return addIdxItem(TList, (idx) => newT({ idx, mom, bro }));
+};
+
+export const replaceFamily = <T extends Family>(
+  TList: T[],
+  idx: number,
+  mom: number
+) => {
+  const bro = generateKeyBetween(getLastBro(TList, mom), null);
+  return replaceIdxItem(TList, idx, (prev) => ({ ...prev, mom, bro }));
 };
 
 export const deleteFamily = <T extends Family>(

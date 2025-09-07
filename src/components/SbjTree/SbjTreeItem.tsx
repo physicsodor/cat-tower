@@ -1,6 +1,6 @@
 import { useSubjectStore } from "../../context/SubjectProvider";
 import type { SelectMode } from "../../types/SelectMode";
-import type { Subject } from "../../types/Subject";
+import type { Subject } from "../../types/Curriculum";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import React, { useRef, useState } from "react";
 import type { InsertMode } from "../../types/InsertMode";
@@ -55,12 +55,15 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
         moveState === "PREVIOUS" && "pre",
         moveState === "NEXT" && "nxt"
       )}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerLeave={onLeave}
     >
-      {info.idx < 0 ? "Subject Tree:" : info.ttl}
+      <div
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerLeave={onLeave}
+      >
+        {info.idx < 0 ? "Subject Tree:" : info.ttl}
+      </div>
     </div>
   );
 };

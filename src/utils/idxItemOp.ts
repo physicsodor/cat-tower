@@ -23,6 +23,14 @@ export const addIdxItem = <T extends IdxItem>(
   return { newIdx, newList };
 };
 
+export const replaceIdxItem = <T extends IdxItem>(
+  TList: T[],
+  idx: number,
+  setT: (prev: T) => T
+): { newList: T[] } => {
+  return { newList: TList.map((t) => (t.idx === idx ? setT(t) : t)) };
+};
+
 export const deleteIdxItem = <T extends IdxItem>(
   TList: T[],
   targetSet: Set<number>

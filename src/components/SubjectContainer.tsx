@@ -1,8 +1,9 @@
 import { useSubjectStore } from "../context/SubjectProvider";
+import SbjCnvs from "./SbjCnvs/SbjCnvs";
 import SbjTree from "./SbjTree/SbjTree";
 
 const SubjectContainer = () => {
-  const { sbjList, addCrs, addSbj, delSbj } = useSubjectStore();
+  const { addCrs, addSbj, delSbj } = useSubjectStore();
 
   return (
     <div>
@@ -10,9 +11,7 @@ const SubjectContainer = () => {
       <button onClick={delSbj}>제거</button>
       <button onClick={addCrs}>그룹 추가</button>
       <SbjTree />
-      {sbjList.map((sbj) => (
-        <div>{JSON.stringify(sbj)}</div>
-      ))}
+      <SbjCnvs />
     </div>
   );
 };

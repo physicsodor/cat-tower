@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { type Course, type Subject } from "../types/Subject";
+import { type Course, type Subject } from "../types/Curriculum";
 import type { SelectMode } from "../types/SelectMode";
 import { setDif, setUni } from "../utils/setOp";
 import { getItemByIdx } from "../utils/idxItemOp";
 import { setBro, setMom } from "../utils/familyOp";
-import { addCourse, addSubject, deleteSubject } from "../utils/subjectOp";
+import { addCourse, addSubject, deleteCurriculum } from "../utils/curriculumOp";
 import type { InsertMode } from "../types/InsertMode";
 
 export const useSubject = () => {
@@ -29,12 +29,12 @@ export const useSubject = () => {
 
   const delSbj = () => {
     if (selSet.size === 0) return;
-    setSbjList((prev) => deleteSubject(prev, selSet).newList);
+    setSbjList((prev) => deleteCurriculum(prev, selSet).newList);
     setSelSet(new Set());
   };
   const delCrs = (idx: number) => () => {
     if (idx < 0) return;
-    setSbjList((prev) => deleteSubject(prev, new Set([idx])).newList);
+    setSbjList((prev) => deleteCurriculum(prev, new Set([idx])).newList);
   };
 
   const setSbjMom = (newMom: number) => {
@@ -59,7 +59,7 @@ export const useSubject = () => {
     const idxSet = new Set(
       idxList.filter((idx) => {
         const trg = getItemByIdx(sbjList, idx);
-        return trg && !trg.isMom;
+        return trg && trg.sbjType === "Subject";
       })
     );
     if (mode === "ADD") setSelSet((prev) => setUni(prev, idxSet));
@@ -71,7 +71,7 @@ export const useSubject = () => {
 
   const selCrsDrag = (i: number) => {
     const trg = getItemByIdx(sbjList, i);
-    if (!trg || !trg.isMom) return;
+    if (!trg || trg.sbjType === "Subject") return;
     setCrsDrag(i);
   };
 

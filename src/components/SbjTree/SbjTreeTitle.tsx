@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSubjectStore } from "../../context/SubjectProvider";
-import type { Course } from "../../types/Subject";
+import type { Course } from "../../types/Curriculum";
 import type { InsertMode } from "../../types/InsertMode";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import { makeClassName } from "../../utils/makeClassName";
