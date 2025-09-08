@@ -1,6 +1,6 @@
 import { useSubjectStore } from "../../context/SubjectProvider";
 import { type Course } from "../../types/Curriculum";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SbjTreeTitle from "./SbjTreeTitle";
 import SbjTreeNext from "./SbjTreeNext";
 import { getItemsByMom } from "../../utils/familyOp";
@@ -13,6 +13,11 @@ const SbjTree = ({ info }: { info?: Course }) => {
   const [isOpen, setIsOpen] = useState(true);
 
   const pInfo = info ?? generateCourseByTitle("Subject Tree");
+
+  const broItems = useMemo(
+    () => getItemsByMom(sbjList, pInfo.idx),
+    [sbjList, pInfo.idx]
+  );
 
   useEffect(() => {
     const onGlobalUp = (e: PointerEvent) => {
@@ -35,7 +40,7 @@ const SbjTree = ({ info }: { info?: Course }) => {
     <div className={`sbj-tree`} onPointerDown={prevent}>
       <SbjTreeTitle info={pInfo} {...{ isOpen, onToggle }} />
       <div className={makeClassName("sbj-tree-contents", !isOpen && "hidden")}>
-        {getItemsByMom(sbjList, pInfo.idx).map((s) =>
+        {broItems.map((s) =>
           s.sbjType === "Course" ? (
             <SbjTree key={`sbj-tree-${s.idx}`} info={s} />
           ) : (

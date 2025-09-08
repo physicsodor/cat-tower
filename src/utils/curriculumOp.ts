@@ -73,11 +73,17 @@ export const setSubjectXY = (
   targetSet: Set<number>,
   dxy: { x: number; y: number }
 ): { newList: Curriculum[] } => {
-  console.log(dxy.x, dxy.y);
-  const newList = TList.map((t) =>
-    targetSet.has(t.idx) && t.sbjType === "Subject"
-      ? { ...t, x: t.x + dxy.x, y: t.y + dxy.y }
-      : t
-  );
-  return { newList };
+  if (targetSet.size === 0 || (dxy.x === 0 && dxy.y === 0)) {
+    return { newList: TList };
+  }
+
+  let isChanged = false;
+  const newList = TList.map((t) => {
+    if (targetSet.has(t.idx) && t.sbjType === "Subject") {
+      isChanged = true;
+      return { ...t, x: t.x + dxy.x, y: t.y + dxy.y };
+    }
+    return t;
+  });
+  return { newList: isChanged ? newList : TList };
 };

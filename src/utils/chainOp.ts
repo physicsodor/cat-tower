@@ -5,7 +5,7 @@ import {
   makeIdx2Item,
   replaceIdxItem,
 } from "./idxItemOp";
-import { setDel } from "./setOp";
+import { setDif } from "./setOp";
 
 export const getPreSet = <T extends Chain>(
   TList: T[],
@@ -61,7 +61,7 @@ export const deleteChain = <T extends Chain, S = unknown>(
     TList.filter((t) => isChain<T>(t)),
     targetSet
   ).newList;
-  for (const x of subList) setDel(x.pre, targetSet);
+  for (const x of subList) x.pre = setDif(x.pre, targetSet);
 
   let i = 0;
   const newList: (T | S)[] = [];

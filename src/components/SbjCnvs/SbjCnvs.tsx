@@ -9,9 +9,13 @@ const SbjCnvs = () => {
   const [dxy, setDxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
+    let raf = 0; // ChatGPT가 요청애니메이션프레임 어쩌구라고 설명해줌. ㅎㅎ
     const onGlobalMove = (e: PointerEvent) => {
       if (!isCnvsDrag) return;
-      setDxy({ x: e.clientX - pxy.x, y: e.clientY - pxy.y });
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setDxy({ x: e.clientX - pxy.x, y: e.clientY - pxy.y });
+      });
     };
 
     const onGlobalUp = () => {
@@ -21,8 +25,8 @@ const SbjCnvs = () => {
       clearCnvsDrag();
     };
 
-    document.addEventListener("pointermove", onGlobalMove);
-    document.addEventListener("pointerup", onGlobalUp);
+    document.addEventListener("pointermove", onGlobalMove, { passive: true });
+    document.addEventListener("pointerup", onGlobalUp, { passive: true });
     return () => {
       document.removeEventListener("pointermove", onGlobalMove);
       document.removeEventListener("pointerup", onGlobalUp);

@@ -35,6 +35,12 @@ export const deleteIdxItem = <T extends IdxItem>(
   TList: T[],
   targetSet: Set<number>
 ): { newList: T[] } => {
-  const newList = TList.filter((t) => !targetSet.has(t.idx));
-  return { newList };
+  if (targetSet.size === 0) return { newList: TList };
+  let isChanged = false;
+  const newList = TList.filter((t) => {
+    const isTarget = targetSet.has(t.idx);
+    if (isTarget) isChanged = true;
+    return !isTarget;
+  });
+  return { newList: isChanged ? newList : TList };
 };
