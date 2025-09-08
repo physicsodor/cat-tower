@@ -66,7 +66,7 @@ export const deleteChain = <T extends Chain, S = unknown>(
   let i = 0;
   const newList: (T | S)[] = [];
   for (const t of TList) {
-    if (isChain<T>(t)) newList.push(subList[i++]);
+    if (isChain<T>(t) && !targetSet.has(t.idx)) newList.push(subList[i++]);
     else newList.push(t);
   }
 

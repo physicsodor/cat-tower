@@ -67,3 +67,17 @@ export const deleteCurriculum = (
   ).newList;
   return { newList };
 };
+
+export const setSubjectXY = (
+  TList: Curriculum[],
+  targetSet: Set<number>,
+  dxy: { x: number; y: number }
+): { newList: Curriculum[] } => {
+  console.log(dxy.x, dxy.y);
+  const newList = TList.map((t) =>
+    targetSet.has(t.idx) && t.sbjType === "Subject"
+      ? { ...t, x: t.x + dxy.x, y: t.y + dxy.y }
+      : t
+  );
+  return { newList };
+};

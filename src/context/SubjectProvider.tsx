@@ -1,11 +1,11 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { useSubject } from "../hooks/useSubject";
+import { useCurriculum } from "../hooks/useCurriculum";
 
-type SubjectContextValue = ReturnType<typeof useSubject>;
+type SubjectContextValue = ReturnType<typeof useCurriculum>;
 const SubjectContext = createContext<SubjectContextValue | null>(null);
 
 export function SubjectProvider({ children }: { children: ReactNode }) {
-  const S = useSubject();
+  const S = useCurriculum();
   return (
     <SubjectContext.Provider value={S}>{children}</SubjectContext.Provider>
   );

@@ -1,22 +1,27 @@
 import { useSubjectStore } from "../../context/SubjectProvider";
-import type { SelectMode } from "../../types/SelectMode";
 import type { Subject } from "../../types/Curriculum";
 import { useDragGhost } from "../../hooks/useDragGhost";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import type { InsertMode } from "../../types/InsertMode";
 import { makeClassName } from "../../utils/makeClassName";
 
 const SbjTreeItem = ({ info }: { info: Subject }) => {
-  const { clearDrag, isDrag, setSbjBro, selSet, selSbj, selSbjDrag } =
-    useSubjectStore();
+  const {
+    clearTreeDrag,
+    isTreeDrag,
+    setSbjBro,
+    setSelMode,
+    selSet,
+    selSbj,
+    selTreeSbjDrag,
+  } = useSubjectStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
-  const modeRef = useRef<SelectMode>("NONE");
 
   const onUp = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (moveState !== null) setSbjBro(info.idx, moveState);
-    clearDrag();
+    clearTreeDrag();
     setMoveState(null);
   };
 
@@ -24,7 +29,7 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
 
   const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (!ref.current || !isDrag) return;
+    if (!ref.current || !isTreeDrag) return;
     const rect = ref.current.getBoundingClientRect();
     if (e.clientY > rect.top + rect.height / 2) {
       setMoveState("NEXT");
@@ -34,13 +39,10 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
 
-    modeRef.current = "REPLACE";
-    if (e.ctrlKey || e.metaKey) modeRef.current = "ADD";
-    else if (e.shiftKey) modeRef.current = "REMOVE";
-    else if (selSet.has(info.idx)) modeRef.current = "NONE";
-    selSbj(modeRef.current, info.idx);
-    if (modeRef.current !== "REMOVE") {
-      selSbjDrag(true);
+    const mode = setSelMode(e, info.idx);
+    selSbj(mode, info.idx);
+    if (mode !== "REMOVE") {
+      selTreeSbjDrag(true);
       ghost_down(e);
     }
   };

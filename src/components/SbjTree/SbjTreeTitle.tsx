@@ -16,8 +16,14 @@ const SbjTreeTitle = ({
   isOpen: boolean;
   onToggle: () => void;
 }) => {
-  const { isDrag, clearDrag, delCrs, selCrsDrag, setSbjBro, setSbjMom } =
-    useSubjectStore();
+  const {
+    isTreeDrag: isDrag,
+    clearTreeDrag: clearDrag,
+    delCrs,
+    selTreeCrsDrag,
+    setSbjBro,
+    setSbjMom,
+  } = useSubjectStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
 
@@ -43,7 +49,7 @@ const SbjTreeTitle = ({
   const onDown = (e: PE) => {
     e.preventDefault();
     down(e);
-    selCrsDrag(info.idx);
+    selTreeCrsDrag(info.idx);
   };
 
   return (

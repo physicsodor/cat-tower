@@ -31,7 +31,7 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
       if (!target) return;
       const rect = target.getBoundingClientRect();
       const ghost = target.cloneNode(true) as HTMLElement;
-      ghost.className = "ghost";
+      ghost.className += " ghost";
       ghost.style.left = `${pxyRef.current[0]}px`;
       ghost.style.top = `${pxyRef.current[1]}px`;
       ghost.style.width = `${rect.width}px`;

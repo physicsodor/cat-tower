@@ -9,7 +9,7 @@ import { makeClassName } from "../../utils/makeClassName";
 import { generateCourseByTitle } from "../../utils/curriculumOp";
 
 const SbjTree = ({ info }: { info?: Course }) => {
-  const { sbjList, clearDrag } = useSubjectStore();
+  const { sbjList, clearTreeDrag } = useSubjectStore();
   const [isOpen, setIsOpen] = useState(true);
 
   const pInfo = info ?? generateCourseByTitle("Subject Tree");
@@ -18,14 +18,14 @@ const SbjTree = ({ info }: { info?: Course }) => {
     const onGlobalUp = (e: PointerEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.classList.contains("sbj-tree-up")) return;
-      clearDrag();
+      clearTreeDrag();
     };
 
     document.addEventListener("pointerup", onGlobalUp);
     return () => {
       document.removeEventListener("pointerup", onGlobalUp);
     };
-  }, [clearDrag]);
+  }, [clearTreeDrag]);
 
   const onToggle = () => setIsOpen((b) => !b);
 

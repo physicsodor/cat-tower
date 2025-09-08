@@ -1,27 +1,12 @@
 .sbj-tree {
   width: fit-content;
 }
-
 .sbj-tree-title {
   background-color: lightgray;
   * {
     display: inline-block;
   }
 }
-
-.sbj-tree-next {
-  height: 0.3rem;
-}
-
-.sbj-tree-up {
-  &.pre {
-    border-top: 1pt solid black;
-  }
-  &.nxt {
-    border-bottom: 1pt solid black;
-  }
-}
-
 .sbj-tree-contents {
   margin-left: 1rem;
   overflow: hidden;
@@ -30,13 +15,36 @@
     display: none;
   }
 }
-
+.sbj-tree-next {
+  height: 0.3rem;
+}
+.sbj-tree-up {
+  &.pre {
+    border-top: 1pt solid black;
+  }
+  &.nxt {
+    border-bottom: 1pt solid black;
+  }
+}
 .sbj-tree-item {
   background-color: transparent;
   border: none;
 
   &.selected {
     background-color: red;
+  }
+}
+
+.sbj-cnvs {
+  position: relative;
+}
+.sbj-cnvs-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  &.selected {
+    background-color: pink;
   }
 }
 
