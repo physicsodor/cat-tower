@@ -18,7 +18,7 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
     if (ghost) document.body.removeChild(ghost);
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("pointerup", onPointerUp);
-  }, []);
+  }, [onPointerMove]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<T>) => {

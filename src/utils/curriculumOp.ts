@@ -3,69 +3,57 @@ import {
   type Curriculum,
   type Subject,
 } from "../types/Curriculum";
-import type { Family } from "../types/Family";
-import { deleteChain, replaceChain } from "./chainOp";
-import { addFamily, deleteFamily } from "./familyOp";
+import { deleteChainMap } from "./chainOp";
+import { deleteFamilyMap, getNewBro } from "./familyOp";
+import {
+  getNewIdx,
+  makeIdx2Item,
+  modifyItems,
+  updateIdx2New,
+} from "./idxItemOp";
 
-const generateSubjectByFamily = (s: Family): Subject => ({
-  ...s,
-  cnt: "",
-  dsc: "",
-  pre: new Set(),
-  sbjType: "Subject",
-  ttl: `Subject ${s.idx}`,
-  x: 0,
-  y: 0,
-});
+type NewInfo = Partial<Curriculum>;
 
-const generateCourseByFamily = (s: Family): Course => ({
-  ...s,
-  sbjType: "Course",
-  ttl: `Course ${s.idx}`,
-});
-
-export const generateCourseByTitle = (ttl: string): Course => ({
-  ttl,
-  bro: "",
-  idx: -1,
-  mom: -1,
-  sbjType: "Course",
-});
-
-export const addSubject = (
-  TList: Curriculum[]
-): { newIdx: number; newList: Curriculum[] } => {
-  const result = addFamily(TList, generateSubjectByFamily, -1);
-  result.newList = replaceChain<Subject, Course>(
-    result.newList,
-    result.newIdx
-  ).newList;
-
-  return result;
+const newSubject = (list: ReadonlyArray<Curriculum>): Subject => {
+  const idx = getNewIdx(list);
+  const mom = -1;
+  const bro = getNewBro(list, mom);
+  return {
+    idx,
+    mom,
+    bro,
+    pre: new Set<number>(),
+    ttl: `Subject ${idx}`,
+    cnt: "",
+    dsc: "",
+    x: 0,
+    y: 0,
+    sbjType: "SUBJECT",
+  };
+};
+const newCourse = (list: ReadonlyArray<Curriculum>): Course => {
+  const idx = getNewIdx(list);
+  const mom = -1;
+  const bro = getNewBro(list, mom);
+  return {
+    idx,
+    mom,
+    bro,
+    ttl: `Course ${idx}`,
+    sbjType: "COURSE",
+  };
 };
 
-export const addCourse = (
-  TList: Curriculum[]
-): { newIdx: number; newList: Curriculum[] } => {
-  const result = addFamily(TList, generateCourseByFamily, -1);
-  result.newList = replaceChain<Subject, Course>(
-    result.newList,
-    result.newIdx
-  ).newList;
-
-  return result;
-};
-
-export const deleteCurriculum = (
-  TList: Curriculum[],
+const deleteCurriculum = (
+  list: Curriculum[],
   targetSet: Set<number>
-): { newList: Curriculum[] } => {
-  const result = deleteFamily(TList, targetSet);
-  const newList = deleteChain<Subject, Course>(
-    result.newList,
-    targetSet
-  ).newList;
-  return { newList };
+): Curriculum[] => {
+  const idx2item = makeIdx2Item(list);
+  const idx2new = new Map<number, NewInfo | null>();
+  for (const idx of targetSet) idx2new.set(idx, null);
+  updateIdx2New(idx2new, deleteFamilyMap(idx2item, targetSet));
+  updateIdx2New(idx2new, deleteChainMap(idx2item, targetSet));
+  return modifyItems(list, idx2new);
 };
 
 export const setSubjectXY = (
@@ -79,7 +67,7 @@ export const setSubjectXY = (
 
   let isChanged = false;
   const newList = TList.map((t) => {
-    if (targetSet.has(t.idx) && t.sbjType === "Subject") {
+    if (targetSet.has(t.idx) && t.sbjType === "SUBJECT") {
       isChanged = true;
       return { ...t, x: t.x + dxy.x, y: t.y + dxy.y };
     }
@@ -87,3 +75,5 @@ export const setSubjectXY = (
   });
   return { newList: isChanged ? newList : TList };
 };
+
+export { newSubject, newCourse, deleteCurriculum };

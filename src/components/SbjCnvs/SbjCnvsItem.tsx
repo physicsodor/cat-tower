@@ -1,4 +1,4 @@
-import { useSubjectStore } from "../../context/SubjectProvider";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
 import type { Subject } from "../../types/Curriculum";
 import { makeClassName } from "../../utils/makeClassName";
 
@@ -15,7 +15,7 @@ const SbjCnvsItem = ({
   isSelected: boolean;
   setPxy: (e: PE) => void;
 }) => {
-  const { setSelMode, selCnvsSbjDrag, selSbj } = useSubjectStore();
+  const { setSelMode, selCnvsSbjDrag, selSbj } = useCurriculumStore();
 
   const onDown = (e: PE) => {
     const mode = setSelMode(e, info.idx);

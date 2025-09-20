@@ -1,226 +1,246 @@
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
-import { type Family } from "../types/Family";
-import {
-  addIdxItem,
-  deleteIdxItem,
-  getItemByIdx,
-  makeIdx2Item,
-  replaceIdxItem,
-} from "./idxItemOp";
+import type { Family } from "../types/Family";
 import type { InsertMode } from "../types/InsertMode";
+import { modifyItems } from "./idxItemOp";
 
-const compareBro = <T extends Family>(a: T, b: T) =>
-  a.bro < b.bro ? -1 : a.bro > b.bro ? 1 : 0;
+type NewInfo = Partial<Family>;
 
-export const getItemsByMom = <T extends Family>(TList: T[], mom: number) => {
-  return TList.filter((t) => t.mom === mom).sort(compareBro);
+const getNewBro = <T extends Family>(
+  list: ReadonlyArray<T>,
+  mom: number
+): string => {
+  let lastBro: string | null = "";
+  for (const t of list) if (t.mom === mom && t.bro > lastBro) lastBro = t.bro;
+  if (lastBro === "") lastBro = null;
+  return generateKeyBetween(lastBro, null);
 };
 
-const getFirstBro = <T extends Family>(
-  TList: T[],
-  mom: number = -1,
-  ignore: Set<number> = new Set()
-): string | null => {
-  const broList = getItemsByMom(TList, mom);
-  for (let i = 0; i < broList.length; i++) {
-    if (!ignore.has(broList[i].idx)) return broList[i].bro;
-  }
-  return null;
+type FamilyMap<T extends Family> = {
+  idx2item: ReadonlyMap<number, T>;
+  mom2idxs: ReadonlyMap<number, number[]>;
 };
 
-const getLastBro = <T extends Family>(
-  TList: T[],
-  mom: number = -1,
-  ignore: Set<number> = new Set()
-): string | null => {
-  const broList = getItemsByMom(TList, mom);
-  for (let i = broList.length - 1; i >= 0; i--) {
-    if (!ignore.has(broList[i].idx)) return broList[i].bro;
+const _compare =
+  <T extends Family>(idx2item: ReadonlyMap<number, T>) =>
+  (a: number, b: number) => {
+    const broA = idx2item.get(a)?.bro ?? "";
+    const broB = idx2item.get(b)?.bro ?? "";
+    return broA === broB ? 0 : broA < broB ? -1 : 1;
+  };
+
+export const makeFamilyMap = <T extends Family>(
+  TList: ReadonlyArray<T>
+): FamilyMap<T> => {
+  const idx2item = new Map<number, T>();
+  const mom2idxs = new Map<number, number[]>();
+
+  for (const t of TList) {
+    idx2item.set(t.idx, t);
+    const arr = mom2idxs.get(t.mom);
+    if (arr) arr.push(t.idx);
+    else mom2idxs.set(t.mom, [t.idx]);
   }
-  return null;
+  for (const arr of mom2idxs.values()) arr.sort(_compare(idx2item));
+
+  return { idx2item, mom2idxs };
+};
+
+const makeMom2Idxs = <T extends Family>(
+  idx2item: ReadonlyMap<number, T>
+): Map<number, number[]> => {
+  const mom2idxs = new Map<number, number[]>();
+  for (const t of idx2item.values()) {
+    const arr = mom2idxs.get(t.mom);
+    if (arr) arr.push(t.idx);
+    else mom2idxs.set(t.mom, [t.idx]);
+  }
+  return mom2idxs;
+};
+
+const makeIdx2NewBro = (
+  idxList: number[],
+  leftBro: string | null,
+  rightBro: string | null
+): Map<number, string> => {
+  const n = idxList.length;
+  if (n === 0) return new Map();
+  const bros = generateNKeysBetween(leftBro, rightBro, n);
+  const idx2newBro = new Map<number, string>();
+  for (let i = 0; i < n; i++) idx2newBro.set(idxList[i], bros[i]);
+  return idx2newBro;
 };
 
 const getAdjacentBro = <T extends Family>(
-  TList: T[],
-  pivotItem: T,
-  dir: InsertMode,
-  ignore: Set<number> = new Set()
-): string | null => {
-  const broList = getItemsByMom(TList, pivotItem.mom);
-  const i = broList.findIndex((t) => t.idx === pivotItem.idx);
-  if (i < 0) return null;
+  idx2item: ReadonlyMap<number, T>,
+  mom2idxs: ReadonlyMap<number, number[]>,
+  pivotIdx: number,
+  ignore: ReadonlySet<number> = new Set()
+): { leftBro: string | null; rightBro: string | null } => {
+  const result = { leftBro: null, rightBro: null };
+  const pivot = idx2item.get(pivotIdx);
+  if (!pivot) return result;
+  const broIdxs = mom2idxs.get(pivot.mom);
+  if (!broIdxs) return result;
+  const ord = broIdxs.indexOf(pivotIdx);
+  if (ord < 0) return result;
 
-  if (dir === "PREVIOUS") {
-    for (let k = i - 1; k >= 0; k--) {
-      if (!ignore.has(broList[k].idx)) return broList[k].bro;
-    }
-  } else {
-    for (let k = i + 1; k < broList.length; k++) {
-      if (!ignore.has(broList[k].idx)) return broList[k].bro;
+  let leftBro: string | null = null;
+  for (let i = ord - 1; i >= 0; i--) {
+    const idx = broIdxs[i];
+    if (!ignore.has(idx)) {
+      leftBro = idx2item.get(idx)?.bro ?? null;
+      break;
     }
   }
-  return null;
+
+  let rightBro: string | null = null;
+  for (let i = ord + 1; i < broIdxs.length; i++) {
+    const idx = broIdxs[i];
+    if (!ignore.has(idx)) {
+      rightBro = idx2item.get(idx)?.bro ?? null;
+      break;
+    }
+  }
+  return { leftBro, rightBro };
 };
 
 const isMomCyclic = <T extends Family>(
-  idx2Item: Map<number, T>,
-  targetSet: Set<number>,
-  startMom: number
+  idx2item: ReadonlyMap<number, T>,
+  idx: number,
+  targetSet: ReadonlySet<number>
 ) => {
-  let testMom = startMom;
+  let testMom = idx;
+  const visited = new Set<number>(targetSet);
   while (testMom >= 0) {
-    if (targetSet.has(testMom)) return true;
-    testMom = idx2Item.get(testMom)?.mom ?? -1;
+    if (visited.has(testMom)) return true;
+    testMom = idx2item.get(testMom)?.mom ?? -1;
   }
   return false;
 };
 
-const makeFamilyList = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number> = new Set(TList.map((t) => t.idx))
+const getFlatIdxs = (
+  mom2idxs: ReadonlyMap<number, number[]>,
+  idxSet: ReadonlySet<number>,
+  mode: "TARGET" | "IGNORE",
+  mom: number = -1
 ): number[] => {
-  if (targetSet.size === 0) return [];
-
-  const idx2Item = makeIdx2Item(TList);
-  const targetMomSet = new Set<number>();
-  for (const idx of targetSet) {
-    let mom = idx2Item.get(idx)?.mom ?? -1;
-    while (mom >= 0 && !targetMomSet.has(mom)) {
-      targetMomSet.add(mom);
-      mom = idx2Item.get(mom)?.mom ?? -1;
-    }
-  }
-  targetMomSet.add(-1);
-
-  const mom2items = new Map<number, T[]>();
-  for (const t of TList) {
-    if (!targetMomSet.has(t.mom)) continue;
-    const arr = mom2items.get(t.mom);
-    if (arr) arr.push(t);
-    else mom2items.set(t.mom, [t]);
-  }
-
-  for (const arr of mom2items.values())
-    if (arr.length > 1) arr.sort(compareBro);
-
+  const newMom = mode === "TARGET" ? -1 : mom;
   const result: number[] = [];
   const visited = new Set<number>();
-  const pushItems = (mom: number) => {
-    const arr = mom2items.get(mom);
-    if (!arr) return;
-    for (const x of arr) {
-      if (visited.has(x.idx)) continue;
-      visited.add(x.idx);
-      if (targetSet.has(x.idx)) result.push(x.idx);
-      pushItems(x.idx);
+  const pushIdx = (m: number) => {
+    const idxs = mom2idxs.get(m) ?? [];
+    for (const idx of idxs) {
+      if (visited.has(idx)) continue;
+      visited.add(idx);
+      if ((mode === "TARGET") === idxSet.has(idx)) result.push(idx);
+      if (mode === "TARGET" || idxSet.has(idx)) pushIdx(idx);
     }
   };
-  pushItems(-1);
-
+  pushIdx(newMom);
   return result;
 };
 
-const makeIdx2Mom = <T extends Family>(
-  TList: T[],
-  ignore: Set<number> = new Set()
-): Map<number, number> => {
-  const result = new Map<number, number>();
-  const idx2Item = makeIdx2Item(TList);
+const deleteFamilyMap = <T extends Family>(
+  idx2item: ReadonlyMap<number, T>,
+  targetSet: ReadonlySet<number>
+): Map<number, NewInfo> => {
+  if (targetSet.size === 0) return new Map();
+  const mom2idxs = makeMom2Idxs(idx2item);
 
-  for (const x of TList) {
-    if (!ignore.has(x.idx)) continue;
-    let m = x.mom;
-    while (m >= 0 && ignore.has(m)) {
-      m = idx2Item.get(m)?.mom ?? -1;
-    }
-    result.set(x.idx, m);
+  const topIdxs: number[] = [];
+  for (const idx of targetSet) {
+    const mom = idx2item.get(idx)?.mom;
+    if (mom === undefined) continue;
+    if (!targetSet.has(mom)) topIdxs.push(idx);
   }
-  return result;
+  if (topIdxs.length === 0) return new Map();
+
+  type Run = { rightBro: string | null; idxs: number[] };
+  type Runs = Map<string | null, Run>;
+  const mom2runs = new Map<number, Runs>();
+  for (const topIdx of topIdxs) {
+    const top = idx2item.get(topIdx);
+    if (!top) continue;
+
+    const idxs = getFlatIdxs(mom2idxs, targetSet, "IGNORE", topIdx);
+    if (idxs.length === 0) continue;
+    const { leftBro, rightBro } = getAdjacentBro(
+      idx2item,
+      mom2idxs,
+      topIdx,
+      targetSet
+    );
+    const runs: Runs = mom2runs.get(top.mom) ?? new Map();
+    const run: Run = runs.get(leftBro) ?? { rightBro, idxs: [] };
+    run.idxs.push(...idxs);
+    runs.set(leftBro, run);
+    mom2runs.set(top.mom, runs);
+  }
+
+  const idx2new = new Map<number, NewInfo>();
+  for (const [mom, runs] of mom2runs) {
+    for (const [leftBro, run] of runs) {
+      const m = makeIdx2NewBro(run.idxs, leftBro, run.rightBro);
+      for (const [idx, bro] of m) {
+        const t = idx2item.get(idx);
+        if (!t) continue;
+        const newInfo: NewInfo = {};
+        if (t.mom !== mom) newInfo.mom = mom;
+        if (t.bro !== bro) newInfo.bro = bro;
+        if (!newInfo.mom || !newInfo.bro) idx2new.set(idx, newInfo);
+      }
+    }
+  }
+
+  return idx2new;
 };
 
-const relocateFamily = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number>,
-  newMom: number,
-  leftBro: string | null,
-  rightBro: string | null
-): { newList: T[]; isErr: boolean } => {
-  const result = { newList: TList, isErr: true };
-  if (targetSet.size === 0) return result;
-
-  const idx2Item = makeIdx2Item(TList);
-  if (isMomCyclic(idx2Item, targetSet, newMom)) return result;
-
-  const idxList = makeFamilyList(TList, targetSet);
-  const newBroList = generateNKeysBetween(leftBro, rightBro, targetSet.size);
-  const idx2bro = new Map<number, string>();
-  idxList.forEach((idx, i) => idx2bro.set(idx, newBroList[i]));
-  result.newList = TList.map((t) =>
-    targetSet.has(t.idx) ? { ...t, mom: newMom, bro: idx2bro.get(t.idx)! } : t
-  );
-  result.isErr = false;
-  return result;
-};
-
-export const addFamily = <T extends Family>(
-  TList: T[],
-  newT: (s: Family) => T,
-  mom: number
-): { newIdx: number; newList: T[] } => {
-  const bro = generateKeyBetween(getLastBro(TList, mom), null);
-  return addIdxItem(TList, (idx) => newT({ idx, mom, bro }));
-};
-
-export const replaceFamily = <T extends Family>(
-  TList: T[],
-  idx: number,
-  mom: number
-) => {
-  const bro = generateKeyBetween(getLastBro(TList, mom), null);
-  return replaceIdxItem(TList, idx, (prev) => ({ ...prev, mom, bro }));
-};
-
-export const deleteFamily = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number>
-): { newList: T[] } => {
-  const idx2mom = makeIdx2Mom(TList, targetSet);
-  const result = deleteIdxItem(TList, targetSet);
-  result.newList = result.newList.map((t) =>
-    targetSet.has(t.mom) ? { ...t, mom: idx2mom.get(t.mom) ?? -1 } : t
-  );
-  return result;
-};
-
-export const setMom = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number>,
-  newMom: number
-) => {
-  return relocateFamily(
-    TList,
-    targetSet,
-    newMom,
-    null,
-    getFirstBro(TList, newMom, targetSet)
-  );
-};
-
-export const setBro = <T extends Family>(
-  TList: T[],
-  targetSet: Set<number>,
+const setBro = <T extends Family>(
+  list: ReadonlyArray<T>,
+  targetSet: ReadonlySet<number>,
   pivotIdx: number,
   dir: InsertMode
-): { newList: T[]; isErr: boolean } => {
-  const pivot = getItemByIdx(TList, pivotIdx);
-  if (!pivot || targetSet.has(pivotIdx)) return { newList: TList, isErr: true };
-  const adjacentBro = getAdjacentBro(TList, pivot, dir, targetSet);
+): T[] => {
+  const familyMap = makeFamilyMap(list);
+  const { idx2item, mom2idxs } = familyMap;
 
-  return relocateFamily(
-    TList,
-    targetSet,
-    pivot.mom,
-    dir === "PREVIOUS" ? adjacentBro : pivot.bro,
-    dir === "PREVIOUS" ? pivot.bro : adjacentBro
-  );
+  const pivot = idx2item.get(pivotIdx);
+  if (!pivot || targetSet.has(pivotIdx)) return list as T[];
+
+  const newMom = pivot.mom;
+  if (isMomCyclic(idx2item, newMom, targetSet)) return list as T[];
+
+  const adjacentBro = getAdjacentBro(idx2item, mom2idxs, pivotIdx, targetSet);
+  const leftBro = dir === "LEFT" ? adjacentBro.leftBro : pivot.bro;
+  const rightBro = dir === "LEFT" ? pivot.bro : adjacentBro.rightBro;
+  const flatIdxs = getFlatIdxs(mom2idxs, targetSet, "TARGET");
+  const bros = generateNKeysBetween(leftBro, rightBro, flatIdxs.length);
+  const idx2new = new Map<number, Partial<T>>();
+  for (let i = 0; i < flatIdxs.length; i++)
+    idx2new.set(flatIdxs[i], { mom: newMom, bro: bros[i] } as Partial<T>);
+
+  return modifyItems(list, idx2new);
 };
+
+const setFamilyMom = <T extends Family>(
+  list: ReadonlyArray<T>,
+  targetSet: ReadonlySet<number>,
+  newMom: number
+): T[] => {
+  if (targetSet.size === 0) return list as T[];
+
+  const familyMap = makeFamilyMap(list);
+  const { idx2item, mom2idxs } = familyMap;
+  if (isMomCyclic(idx2item, newMom, targetSet)) return list as T[];
+
+  const firstBro = idx2item.get(mom2idxs.get(newMom)?.[0] ?? -1)?.bro ?? null;
+  const flatIdxs = getFlatIdxs(mom2idxs, targetSet, "TARGET");
+  const bros = generateNKeysBetween(null, firstBro, flatIdxs.length);
+  const idx2new = new Map<number, Partial<T>>();
+  for (let i = 0; i < flatIdxs.length; i++)
+    idx2new.set(flatIdxs[i], { mom: newMom, bro: bros[i] } as Partial<T>);
+
+  return modifyItems(list, idx2new);
+};
+
+export { getNewBro, deleteFamilyMap, setFamilyMom, setBro };

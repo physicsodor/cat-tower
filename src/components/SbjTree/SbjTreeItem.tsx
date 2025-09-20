@@ -1,9 +1,9 @@
-import { useSubjectStore } from "../../context/SubjectProvider";
 import type { Subject } from "../../types/Curriculum";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import React, { useState } from "react";
 import type { InsertMode } from "../../types/InsertMode";
 import { makeClassName } from "../../utils/makeClassName";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
 
 const SbjTreeItem = ({ info }: { info: Subject }) => {
   const {
@@ -14,7 +14,7 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
     selSet,
     selSbj,
     selTreeSbjDrag,
-  } = useSubjectStore();
+  } = useCurriculumStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
 
@@ -32,8 +32,8 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
     if (!ref.current || !isTreeDrag) return;
     const rect = ref.current.getBoundingClientRect();
     if (e.clientY > rect.top + rect.height / 2) {
-      setMoveState("NEXT");
-    } else setMoveState("PREVIOUS");
+      setMoveState("RIGHT");
+    } else setMoveState("LEFT");
   };
 
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -54,8 +54,8 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
         "sbj-tree-item",
         "sbj-tree-up",
         selSet.has(info.idx) && "selected",
-        moveState === "PREVIOUS" && "pre",
-        moveState === "NEXT" && "nxt"
+        moveState === "LEFT" && "pre",
+        moveState === "RIGHT" && "nxt"
       )}
     >
       <div

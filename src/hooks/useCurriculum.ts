@@ -1,19 +1,19 @@
-import React, { useRef, useState } from "react";
-import { type Course, type Subject } from "../types/Curriculum";
-import type { SelectMode } from "../types/SelectMode";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { type Curriculum } from "../types/Curriculum";
+import { type SelectMode } from "../types/SelectMode";
 import { setDif, setUni } from "../utils/setOp";
-import { getItemByIdx } from "../utils/idxItemOp";
-import { setBro, setMom } from "../utils/familyOp";
+import { setBro, setFamilyMom } from "../utils/familyOp";
 import {
-  addCourse,
-  addSubject,
   deleteCurriculum,
+  newCourse,
+  newSubject,
   setSubjectXY,
 } from "../utils/curriculumOp";
 import type { InsertMode } from "../types/InsertMode";
+import { getItemByIdx } from "../utils/idxItemOp";
 
 export const useCurriculum = () => {
-  const [sbjList, setSbjList] = useState<(Subject | Course)[]>([]);
+  const [sbjList, setSbjList] = useState<Curriculum[]>([]);
   const [selSet, setSelSet] = useState<Set<number>>(new Set());
   const [treeSbjDrag, setTreeSbjDrag] = useState(false);
   const [treeCrsDrag, setTreeCrsDrag] = useState(-1);
@@ -21,55 +21,63 @@ export const useCurriculum = () => {
   const [cnvsCrsDrag, setCnvsCrsDrag] = useState(-1);
   const selModeRef = useRef<SelectMode>("NONE");
 
-  const addSbj = () => {
+  const addSbj = useCallback(() => {
+    let newIdx: number = -1;
     setSbjList((prev) => {
-      const result = addSubject(prev);
-      setSelSet(new Set([result.newIdx]));
-      return result.newList;
+      const newItem = newSubject(prev);
+      newIdx = newItem.idx;
+      return [...prev, newItem];
     });
-  };
-  const addCrs = () => {
-    setSbjList((prev) => {
-      const result = addCourse(prev);
-      return result.newList;
-    });
-  };
+    setSelSet(new Set([newIdx]));
+  }, []);
 
-  const delSbj = () => {
-    if (selSet.size === 0) return;
-    setSbjList((prev) => deleteCurriculum(prev, selSet).newList);
+  const addCrs = useCallback(() => {
+    setSbjList((prev) => [...prev, newCourse(prev)]);
+  }, []);
+
+  const delSbj = useCallback(() => {
+    setSbjList((prev) => deleteCurriculum(prev, selSet));
     setSelSet(new Set());
-  };
-  const delCrs = (idx: number) => () => {
-    if (idx < 0) return;
-    setSbjList((prev) => deleteCurriculum(prev, new Set([idx])).newList);
-  };
+  }, [selSet]);
 
-  const setSbjMom = (newMom: number) => {
-    const targetSet =
+  const delCrsByIdx = useCallback(
+    (idx: number) => () =>
+      setSbjList((prev) => deleteCurriculum(prev, new Set([idx]))),
+    []
+  );
+
+  const treeTarget = useMemo(
+    () =>
       treeCrsDrag >= 0
         ? new Set([treeCrsDrag])
         : treeSbjDrag
         ? selSet
-        : new Set<number>();
-    if (targetSet.size > 0)
-      setSbjList((prev) => setMom(prev, targetSet, newMom).newList);
-    if (treeCrsDrag >= 0) setTreeCrsDrag(-1);
-    if (treeSbjDrag) setTreeSbjDrag(false);
-  };
+        : new Set<number>(),
+    [selSet, treeCrsDrag, treeSbjDrag]
+  );
 
-  const setSbjBro = (pivotIdx: number, dir: InsertMode) => {
-    const targetSet =
-      treeCrsDrag >= 0
-        ? new Set([treeCrsDrag])
-        : treeSbjDrag
-        ? selSet
-        : new Set<number>();
-    if (targetSet.size > 0)
-      setSbjList((prev) => setBro(prev, targetSet, pivotIdx, dir).newList);
-    if (treeCrsDrag >= 0) setTreeCrsDrag(-1);
-    if (treeSbjDrag) setTreeSbjDrag(false);
-  };
+  const clearTreeTarget = useCallback(() => {
+    setTreeCrsDrag(-1);
+    setTreeSbjDrag(false);
+  }, []);
+
+  const setSbjMom = useCallback(
+    (mom: number) => {
+      if (treeTarget.size === 0) return;
+      setSbjList((prev) => setFamilyMom(prev, treeTarget, mom));
+      clearTreeTarget();
+    },
+    [treeTarget, clearTreeTarget]
+  );
+
+  const setSbjBro = useCallback(
+    (pivotIdx: number, dir: InsertMode) => {
+      if (treeTarget.size === 0) return;
+      setSbjList((prev) => setBro(prev, treeTarget, pivotIdx, dir));
+      clearTreeTarget();
+    },
+    [clearTreeTarget, treeTarget]
+  );
 
   const setSelMode = <T extends HTMLElement = HTMLDivElement>(
     e: React.PointerEvent<T>,
@@ -88,7 +96,7 @@ export const useCurriculum = () => {
     const idxSet = new Set(
       idxList.filter((idx) => {
         const trg = getItemByIdx(sbjList, idx);
-        return trg && trg.sbjType === "Subject";
+        return trg && trg.sbjType === "SUBJECT";
       })
     );
     if (mode === "ADD") setSelSet((prev) => setUni(prev, idxSet));
@@ -101,7 +109,7 @@ export const useCurriculum = () => {
   };
   const selTreeCrsDrag = (i: number) => {
     const trg = getItemByIdx(sbjList, i);
-    if (!trg || trg.sbjType === "Subject") return;
+    if (!trg || trg.sbjType === "SUBJECT") return;
     setTreeCrsDrag(i);
   };
 
@@ -110,7 +118,7 @@ export const useCurriculum = () => {
   };
   const selCnvsCrsDrag = (i: number) => {
     const trg = getItemByIdx(sbjList, i);
-    if (!trg || trg.sbjType === "Subject") return;
+    if (!trg || trg.sbjType === "SUBJECT") return;
     setCnvsCrsDrag(i);
   };
 
@@ -138,7 +146,7 @@ export const useCurriculum = () => {
     clearCnvsDrag,
     clearTreeDrag,
     delSbj,
-    delCrs,
+    delCrs: delCrsByIdx,
     getSelMode,
     setSbjBro,
     setSbjMom,

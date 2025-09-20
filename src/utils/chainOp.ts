@@ -1,11 +1,8 @@
 import { isChain, type Chain } from "../types/Chain";
-import {
-  addIdxItem,
-  deleteIdxItem,
-  makeIdx2Item,
-  replaceIdxItem,
-} from "./idxItemOp";
+import { makeIdx2Item } from "./idxItemOp";
 import { setDif } from "./setOp";
+
+type NewInfo = Partial<Chain>;
 
 export const getPreSet = <T extends Chain>(
   TList: T[],
@@ -27,48 +24,16 @@ export const getPreSet = <T extends Chain>(
   return preSet;
 };
 
-export const addChain = <T extends Chain>(
-  TList: T[],
-  newT: (s: Chain) => T
-): { newIdx: number; newList: T[] } => {
-  return addIdxItem(TList, (idx) => newT({ idx, pre: new Set() }));
-};
-
-export const replaceChain = <T extends Chain, S = unknown>(
-  TList: (T | S)[],
-  idx: number
-): { newList: (T | S)[] } => {
-  const subList: T[] = replaceIdxItem(
-    TList.filter((t) => isChain<T>(t)),
-    idx,
-    (prev) => ({
-      ...prev,
-      pre: new Set(),
-    })
-  ).newList;
-
-  let i = 0;
-  const newList = TList.map((t) => (isChain<T>(t) ? subList[i++] : t));
-
-  return { newList };
-};
-
-export const deleteChain = <T extends Chain, S = unknown>(
-  TList: (T | S)[],
-  targetSet: Set<number>
-): { newList: (T | S)[] } => {
-  const subList: T[] = deleteIdxItem(
-    TList.filter((t) => isChain<T>(t)),
-    targetSet
-  ).newList;
-  for (const x of subList) x.pre = setDif(x.pre, targetSet);
-
-  let i = 0;
-  const newList: (T | S)[] = [];
-  for (const t of TList) {
-    if (isChain<T>(t) && !targetSet.has(t.idx)) newList.push(subList[i++]);
-    else newList.push(t);
+const deleteChainMap = <T extends Chain, S>(
+  idx2item: ReadonlyMap<number, T | S>,
+  targetSet: ReadonlySet<number>
+): Map<number, NewInfo> => {
+  const idx2new = new Map<number, NewInfo>();
+  for (const [idx, t] of idx2item) {
+    if (!isChain(t) || targetSet.has(t.idx)) continue;
+    idx2new.set(idx, { pre: setDif(t.pre, targetSet) });
   }
-
-  return { newList };
+  return idx2new;
 };
+
+export { deleteChainMap };

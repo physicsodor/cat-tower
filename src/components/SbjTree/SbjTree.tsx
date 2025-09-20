@@ -1,22 +1,37 @@
-import { useSubjectStore } from "../../context/SubjectProvider";
-import { type Course } from "../../types/Curriculum";
+import { type Course, type Curriculum } from "../../types/Curriculum";
 import { useEffect, useMemo, useState } from "react";
 import SbjTreeTitle from "./SbjTreeTitle";
 import SbjTreeNext from "./SbjTreeNext";
-import { getItemsByMom } from "../../utils/familyOp";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "../../utils/makeClassName";
-import { generateCourseByTitle } from "../../utils/curriculumOp";
+// import { generateCourseByTitle } from "../../utils/curriculumOp";
+import { makeFamilyMap } from "../../utils/familyOp";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
+import { newCourse } from "../../utils/curriculumOp";
 
-const SbjTree = ({ info }: { info?: Course }) => {
-  const { sbjList, clearTreeDrag } = useSubjectStore();
+type Props = {
+  info?: Course;
+  familyMap?: {
+    idx2item: ReadonlyMap<number, Curriculum>;
+    mom2idxs: ReadonlyMap<number, number[]>;
+  };
+};
+
+const SbjTree = ({ info, familyMap }: Props) => {
+  const { sbjList, clearTreeDrag } = useCurriculumStore();
   const [isOpen, setIsOpen] = useState(true);
 
-  const pInfo = info ?? generateCourseByTitle("Subject Tree");
+  const pInfo = info ?? { ...newCourse(sbjList), idx: -1, ttl: "Subject List" };
+
+  const pMap = useMemo(
+    () => familyMap ?? makeFamilyMap(sbjList),
+    [familyMap, sbjList]
+  );
 
   const broItems = useMemo(
-    () => getItemsByMom(sbjList, pInfo.idx),
-    [sbjList, pInfo.idx]
+    () =>
+      pMap.mom2idxs.get(pInfo.idx)?.map((idx) => pMap.idx2item.get(idx)) ?? [],
+    [pInfo.idx, pMap.idx2item, pMap.mom2idxs]
   );
 
   useEffect(() => {
@@ -41,7 +56,7 @@ const SbjTree = ({ info }: { info?: Course }) => {
       <SbjTreeTitle info={pInfo} {...{ isOpen, onToggle }} />
       <div className={makeClassName("sbj-tree-contents", !isOpen && "hidden")}>
         {broItems.map((s) =>
-          s.sbjType === "Course" ? (
+          s === undefined ? null : s.sbjType === "COURSE" ? (
             <SbjTree key={`sbj-tree-${s.idx}`} info={s} />
           ) : (
             <SbjTreeItem key={`sbj-tree-item-${s.idx}`} info={s} />

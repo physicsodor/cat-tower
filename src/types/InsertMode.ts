@@ -1,1 +1,1 @@
-export type InsertMode = "PREVIOUS" | "NEXT";
+export type InsertMode = "LEFT" | "RIGHT";

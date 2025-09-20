@@ -9,10 +9,10 @@ export interface Subject extends Family, Chain {
   dsc: string;
   x: number;
   y: number;
-  sbjType: "Subject";
+  sbjType: "SUBJECT";
 }
 
 export interface Course extends Family {
   ttl: string;
-  sbjType: "Course";
+  sbjType: "COURSE";
 }

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useSubjectStore } from "../../context/SubjectProvider";
 import type { Course } from "../../types/Curriculum";
 import type { InsertMode } from "../../types/InsertMode";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import { makeClassName } from "../../utils/makeClassName";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
 
 type PE = React.PointerEvent<HTMLDivElement>;
 
@@ -23,14 +23,14 @@ const SbjTreeTitle = ({
     selTreeCrsDrag,
     setSbjBro,
     setSbjMom,
-  } = useSubjectStore();
+  } = useCurriculumStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (moveState === "PREVIOUS") setSbjBro(info.idx, moveState);
-    else if (moveState === "NEXT") setSbjMom(info.idx);
+    if (moveState === "LEFT") setSbjBro(info.idx, moveState);
+    else if (moveState === "RIGHT") setSbjMom(info.idx);
     clearDrag();
     setMoveState(null);
   };
@@ -42,8 +42,8 @@ const SbjTreeTitle = ({
     if (!ref.current || !isDrag) return;
     const rect = ref.current.getBoundingClientRect();
     const dy = e.clientY - rect.top;
-    if (dy < 0.5 * rect.height) setMoveState("PREVIOUS");
-    else setMoveState("NEXT");
+    if (dy < 0.5 * rect.height) setMoveState("LEFT");
+    else setMoveState("RIGHT");
   };
 
   const onDown = (e: PE) => {
@@ -58,8 +58,8 @@ const SbjTreeTitle = ({
       className={makeClassName(
         "sbj-tree-title",
         "sbj-tree-up",
-        moveState === "PREVIOUS" && "pre",
-        moveState === "NEXT" && "nxt"
+        moveState === "LEFT" && "pre",
+        moveState === "RIGHT" && "nxt"
       )}
     >
       {info.idx >= 0 ? (

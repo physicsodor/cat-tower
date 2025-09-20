@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useSubjectStore } from "../../context/SubjectProvider";
 import type { Course } from "../../types/Curriculum";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
 
 type PE = React.PointerEvent<HTMLDivElement>;
 
@@ -9,12 +9,12 @@ const SbjTreeNext = ({ info }: { info: Course }) => {
     isTreeDrag: isDrag,
     clearTreeDrag: clearDrag,
     setSbjBro,
-  } = useSubjectStore();
+  } = useCurriculumStore();
   const [isOn, setIsOn] = useState(false);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (isOn) setSbjBro(info.idx, "NEXT");
+    if (isOn) setSbjBro(info.idx, "RIGHT");
     clearDrag();
     setIsOn(false);
   };

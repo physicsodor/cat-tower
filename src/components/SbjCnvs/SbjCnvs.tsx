@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useSubjectStore } from "../../context/SubjectProvider";
 import SbjCnvsItem from "./SbjCnvsItem";
+import { useCurriculumStore } from "../../context/useCurriculumStore";
 
 const SbjCnvs = () => {
   const { isCnvsDrag, sbjList, selSet, clearCnvsDrag, setSbjPos } =
-    useSubjectStore();
+    useCurriculumStore();
   const [pxy, setPxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dxy, setDxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -40,7 +40,7 @@ const SbjCnvs = () => {
   return (
     <div className="sbj-cnvs">
       {sbjList.map((s) => {
-        if (s.sbjType === "Subject") {
+        if (s.sbjType === "SUBJECT") {
           const isSelected = selSet.has(s.idx);
           return (
             <SbjCnvsItem

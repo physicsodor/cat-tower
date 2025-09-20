@@ -1,13 +1,11 @@
-import { type SelectMode } from "./types/SelectMode";
-import SbjTreeItem from "./components/SbjTree/SbjTreeItem";
-import { SubjectProvider } from "./context/SubjectProvider";
+import { CurriculumProvider } from "./context/CurriculumProvider";
 import SubjectContainer from "./components/SubjectContainer";
 
 function App() {
   return (
-    <SubjectProvider>
+    <CurriculumProvider>
       <SubjectContainer />
-    </SubjectProvider>
+    </CurriculumProvider>
   );
 }
 
