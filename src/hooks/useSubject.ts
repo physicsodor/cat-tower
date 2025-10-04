@@ -1,15 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { type Curriculum } from "../types/Curriculum";
 import { setDif } from "../utils/setOp";
 import { buildFamilyMap, getFlatIdxs } from "../utils/familyOp";
 import { addCourse, addSubject } from "../utils/curriculumOp";
+import { generateNKeysBetween } from "fractional-indexing";
 
 export const useSubject = () => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
   const [slcSet, setSlcSet] = useState(new Set<number>());
   const [treeDrag, setTreeDrag] = useState(new Set<number>());
 
-  const idx2family = useMemo(() => buildFamilyMap(list), [list]);
+  // const idx2family = useMemo(() => buildFamilyMap(list), [list]);
 
   const addSbj = useCallback(() => {
     const { newList, newIdx } = addSubject(list);
@@ -38,6 +39,7 @@ export const useSubject = () => {
 
   const delCrs = useCallback(
     (idx: number) => {
+      const idx2family = buildFamilyMap(list);
       const mom = idx2family.get(idx)?.mom ?? -1;
       const newList: Curriculum[] = [];
       for (const x of list) {
@@ -53,13 +55,15 @@ export const useSubject = () => {
 
   const setTreeMom = useCallback(
     (mom: number) => {
+      const idx2family = buildFamilyMap(list);
       let testMom = mom;
       while (testMom >= 0) {
         if (treeDrag.has(testMom)) return;
         testMom = idx2family.get(testMom)?.mom ?? -1;
       }
       const { flatIdxs } = getFlatIdxs(idx2family, treeDrag);
-      const bros = getNewLastBros(idx2family, mom, flatIdxs.length);
+      const lastBro = idx2family.get(mom)?.last ?? null;
+      const bros = generateNKeysBetween(lastBro, null, flatIdxs.length);
       const idx2bro = new Map<number, string>();
       for (let i = 0; i < flatIdxs.length; i++)
         idx2bro.set(flatIdxs[i], bros[i]);
