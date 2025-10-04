@@ -3,7 +3,7 @@ import { useDragGhost } from "../../hooks/useDragGhost";
 import React, { useState } from "react";
 import type { InsertMode } from "../../types/InsertMode";
 import { makeClassName } from "../../utils/makeClassName";
-import { useCurriculumStore } from "../../context/useCurriculumStore";
+import { useSubjectStore } from "../../context/useSubjectStore";
 
 const SbjTreeItem = ({ info }: { info: Subject }) => {
   const {
@@ -14,7 +14,7 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
     selSet,
     selSbj,
     selTreeSbjDrag,
-  } = useCurriculumStore();
+  } = useSubjectStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
 

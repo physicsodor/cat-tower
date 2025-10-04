@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import SbjCnvsItem from "./SbjCnvsItem";
-import { useCurriculumStore } from "../../context/useCurriculumStore";
+import { useSubjectStore } from "../../context/useSubjectStore";
 
 const SbjCnvs = () => {
   const { isCnvsDrag, sbjList, selSet, clearCnvsDrag, setSbjPos } =
-    useCurriculumStore();
+    useSubjectStore();
   const [pxy, setPxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dxy, setDxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 

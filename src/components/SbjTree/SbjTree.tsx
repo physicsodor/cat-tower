@@ -5,9 +5,9 @@ import SbjTreeNext from "./SbjTreeNext";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "../../utils/makeClassName";
 // import { generateCourseByTitle } from "../../utils/curriculumOp";
-import { makeFamilyMap } from "../../utils/familyOp";
-import { useCurriculumStore } from "../../context/useCurriculumStore";
-import { newCourse } from "../../utils/curriculumOp";
+import { makeFamilyMap } from "../../utils/familyOp_old";
+import { useSubjectStore } from "../../context/useSubjectStore";
+import { newCourse } from "../../utils/curriculumOp_old";
 
 type Props = {
   info?: Course;
@@ -18,7 +18,7 @@ type Props = {
 };
 
 const SbjTree = ({ info, familyMap }: Props) => {
-  const { sbjList, clearTreeDrag } = useCurriculumStore();
+  const { sbjList, clearTreeDrag } = useSubjectStore();
   const [isOpen, setIsOpen] = useState(true);
 
   const pInfo = info ?? { ...newCourse(sbjList), idx: -1, ttl: "Subject List" };

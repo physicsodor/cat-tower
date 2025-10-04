@@ -3,7 +3,7 @@ import type { Course } from "../../types/Curriculum";
 import type { InsertMode } from "../../types/InsertMode";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import { makeClassName } from "../../utils/makeClassName";
-import { useCurriculumStore } from "../../context/useCurriculumStore";
+import { useSubjectStore } from "../../context/useSubjectStore";
 
 type PE = React.PointerEvent<HTMLDivElement>;
 
@@ -23,7 +23,7 @@ const SbjTreeTitle = ({
     selTreeCrsDrag,
     setSbjBro,
     setSbjMom,
-  } = useCurriculumStore();
+  } = useSubjectStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [moveState, setMoveState] = useState<InsertMode | null>(null);
 

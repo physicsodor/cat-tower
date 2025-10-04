@@ -1,9 +1,9 @@
-import { useCurriculumStore } from "../context/useCurriculumStore";
+import { useSubjectStore } from "../context/useSubjectStore";
 import SbjCnvs from "./SbjCnvs/SbjCnvs";
 import SbjTree from "./SbjTree/SbjTree";
 
 const SubjectContainer = () => {
-  const { sbjList, addCrs, addSbj, delSbj } = useCurriculumStore();
+  const { sbjList, addCrs, addSbj, delSbj } = useSubjectStore();
 
   return (
     <div>

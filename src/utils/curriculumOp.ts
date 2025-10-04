@@ -1,79 +1,68 @@
-import {
-  type Course,
-  type Curriculum,
-  type Subject,
-} from "../types/Curriculum";
-import { deleteChainMap } from "./chainOp";
-import { deleteFamilyMap, getNewBro } from "./familyOp";
-import {
-  getNewIdx,
-  makeIdx2Item,
-  modifyItems,
-  updateIdx2New,
-} from "./idxItemOp";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
+import type { Curriculum } from "../types/Curriculum";
+import { buildFamilyMap, getFlatIdxs } from "./familyOp";
 
-type NewInfo = Partial<Curriculum>;
+type List = ReadonlyArray<Curriculum>;
+type Target = ReadonlySet<number>;
 
-const newSubject = (list: ReadonlyArray<Curriculum>): Subject => {
-  const idx = getNewIdx(list);
+const addSubject = (
+  list: ReadonlyArray<Curriculum>
+): { newIdx: number; newList: List } => {
+  const idx2family = buildFamilyMap(list);
+  let newIdx = 0;
+  while (idx2family.has(newIdx)) newIdx++;
   const mom = -1;
-  const bro = getNewBro(list, mom);
-  return {
-    idx,
-    mom,
-    bro,
-    pre: new Set<number>(),
-    ttl: `Subject ${idx}`,
-    cnt: "",
-    dsc: "",
-    x: 0,
-    y: 0,
-    sbjType: "SUBJECT",
-  };
-};
-const newCourse = (list: ReadonlyArray<Curriculum>): Course => {
-  const idx = getNewIdx(list);
-  const mom = -1;
-  const bro = getNewBro(list, mom);
-  return {
-    idx,
-    mom,
-    bro,
-    ttl: `Course ${idx}`,
-    sbjType: "COURSE",
-  };
+  const lastBro = idx2family.get(mom)?.last ?? null;
+  const newBro = generateKeyBetween(lastBro, null);
+  const newList = [...list, getNewItem(newIdx, mom, newBro, "SUBJECT")];
+  return { newIdx, newList };
 };
 
-const deleteCurriculum = (
-  list: Curriculum[],
-  targetSet: Set<number>
-): Curriculum[] => {
-  const idx2item = makeIdx2Item(list);
-  const idx2new = new Map<number, NewInfo | null>();
-  for (const idx of targetSet) idx2new.set(idx, null);
-  updateIdx2New(idx2new, deleteFamilyMap(idx2item, targetSet));
-  updateIdx2New(idx2new, deleteChainMap(idx2item, targetSet));
-  return modifyItems(list, idx2new);
-};
-
-export const setSubjectXY = (
-  TList: Curriculum[],
-  targetSet: Set<number>,
-  dxy: { x: number; y: number }
-): { newList: Curriculum[] } => {
-  if (targetSet.size === 0 || (dxy.x === 0 && dxy.y === 0)) {
-    return { newList: TList };
+const addCourse = (list: List, targetSet: Target): { newList: List } => {
+  const idx2family = buildFamilyMap(list);
+  let newIdx = 0;
+  while (idx2family.has(newIdx)) newIdx++;
+  const { commonMom, flatIdxs } = getFlatIdxs(idx2family, targetSet);
+  const lastBro = idx2family.get(commonMom)?.last ?? null;
+  const newBro = generateKeyBetween(lastBro, null);
+  const bros = generateNKeysBetween(null, null, targetSet.size);
+  const idx2bro = new Map<number, string>();
+  for (let i = 0; i < flatIdxs.length; i++) idx2bro.set(flatIdxs[i], bros[i]);
+  const newList: Curriculum[] = [];
+  for (const x of list) {
+    if (targetSet.has(x.idx)) newList.push({ ...x, mom: newIdx, bro: newBro });
+    else newList.push(x);
   }
-
-  let isChanged = false;
-  const newList = TList.map((t) => {
-    if (targetSet.has(t.idx) && t.sbjType === "SUBJECT") {
-      isChanged = true;
-      return { ...t, x: t.x + dxy.x, y: t.y + dxy.y };
-    }
-    return t;
-  });
-  return { newList: isChanged ? newList : TList };
+  newList.push(getNewItem(newIdx, commonMom, newBro, "COURSE"));
+  return { newList };
 };
 
-export { newSubject, newCourse, deleteCurriculum };
+const getNewItem = (
+  idx: number,
+  mom: number,
+  bro: string,
+  sbjType: Curriculum["sbjType"]
+): Curriculum => {
+  return sbjType === "COURSE"
+    ? {
+        idx,
+        mom,
+        bro,
+        ttl: `Course ${idx}`,
+        sbjType,
+      }
+    : {
+        idx,
+        mom,
+        bro,
+        pre: new Set(),
+        ttl: `Subject ${idx}`,
+        cnt: "",
+        dsc: "",
+        x: 0,
+        y: 0,
+        sbjType,
+      };
+};
+
+export { addSubject, addCourse };
