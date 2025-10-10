@@ -9,18 +9,19 @@ type PE = React.PointerEvent | PointerEvent;
 type Props = { idx?: number; ttl?: string };
 
 const SbjTree = ({ idx = -1, ttl = "Subject Tree:" }: Props) => {
-  const { idx2sbj, idx2family, clearTreeDrag } = useSubjectStore();
+  const { idx2sbj, idx2family, setTreeDrag } = useSubjectStore();
   const [isOpen, setIsOpen] = useState(idx !== -1);
 
   useEffect(() => {
     const onGlobalUp = (e: PE) => {
       const target = e.target as HTMLElement | null;
       if (target?.classList.contains("-ovr")) return;
-      clearTreeDrag();
+      // clearTreeDrag();
+      setTreeDrag(new Set());
     };
     document.addEventListener("pointerup", onGlobalUp);
     return () => document.removeEventListener("pointerup", onGlobalUp);
-  }, [clearTreeDrag]);
+  }, [setTreeDrag]);
 
   const onToggle = () => setIsOpen((b) => !b);
 

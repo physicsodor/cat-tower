@@ -1,4 +1,4 @@
-import { use, useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   type Course,
   type Curriculum,
@@ -17,8 +17,8 @@ import { buildChainMap, setPre } from "../utils/chainOp";
 export const useSubject = () => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
   const [slcSet, setSlcSet] = useState(new Set<number>());
-  const [treeDrag, setTreeDrag] = useState(new Set<number>());
-  const [cnvsDrag, setCnvsDrag] = useState(new Set<number>());
+  const treeDragRef = useRef(new Set<number>());
+  const cnvsDragRef = useRef(new Set<number>());
   const cnvsPxyRef = useRef({ px: 0, py: 0 });
   const preFromRef = useRef(-1);
 
@@ -65,27 +65,22 @@ export const useSubject = () => {
   );
 
   const setTreeMom = useCallback(
-    (mom: number) => {
-      const { updator } = setMom<Curriculum>(idx2family, treeDrag, mom);
+    (trg: Set<number>, mom: number) => {
+      const { updator } = setMom<Curriculum>(idx2family, trg, mom);
       setList(updator);
-      setTreeDrag(new Set());
+      treeDragRef.current = new Set();
     },
-    [idx2family, treeDrag]
+    [idx2family]
   );
 
   const setTreeBro = useCallback(
-    (idx: number, dir: BroDir) => {
-      const { updator } = setBro<Curriculum>(idx2family, treeDrag, idx, dir);
+    (trg: Set<number>, idx: number, dir: BroDir) => {
+      const { updator } = setBro<Curriculum>(idx2family, trg, idx, dir);
       setList(updator);
-      setTreeDrag(new Set());
+      treeDragRef.current = new Set();
     },
-    [idx2family, treeDrag]
+    [idx2family]
   );
-
-  const beginTreeDrag = useCallback((s: Set<number>) => setTreeDrag(s), []);
-  const clearTreeDrag = useCallback(() => setTreeDrag(new Set()), []);
-  const beginCnvsDrag = useCallback((s: Set<number>) => setCnvsDrag(s), []);
-  const clearCnvsDrag = useCallback(() => setCnvsDrag(new Set()), []);
 
   const setCnvsPre = useCallback(
     (idx: number) => {
@@ -100,39 +95,50 @@ export const useSubject = () => {
     [list]
   );
 
-  const setCnvsPos = ({ dx, dy }: { dx: number; dy: number }) => {
+  const setCnvsPos = (
+    trg: Set<number>,
+    { dx, dy }: { dx: number; dy: number }
+  ) => {
     setList((prev) =>
       prev.map((item) => {
-        if (item.sbjType === "COURSE" || !cnvsDrag.has(item.idx)) return item;
+        if (item.sbjType === "COURSE" || !trg.has(item.idx)) return item;
         return { ...item, x: item.x + dx, y: item.y + dy };
       })
     );
-    setTreeDrag(new Set());
+    treeDragRef.current = new Set();
   };
+
+  const setCnvsDrag = useCallback((s: Set<number>) => {
+    cnvsDragRef.current = s;
+  }, []);
+  const getCnvsDrag = useCallback(() => cnvsDragRef.current, []);
 
   const setCnvsPxy = useCallback((pxy: { px: number; py: number }) => {
     cnvsPxyRef.current = pxy;
   }, []);
   const getCnvsPxy = useCallback(() => cnvsPxyRef.current, []);
 
+  const setTreeDrag = useCallback((s: Set<number>) => {
+    treeDragRef.current = s;
+  }, []);
+  const getTreeDrag = useCallback(() => treeDragRef.current, []);
+
   return {
     list,
     idx2sbj,
     idx2family,
-    slcSet,
     addSbj,
     addCrs,
     delSbj,
     delCrs,
+    slcSet,
     slcSbj,
     setTreeMom,
     setTreeBro,
-    treeDrag,
-    beginTreeDrag,
-    clearTreeDrag,
-    cnvsDrag,
-    beginCnvsDrag,
-    clearCnvsDrag,
+    setTreeDrag,
+    getTreeDrag,
+    setCnvsDrag,
+    getCnvsDrag,
     setCnvsPre,
     setCnvsPos,
     setCnvsPxy,

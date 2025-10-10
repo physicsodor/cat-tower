@@ -13,22 +13,16 @@ type Props = {
 type PE = React.PointerEvent<HTMLDivElement>;
 
 const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
-  const {
-    treeDrag,
-    beginTreeDrag,
-    clearTreeDrag,
-    delCrs,
-    setTreeBro,
-    setTreeMom,
-  } = useSubjectStore();
+  const { setTreeDrag, getTreeDrag, delCrs, setTreeBro, setTreeMom } =
+    useSubjectStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (dir === "LEFT") setTreeBro(idx, dir);
-    else if (dir === "RIGHT") setTreeMom(idx);
-    clearTreeDrag();
+    if (dir === "LEFT") setTreeBro(getTreeDrag(), idx, dir);
+    else if (dir === "RIGHT") setTreeMom(getTreeDrag(), idx);
+    setTreeDrag(new Set());
     setDir(null);
   };
 
@@ -36,7 +30,7 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
 
   const onMove = (e: PE) => {
     e.preventDefault();
-    if (!ref.current || treeDrag.size <= 0) return;
+    if (!ref.current || getTreeDrag().size <= 0) return;
     const rect = ref.current.getBoundingClientRect();
     const y = rect.top + rect.height / 2;
     if (e.clientY <= y) setDir("LEFT");
@@ -46,7 +40,7 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
   const onDown = (e: PE) => {
     e.preventDefault();
     down(e);
-    beginTreeDrag(new Set([idx]));
+    setTreeDrag(new Set([idx]));
   };
 
   return (

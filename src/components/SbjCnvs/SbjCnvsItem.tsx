@@ -1,4 +1,3 @@
-import { useSubjectStore } from "../../context/useSubjectStore";
 import type { Subject } from "../../types/Curriculum";
 import { makeClassName } from "../../utils/makeClassName";
 import SbjCnvsTitle from "./SbjCnvsTitle";

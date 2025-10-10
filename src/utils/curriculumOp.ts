@@ -52,13 +52,12 @@ const addCourse = (
   const lastBro = idx2family.get(commonMom)?.last ?? null;
   const newBro = generateKeyBetween(lastBro, null);
   const bros = generateNKeysBetween(null, null, targetSet.size);
-  const idx2bro = new Map<number, string>();
-  for (let i = 0; i < flatIdxs.length; i++) idx2bro.set(flatIdxs[i], bros[i]);
+  const idx2bro = new Map(flatIdxs.map((x, i) => [x, bros[i]]));
   const updator = (list: ReadonlyArray<Curriculum>) => {
     const newList: Curriculum[] = [];
     for (const x of list) {
       if (targetSet.has(x.idx))
-        newList.push({ ...x, mom: newIdx, bro: newBro });
+        newList.push({ ...x, mom: newIdx, bro: idx2bro.get(x.idx) ?? "" });
       else newList.push(x);
     }
     newList.push(getNewItem(newIdx, commonMom, newBro, "COURSE"));

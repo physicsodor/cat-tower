@@ -8,7 +8,7 @@ type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; ttl: string };
 
 const SbjTreeItem = ({ idx, ttl }: Props) => {
-  const { slcSet, slcSbj, treeDrag, beginTreeDrag, clearTreeDrag, setTreeBro } =
+  const { slcSet, slcSbj, setTreeDrag, getTreeDrag, setTreeBro } =
     useSubjectStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
@@ -16,8 +16,8 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
   /** 위/아래 삽입 */
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (dir !== null) setTreeBro(idx, dir);
-    clearTreeDrag();
+    if (dir !== null) setTreeBro(getTreeDrag(), idx, dir);
+    setTreeDrag(new Set());
     setDir(null);
   };
 
@@ -27,7 +27,8 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
   /** drag 중 위/아래에 삽입 전 */
   const onMove = (e: PE) => {
     e.preventDefault();
-    if (!ref.current || treeDrag.size <= 0 || treeDrag.has(idx)) return;
+    if (!ref.current || getTreeDrag().size <= 0 || getTreeDrag().has(idx))
+      return;
     const rect = ref.current.getBoundingClientRect();
     const y = rect.top + rect.height / 2;
     if (e.clientY > y) setDir("RIGHT");
@@ -39,7 +40,7 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
     e.preventDefault();
     const s = slcSbj(e, idx);
     if (s.has(idx)) {
-      beginTreeDrag(s);
+      setTreeDrag(s);
       ghost_down(e);
     }
   };

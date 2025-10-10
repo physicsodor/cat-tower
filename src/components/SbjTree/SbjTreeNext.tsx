@@ -6,13 +6,13 @@ type Props = { idx: number };
 type PE = React.PointerEvent<HTMLDivElement>;
 
 const SbjTreeNext = ({ idx }: Props) => {
-  const { treeDrag, clearTreeDrag, setTreeBro } = useSubjectStore();
+  const { getTreeDrag, setTreeDrag, setTreeBro } = useSubjectStore();
   const [isOn, setIsOn] = useState(false);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (isOn) setTreeBro(idx, "RIGHT");
-    clearTreeDrag();
+    if (isOn) setTreeBro(getTreeDrag(), idx, "RIGHT");
+    setTreeDrag(new Set());
     setIsOn(false);
   };
 
@@ -20,7 +20,7 @@ const SbjTreeNext = ({ idx }: Props) => {
 
   const onEnter = (e: PE) => {
     e.preventDefault();
-    if (treeDrag.size <= 0) return;
+    if (getTreeDrag().size <= 0) return;
     setIsOn(true);
   };
 

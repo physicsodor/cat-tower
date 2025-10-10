@@ -62,8 +62,7 @@ const setMom = <T extends Family>(
   const { flatIdxs } = getFlatIdxs(idx2family, targetSet);
   const firstBro = idx2family.get(mom)?.first ?? null;
   const bros = generateNKeysBetween(null, firstBro, targetSet.size);
-  const idx2bro = new Map<number, string>();
-  for (let i = 0; i < flatIdxs.length; i++) idx2bro.set(flatIdxs[i], bros[i]);
+  const idx2bro = new Map(flatIdxs.map((x, i) => [x, bros[i]]));
   const updator = (list: ReadonlyArray<T>) =>
     list.map((x) =>
       targetSet.has(x.idx) ? { ...x, mom, bro: idx2bro.get(x.idx) ?? "" } : x
@@ -77,19 +76,17 @@ const setBro = <T extends Family>(
   idx: number,
   dir: BroDir
 ): { updator: (list: ReadonlyArray<T>) => T[] } => {
-  const mom = idx2family.get(idx)?.mom ?? -1;
-  if (isMomCyclic(idx2family, targetSet, mom))
-    return { updator: (x) => x as T[] };
-  const { flatIdxs } = getFlatIdxs(idx2family, targetSet);
   const info = idx2family.get(idx);
   if (!info) return { updator: (x) => x as T[] };
+  const mom = info.mom ?? -1;
+  if (isMomCyclic(idx2family, targetSet, mom))
+    return { updator: (x) => x as T[] };
   const bro = info.bro ?? null;
   const left = dir === "LEFT" ? info.left ?? null : bro;
   const right = dir === "LEFT" ? bro : info.right ?? null;
-  console.log(left, bro, right);
   const bros = generateNKeysBetween(left, right, targetSet.size);
-  const idx2bro = new Map<number, string>();
-  for (let i = 0; i < flatIdxs.length; i++) idx2bro.set(flatIdxs[i], bros[i]);
+  const { flatIdxs } = getFlatIdxs(idx2family, targetSet);
+  const idx2bro = new Map(flatIdxs.map((x, i) => [x, bros[i]]));
   const updator = (list: ReadonlyArray<T>) =>
     list.map((x) =>
       targetSet.has(x.idx) ? { ...x, mom, bro: idx2bro.get(x.idx) ?? "" } : x
@@ -126,9 +123,8 @@ const getFlatIdxs = (
       if (targetSet.has(kid)) flatIdxs.push(kid);
       n += _push(kid);
     }
-    if (commonMom === -1 && n === targetSet.size && !targetSet.has(mom)) {
+    if (commonMom === -1 && n === targetSet.size && !targetSet.has(mom))
       commonMom = mom;
-    }
     return n;
   };
   _push(-1);

@@ -4,12 +4,12 @@ type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; ttl: string };
 
 const SbjCnvsTitle = ({ idx, ttl }: Props) => {
-  const { setCnvsPxy, beginCnvsDrag, slcSbj } = useSubjectStore();
+  const { setCnvsPxy, setCnvsDrag, slcSbj } = useSubjectStore();
   const onDown = (e: PE) => {
     e.preventDefault();
     const s = slcSbj(e, idx);
     if (s.has(idx)) {
-      beginCnvsDrag(s);
+      setCnvsDrag(s);
       setCnvsPxy({ px: e.clientX, py: e.clientY });
     }
   };
