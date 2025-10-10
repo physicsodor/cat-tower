@@ -1,36 +1,33 @@
 import { useState } from "react";
-import type { Course } from "../../types/Curriculum";
 import { useSubjectStore } from "../../context/useSubjectStore";
+import { makeClassName } from "../../utils/makeClassName";
 
+type Props = { idx: number };
 type PE = React.PointerEvent<HTMLDivElement>;
 
-const SbjTreeNext = ({ info }: { info: Course }) => {
-  const {
-    isTreeDrag: isDrag,
-    clearTreeDrag: clearDrag,
-    setSbjBro,
-  } = useSubjectStore();
+const SbjTreeNext = ({ idx }: Props) => {
+  const { treeDrag, clearTreeDrag, setTreeBro } = useSubjectStore();
   const [isOn, setIsOn] = useState(false);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (isOn) setSbjBro(info.idx, "RIGHT");
-    clearDrag();
+    if (isOn) setTreeBro(idx, "RIGHT");
+    clearTreeDrag();
     setIsOn(false);
   };
 
   const onLeave = () => setIsOn(false);
 
-  const onNextEnter = (e: PE) => {
+  const onEnter = (e: PE) => {
     e.preventDefault();
-    if (!isDrag) return;
+    if (treeDrag.size <= 0) return;
     setIsOn(true);
   };
 
   return (
     <div
-      className={`sbj-tree-next sbj-tree-up${isOn ? " nxt" : ""}`}
-      onPointerEnter={onNextEnter}
+      className={makeClassName("sbj-tree-next", "-ovr", isOn && "-nxt")}
+      onPointerEnter={onEnter}
       onPointerLeave={onLeave}
       onPointerUp={onUp}
     />

@@ -1,42 +1,25 @@
 import { useSubjectStore } from "../../context/useSubjectStore";
 import type { Subject } from "../../types/Curriculum";
 import { makeClassName } from "../../utils/makeClassName";
+import SbjCnvsTitle from "./SbjCnvsTitle";
 
-type PE = React.PointerEvent<HTMLDivElement>;
-
-const SbjCnvsItem = ({
-  info,
-  dxy,
-  isSelected,
-  setPxy,
-}: {
+type Props = {
   info: Subject;
-  dxy: { x: number; y: number };
+  dxy: { dx: number; dy: number };
   isSelected: boolean;
-  setPxy: (e: PE) => void;
-}) => {
-  const { setSelMode, selCnvsSbjDrag, selSbj } = useSubjectStore();
+};
 
-  const onDown = (e: PE) => {
-    const mode = setSelMode(e, info.idx);
-    selSbj(mode, info.idx);
-    if (mode !== "REMOVE") {
-      selCnvsSbjDrag(true);
-      setPxy(e);
-    }
-  };
-
+const SbjCnvsItem = ({ info, dxy: { dx, dy }, isSelected }: Props) => {
   return (
     <div
-      className={makeClassName("sbj-cnvs-item", isSelected && "selected")}
+      className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
       style={{
-        transform: `translate(${info.x + dxy.x}px, ${info.y + dxy.y}px)`,
+        transform: `translate(${info.x + dx}px, ${info.y + dy}px)`,
       }}
-      onPointerDown={onDown}
     >
-      {info.ttl}
-      {dxy.x}
-      {dxy.y}
+      <div className="in"></div>
+      <SbjCnvsTitle idx={info.idx} ttl={info.ttl} />
+      <div className="out"></div>
     </div>
   );
 };

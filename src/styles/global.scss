@@ -1,50 +1,83 @@
+@use "mixins" as m;
+
+:root {
+  @include m.G-setting;
+  @include m.C-setting(7);
+}
+
 .sbj-tree {
   width: fit-content;
-}
-.sbj-tree-title {
-  background-color: lightgray;
-  * {
-    display: inline-block;
-  }
-}
-.sbj-tree-contents {
-  margin-left: 1rem;
-  overflow: hidden;
+  background-color: var(--C-LL);
 
-  &.hidden {
-    display: none;
+  .sbj-tree-title {
+    padding-left: var(--G-L);
+    background-color: var(--C-L);
+    * {
+      display: inline-block;
+    }
   }
-}
-.sbj-tree-next {
-  height: 0.3rem;
-}
-.sbj-tree-up {
-  &.pre {
-    border-top: 1pt solid black;
-  }
-  &.nxt {
-    border-bottom: 1pt solid black;
-  }
-}
-.sbj-tree-item {
-  background-color: transparent;
-  border: none;
 
-  &.selected {
-    background-color: red;
+  .sbj-tree-contents {
+    border-left: var(--G-S) solid var(--C-L);
+    margin-left: var(--G-L);
+    padding-left: var(--G-M);
+    overflow: hidden;
+    &.hidden {
+      display: none;
+    }
+  }
+
+  .sbj-tree-next {
+    height: var(--G-M);
+  }
+
+  .sbj-tree-item {
+    background-color: transparent;
+    padding-left: var(--G-M);
+    padding-right: var(--G-L);
+    border: none;
+    &.-slc {
+      background-color: var(--C-B);
+    }
+  }
+
+  .-ovr {
+    &.-pre {
+      border-top: var(--G-S) solid black;
+    }
+    &.-nxt {
+      border-bottom: var(--G-S) solid black;
+    }
   }
 }
 
 .sbj-cnvs {
   position: relative;
-}
-.sbj-cnvs-item {
-  position: absolute;
-  left: 0;
-  top: 0;
 
-  &.selected {
-    background-color: pink;
+  .sbj-cnvs-item {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: var(--C-LL);
+    &.-slc {
+      background-color: var(--C-L);
+    }
+    .ttl {
+      padding: var(--G-L);
+    }
+    .in,
+    .out {
+      width: var(--G-L);
+      height: var(--G-L);
+      margin: 0 auto;
+      background-color: var(--C-B);
+    }
+    .in {
+      margin-top: calc(-1 * var(--G-L));
+    }
+    .out {
+      margin-bottom: calc(-1 * var(--G-L));
+    }
   }
 }
 

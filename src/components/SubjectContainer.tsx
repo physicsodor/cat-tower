@@ -1,19 +1,17 @@
-import { useSubjectStore } from "../context/useSubjectStore";
+import { SubjectProvider } from "../context/SubjectProvider";
 import SbjCnvs from "./SbjCnvs/SbjCnvs";
+import SbjCtrl from "./SbjCtrl/SbjCtrl";
+// import SbjTest from "./SbjTest";
 import SbjTree from "./SbjTree/SbjTree";
 
 const SubjectContainer = () => {
-  const { sbjList, addCrs, addSbj, delSbj } = useSubjectStore();
-
   return (
-    <div>
-      <button onClick={addSbj}>추가</button>
-      <button onClick={delSbj}>제거</button>
-      <button onClick={addCrs}>그룹 추가</button>
+    <SubjectProvider>
+      <SbjCtrl />
       <SbjTree />
-      <div>{JSON.stringify(sbjList)}</div>
+      {/* <SbjTest /> */}
       <SbjCnvs />
-    </div>
+    </SubjectProvider>
   );
 };
 

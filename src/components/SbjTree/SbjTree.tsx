@@ -1,69 +1,46 @@
-import { type Course, type Curriculum } from "../../types/Curriculum";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SbjTreeTitle from "./SbjTreeTitle";
 import SbjTreeNext from "./SbjTreeNext";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "../../utils/makeClassName";
-// import { generateCourseByTitle } from "../../utils/curriculumOp";
-import { makeFamilyMap } from "../../utils/familyOp_old";
 import { useSubjectStore } from "../../context/useSubjectStore";
-import { newCourse } from "../../utils/curriculumOp_old";
 
-type Props = {
-  info?: Course;
-  familyMap?: {
-    idx2item: ReadonlyMap<number, Curriculum>;
-    mom2idxs: ReadonlyMap<number, number[]>;
-  };
-};
+type PE = React.PointerEvent | PointerEvent;
+type Props = { idx?: number; ttl?: string };
 
-const SbjTree = ({ info, familyMap }: Props) => {
-  const { sbjList, clearTreeDrag } = useSubjectStore();
-  const [isOpen, setIsOpen] = useState(true);
-
-  const pInfo = info ?? { ...newCourse(sbjList), idx: -1, ttl: "Subject List" };
-
-  const pMap = useMemo(
-    () => familyMap ?? makeFamilyMap(sbjList),
-    [familyMap, sbjList]
-  );
-
-  const broItems = useMemo(
-    () =>
-      pMap.mom2idxs.get(pInfo.idx)?.map((idx) => pMap.idx2item.get(idx)) ?? [],
-    [pInfo.idx, pMap.idx2item, pMap.mom2idxs]
-  );
+const SbjTree = ({ idx = -1, ttl = "Subject Tree:" }: Props) => {
+  const { idx2sbj, idx2family, clearTreeDrag } = useSubjectStore();
+  const [isOpen, setIsOpen] = useState(idx !== -1);
 
   useEffect(() => {
-    const onGlobalUp = (e: PointerEvent) => {
+    const onGlobalUp = (e: PE) => {
       const target = e.target as HTMLElement | null;
-      if (target?.classList.contains("sbj-tree-up")) return;
+      if (target?.classList.contains("-ovr")) return;
       clearTreeDrag();
     };
-
     document.addEventListener("pointerup", onGlobalUp);
-    return () => {
-      document.removeEventListener("pointerup", onGlobalUp);
-    };
+    return () => document.removeEventListener("pointerup", onGlobalUp);
   }, [clearTreeDrag]);
 
   const onToggle = () => setIsOpen((b) => !b);
 
-  const prevent = (e: React.PointerEvent<HTMLDivElement>) => e.preventDefault();
+  const prevent = (e: PE) => e.preventDefault();
 
   return (
     <div className={`sbj-tree`} onPointerDown={prevent}>
-      <SbjTreeTitle info={pInfo} {...{ isOpen, onToggle }} />
+      <SbjTreeTitle {...{ idx, ttl, isOpen, onToggle }} />
       <div className={makeClassName("sbj-tree-contents", !isOpen && "hidden")}>
-        {broItems.map((s) =>
-          s === undefined ? null : s.sbjType === "COURSE" ? (
-            <SbjTree key={`sbj-tree-${s.idx}`} info={s} />
+        {(idx2family.get(idx)?.kids ?? []).map((k) => {
+          const s = idx2sbj.get(k);
+          if (!s) return null;
+          return s.sbjType === "COURSE" ? (
+            <SbjTree key={`sbj-tree-${k}`} idx={k} ttl={s.ttl} />
           ) : (
-            <SbjTreeItem key={`sbj-tree-item-${s.idx}`} info={s} />
-          )
-        )}
+            <SbjTreeItem key={`sbj-tree-item-${k}`} idx={k} ttl={s.ttl} />
+          );
+        })}
       </div>
-      <SbjTreeNext info={pInfo} />
+      <SbjTreeNext idx={idx} />
     </div>
   );
 };

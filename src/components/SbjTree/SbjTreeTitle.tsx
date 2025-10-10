@@ -1,55 +1,52 @@
 import { useState } from "react";
-import type { Course } from "../../types/Curriculum";
-import type { InsertMode } from "../../types/InsertMode";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import { makeClassName } from "../../utils/makeClassName";
 import { useSubjectStore } from "../../context/useSubjectStore";
+import type { BroDir } from "../../utils/familyOp";
 
-type PE = React.PointerEvent<HTMLDivElement>;
-
-const SbjTreeTitle = ({
-  info,
-  isOpen,
-  onToggle,
-}: {
-  info: Course;
+type Props = {
+  idx: number;
+  ttl: string;
   isOpen: boolean;
   onToggle: () => void;
-}) => {
+};
+type PE = React.PointerEvent<HTMLDivElement>;
+
+const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
   const {
-    isTreeDrag: isDrag,
-    clearTreeDrag: clearDrag,
+    treeDrag,
+    beginTreeDrag,
+    clearTreeDrag,
     delCrs,
-    selTreeCrsDrag,
-    setSbjBro,
-    setSbjMom,
+    setTreeBro,
+    setTreeMom,
   } = useSubjectStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
-  const [moveState, setMoveState] = useState<InsertMode | null>(null);
+  const [dir, setDir] = useState<BroDir | null>(null);
 
   const onUp = (e: PE) => {
     e.preventDefault();
-    if (moveState === "LEFT") setSbjBro(info.idx, moveState);
-    else if (moveState === "RIGHT") setSbjMom(info.idx);
-    clearDrag();
-    setMoveState(null);
+    if (dir === "LEFT") setTreeBro(idx, dir);
+    else if (dir === "RIGHT") setTreeMom(idx);
+    clearTreeDrag();
+    setDir(null);
   };
 
-  const onLeave = () => setMoveState(null);
+  const onLeave = () => setDir(null);
 
   const onMove = (e: PE) => {
     e.preventDefault();
-    if (!ref.current || !isDrag) return;
+    if (!ref.current || treeDrag.size <= 0) return;
     const rect = ref.current.getBoundingClientRect();
-    const dy = e.clientY - rect.top;
-    if (dy < 0.5 * rect.height) setMoveState("LEFT");
-    else setMoveState("RIGHT");
+    const y = rect.top + rect.height / 2;
+    if (e.clientY <= y) setDir("LEFT");
+    else setDir("RIGHT");
   };
 
   const onDown = (e: PE) => {
     e.preventDefault();
     down(e);
-    selTreeCrsDrag(info.idx);
+    beginTreeDrag(new Set([idx]));
   };
 
   return (
@@ -57,21 +54,23 @@ const SbjTreeTitle = ({
       ref={ref}
       className={makeClassName(
         "sbj-tree-title",
-        "sbj-tree-up",
-        moveState === "LEFT" && "pre",
-        moveState === "RIGHT" && "nxt"
+        "-ovr",
+        dir === "LEFT" && "-pre",
+        dir === "RIGHT" && "-nxt"
       )}
     >
-      {info.idx >= 0 ? (
+      {idx >= 0 ? (
         <div onPointerDown={onDown}>
           <button>=</button>
         </div>
       ) : null}
-      <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
-        {info.ttl}
-      </div>
+      {idx >= 0 ? (
+        <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
+          {ttl}
+        </div>
+      ) : null}
       <button onClick={onToggle}>{isOpen ? "-" : "+"}</button>
-      {info.idx >= 0 ? <button onClick={delCrs(info.idx)}>제거</button> : null}
+      {idx >= 0 ? <button onClick={() => delCrs(idx)}>제거</button> : null}
     </div>
   );
 };

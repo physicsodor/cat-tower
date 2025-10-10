@@ -1,0 +1,21 @@
+@use "variables" as v;
+
+@mixin C-setting($H-step) {
+  @if map-has-key(v.$H-steps, $H-step) == false {
+    @error "Unknown hue number: #{$H-step}";
+  }
+  $H: map-get(v.$H-steps, $H-step);
+  $C: v.$C-fixed;
+  @if $H-step == 0 {
+    $C: 0%;
+  }
+  @each $LL, $L in v.$L-steps {
+    --C-#{$LL}: oklch(#{$L} #{$C} #{$H});
+  }
+}
+
+@mixin G-setting {
+  @each $GG, $G in v.$Gap {
+    --G-#{$GG}: #{$G};
+  }
+}

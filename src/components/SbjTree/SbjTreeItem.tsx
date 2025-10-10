@@ -1,48 +1,45 @@
-import type { Subject } from "../../types/Curriculum";
 import { useDragGhost } from "../../hooks/useDragGhost";
 import React, { useState } from "react";
-import type { InsertMode } from "../../types/InsertMode";
 import { makeClassName } from "../../utils/makeClassName";
 import { useSubjectStore } from "../../context/useSubjectStore";
+import type { BroDir } from "../../utils/familyOp";
 
-const SbjTreeItem = ({ info }: { info: Subject }) => {
-  const {
-    clearTreeDrag,
-    isTreeDrag,
-    setSbjBro,
-    setSelMode,
-    selSet,
-    selSbj,
-    selTreeSbjDrag,
-  } = useSubjectStore();
+type PE = React.PointerEvent | PointerEvent;
+type Props = { idx: number; ttl: string };
+
+const SbjTreeItem = ({ idx, ttl }: Props) => {
+  const { slcSet, slcSbj, treeDrag, beginTreeDrag, clearTreeDrag, setTreeBro } =
+    useSubjectStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
-  const [moveState, setMoveState] = useState<InsertMode | null>(null);
+  const [dir, setDir] = useState<BroDir | null>(null);
 
-  const onUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  /** 위/아래 삽입 */
+  const onUp = (e: PE) => {
     e.preventDefault();
-    if (moveState !== null) setSbjBro(info.idx, moveState);
+    if (dir !== null) setTreeBro(idx, dir);
     clearTreeDrag();
-    setMoveState(null);
+    setDir(null);
   };
 
-  const onLeave = () => setMoveState(null);
+  /** 위/아래 삽입에서 벗어남 */
+  const onLeave = () => setDir(null);
 
-  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  /** drag 중 위/아래에 삽입 전 */
+  const onMove = (e: PE) => {
     e.preventDefault();
-    if (!ref.current || !isTreeDrag) return;
+    if (!ref.current || treeDrag.size <= 0 || treeDrag.has(idx)) return;
     const rect = ref.current.getBoundingClientRect();
-    if (e.clientY > rect.top + rect.height / 2) {
-      setMoveState("RIGHT");
-    } else setMoveState("LEFT");
+    const y = rect.top + rect.height / 2;
+    if (e.clientY > y) setDir("RIGHT");
+    else setDir("LEFT");
   };
 
-  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  /** 선택 후 drag 시작 */
+  const onDown = (e: PE) => {
     e.preventDefault();
-
-    const mode = setSelMode(e, info.idx);
-    selSbj(mode, info.idx);
-    if (mode !== "REMOVE") {
-      selTreeSbjDrag(true);
+    const s = slcSbj(e, idx);
+    if (s.has(idx)) {
+      beginTreeDrag(s);
       ghost_down(e);
     }
   };
@@ -52,10 +49,10 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
       ref={ref}
       className={makeClassName(
         "sbj-tree-item",
-        "sbj-tree-up",
-        selSet.has(info.idx) && "selected",
-        moveState === "LEFT" && "pre",
-        moveState === "RIGHT" && "nxt"
+        "-ovr",
+        slcSet.has(idx) && "-slc",
+        dir === "LEFT" && "-pre",
+        dir === "RIGHT" && "-nxt"
       )}
     >
       <div
@@ -64,7 +61,7 @@ const SbjTreeItem = ({ info }: { info: Subject }) => {
         onPointerUp={onUp}
         onPointerLeave={onLeave}
       >
-        {info.idx < 0 ? "Subject Tree:" : info.ttl}
+        {ttl}
       </div>
     </div>
   );

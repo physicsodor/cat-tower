@@ -1,54 +1,55 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import SbjCnvsItem from "./SbjCnvsItem";
 import { useSubjectStore } from "../../context/useSubjectStore";
 
+type PE = React.PointerEvent | PointerEvent;
+
 const SbjCnvs = () => {
-  const { isCnvsDrag, sbjList, selSet, clearCnvsDrag, setSbjPos } =
+  const { getCnvsPxy, cnvsDrag, list, slcSet, clearCnvsDrag, setCnvsPos } =
     useSubjectStore();
-  const [pxy, setPxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [dxy, setDxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // const [pxy, setPxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const rafRef = useRef(0);
+
+  const onGlobalMove = useCallback(
+    (e: PE) => {
+      if (cnvsDrag.size <= 0) return;
+      const { px, py } = getCnvsPxy();
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() =>
+        setDxy({ dx: e.clientX - px, dy: e.clientY - py })
+      );
+    },
+    [cnvsDrag, getCnvsPxy]
+  );
+
+  const onGlobalUp = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    setCnvsPos(dxy);
+    setDxy({ dx: 0, dy: 0 });
+    clearCnvsDrag();
+  }, [clearCnvsDrag, setCnvsPos, dxy]);
 
   useEffect(() => {
-    let raf = 0; // ChatGPT가 요청애니메이션프레임 어쩌구라고 설명해줌. ㅎㅎ
-    const onGlobalMove = (e: PointerEvent) => {
-      if (!isCnvsDrag) return;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        setDxy({ x: e.clientX - pxy.x, y: e.clientY - pxy.y });
-      });
-    };
-
-    const onGlobalUp = () => {
-      if (!isCnvsDrag) return;
-      setSbjPos(dxy);
-      setDxy({ x: 0, y: 0 });
-      clearCnvsDrag();
-    };
-
-    document.addEventListener("pointermove", onGlobalMove, { passive: true });
-    document.addEventListener("pointerup", onGlobalUp, { passive: true });
+    window.addEventListener("pointermove", onGlobalMove);
+    window.addEventListener("pointerup", onGlobalUp);
     return () => {
-      document.removeEventListener("pointermove", onGlobalMove);
-      document.removeEventListener("pointerup", onGlobalUp);
+      window.removeEventListener("pointermove", onGlobalMove);
+      window.removeEventListener("pointerup", onGlobalUp);
     };
-  }, [isCnvsDrag, clearCnvsDrag, setSbjPos, dxy, pxy.x, pxy.y]);
-
-  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    setPxy({ x: e.clientX, y: e.clientY });
-  };
+  }, [onGlobalMove, onGlobalUp]);
 
   return (
     <div className="sbj-cnvs">
-      {sbjList.map((s) => {
+      {list.map((s) => {
         if (s.sbjType === "SUBJECT") {
-          const isSelected = selSet.has(s.idx);
+          const isSelected = slcSet.has(s.idx);
           return (
             <SbjCnvsItem
               key={`sbj-cnvs-item-${s.idx}`}
               info={s}
-              dxy={isSelected ? dxy : { x: 0, y: 0 }}
+              dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
               isSelected={isSelected}
-              setPxy={onDown}
             />
           );
         }

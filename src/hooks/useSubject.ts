@@ -1,80 +1,141 @@
-import { useCallback, useState } from "react";
-import { type Curriculum } from "../types/Curriculum";
-import { setDif } from "../utils/setOp";
-import { buildFamilyMap, getFlatIdxs } from "../utils/familyOp";
-import { addCourse, addSubject } from "../utils/curriculumOp";
-import { generateNKeysBetween } from "fractional-indexing";
+import { use, useCallback, useMemo, useRef, useState } from "react";
+import {
+  type Course,
+  type Curriculum,
+  type Subject,
+} from "../types/Curriculum";
+import { buildFamilyMap, setBro, setMom, type BroDir } from "../utils/familyOp";
+import {
+  addCourse,
+  addSubject,
+  buildSbjMap,
+  deleteCourse,
+  deleteSubject,
+} from "../utils/curriculumOp";
+import { buildChainMap, setPre } from "../utils/chainOp";
 
 export const useSubject = () => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
   const [slcSet, setSlcSet] = useState(new Set<number>());
   const [treeDrag, setTreeDrag] = useState(new Set<number>());
+  const [cnvsDrag, setCnvsDrag] = useState(new Set<number>());
+  const cnvsPxyRef = useRef({ px: 0, py: 0 });
+  const preFromRef = useRef(-1);
 
-  // const idx2family = useMemo(() => buildFamilyMap(list), [list]);
+  const idx2sbj = useMemo(() => buildSbjMap(list), [list]);
+  const idx2family = useMemo(() => buildFamilyMap(list), [list]);
+  const idx2chain = useMemo(() => buildChainMap(list), [list]);
 
   const addSbj = useCallback(() => {
-    const { newList, newIdx } = addSubject(list);
-    setList(newList);
+    const { newIdx, updator } = addSubject(idx2family);
+    setList(updator);
     setSlcSet(new Set([newIdx]));
-  }, [list]);
+  }, [idx2family]);
 
   const addCrs = useCallback(() => {
-    const { newList } = addCourse(list, slcSet);
-    setList(newList);
-  }, [list, slcSet]);
+    const { updator } = addCourse(idx2family, slcSet);
+    setList(updator);
+  }, [idx2family, slcSet]);
 
   const delSbj = useCallback(() => {
-    const newList: Curriculum[] = [];
-    for (const x of list) {
-      if (slcSet.has(x.idx)) continue;
-      if (x.sbjType === "COURSE") newList.push(x);
-      else {
-        const pre = setDif(x.pre, slcSet);
-        newList.push({ ...x, pre });
-      }
-    }
-    setList(newList);
+    const { updator } = deleteSubject(slcSet);
+    setList(updator);
     setSlcSet(new Set());
-  }, [list, slcSet]);
+  }, [slcSet]);
 
   const delCrs = useCallback(
     (idx: number) => {
-      const idx2family = buildFamilyMap(list);
-      const mom = idx2family.get(idx)?.mom ?? -1;
-      const newList: Curriculum[] = [];
-      for (const x of list) {
-        if (slcSet.has(x.idx)) continue;
-        if (x.mom !== idx) newList.push(x);
-        else newList.push({ ...x, mom });
-      }
-      setList(newList);
-      setSlcSet(new Set());
+      const { updator } = deleteCourse(idx2family, idx);
+      setList(updator);
+      setSlcSet(new Set(idx2family.get(idx)?.kids ?? []));
     },
-    [list, slcSet]
+    [idx2family]
+  );
+
+  const slcSbj = useCallback(
+    (e: PointerEvent | React.PointerEvent, idx: number) => {
+      let s = new Set(slcSet);
+      if (e.ctrlKey) s.add(idx);
+      else if (e.shiftKey) s.delete(idx);
+      else if (!slcSet.has(idx)) s = new Set([idx]);
+      setSlcSet(s);
+      return s;
+    },
+    [slcSet]
   );
 
   const setTreeMom = useCallback(
     (mom: number) => {
-      const idx2family = buildFamilyMap(list);
-      let testMom = mom;
-      while (testMom >= 0) {
-        if (treeDrag.has(testMom)) return;
-        testMom = idx2family.get(testMom)?.mom ?? -1;
-      }
-      const { flatIdxs } = getFlatIdxs(idx2family, treeDrag);
-      const lastBro = idx2family.get(mom)?.last ?? null;
-      const bros = generateNKeysBetween(lastBro, null, flatIdxs.length);
-      const idx2bro = new Map<number, string>();
-      for (let i = 0; i < flatIdxs.length; i++)
-        idx2bro.set(flatIdxs[i], bros[i]);
-      const newList = list.map((x) =>
-        treeDrag.has(x.idx) ? { ...x, mom, bro: idx2bro.get(x.idx) ?? "" } : x
-      );
-      setList(newList);
+      const { updator } = setMom<Curriculum>(idx2family, treeDrag, mom);
+      setList(updator);
       setTreeDrag(new Set());
     },
-    [list, treeDrag]
+    [idx2family, treeDrag]
   );
 
-  return { addSbj, addCrs, delSbj, delCrs, setTreeMom };
+  const setTreeBro = useCallback(
+    (idx: number, dir: BroDir) => {
+      const { updator } = setBro<Curriculum>(idx2family, treeDrag, idx, dir);
+      setList(updator);
+      setTreeDrag(new Set());
+    },
+    [idx2family, treeDrag]
+  );
+
+  const beginTreeDrag = useCallback((s: Set<number>) => setTreeDrag(s), []);
+  const clearTreeDrag = useCallback(() => setTreeDrag(new Set()), []);
+  const beginCnvsDrag = useCallback((s: Set<number>) => setCnvsDrag(s), []);
+  const clearCnvsDrag = useCallback(() => setCnvsDrag(new Set()), []);
+
+  const setCnvsPre = useCallback(
+    (idx: number) => {
+      const { newList } = setPre<Subject, Course>(
+        list,
+        preFromRef.current,
+        idx
+      );
+      setList(newList);
+      preFromRef.current = -1;
+    },
+    [list]
+  );
+
+  const setCnvsPos = ({ dx, dy }: { dx: number; dy: number }) => {
+    setList((prev) =>
+      prev.map((item) => {
+        if (item.sbjType === "COURSE" || !cnvsDrag.has(item.idx)) return item;
+        return { ...item, x: item.x + dx, y: item.y + dy };
+      })
+    );
+    setTreeDrag(new Set());
+  };
+
+  const setCnvsPxy = useCallback((pxy: { px: number; py: number }) => {
+    cnvsPxyRef.current = pxy;
+  }, []);
+  const getCnvsPxy = useCallback(() => cnvsPxyRef.current, []);
+
+  return {
+    list,
+    idx2sbj,
+    idx2family,
+    slcSet,
+    addSbj,
+    addCrs,
+    delSbj,
+    delCrs,
+    slcSbj,
+    setTreeMom,
+    setTreeBro,
+    treeDrag,
+    beginTreeDrag,
+    clearTreeDrag,
+    cnvsDrag,
+    beginCnvsDrag,
+    clearCnvsDrag,
+    setCnvsPre,
+    setCnvsPos,
+    setCnvsPxy,
+    getCnvsPxy,
+  };
 };

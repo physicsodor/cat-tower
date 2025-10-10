@@ -1,11 +1,13 @@
 import { useCallback, useRef } from "react";
 
+type PE = React.PointerEvent | PointerEvent;
+
 export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
   const targetRef = useRef<T | null>(null);
   const ghostRef = useRef<HTMLElement>(null);
   const pxyRef = useRef<number[]>([0, 0]);
 
-  const onPointerMove = useCallback((e: PointerEvent) => {
+  const onPointerMove = useCallback((e: PE) => {
     const ghost = ghostRef.current;
     if (!ghost) return;
     ghost.style.transform = `translate(${e.clientX - pxyRef.current[0]}px, ${
@@ -21,7 +23,7 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
   }, [onPointerMove]);
 
   const onPointerDown = useCallback(
-    (e: React.PointerEvent<T>) => {
+    (e: PE) => {
       e.preventDefault();
 
       if (e.button !== 0) return;
