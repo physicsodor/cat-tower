@@ -38,7 +38,6 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
   };
 
   const onDown = (e: PE) => {
-    e.preventDefault();
     down(e);
     setTreeDrag(new Set([idx]));
   };
@@ -58,11 +57,11 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
           <button>=</button>
         </div>
       ) : null}
-      {idx >= 0 ? (
-        <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
-          {ttl}
-        </div>
-      ) : null}
+      {/* {idx >= 0 ? ( */}
+      <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
+        {ttl}
+      </div>
+      {/* ) : null} */}
       <button onClick={onToggle}>{isOpen ? "-" : "+"}</button>
       {idx >= 0 ? <button onClick={() => delCrs(idx)}>제거</button> : null}
     </div>

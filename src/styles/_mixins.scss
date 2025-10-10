@@ -14,6 +14,10 @@
   }
 }
 
+@function C-alpha($C-name, $alpha) {
+  @return unquote("oklch(from var(#{$C-name}) l c h / #{$alpha})");
+}
+
 @mixin G-setting {
   @each $GG, $G in v.$Gap {
     --G-#{$GG}: #{$G};

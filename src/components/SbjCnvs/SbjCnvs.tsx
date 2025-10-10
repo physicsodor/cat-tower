@@ -5,9 +5,15 @@ import { useSubjectStore } from "../../context/useSubjectStore";
 type PE = React.PointerEvent | PointerEvent;
 
 const SbjCnvs = () => {
-  const { getCnvsPxy, getCnvsDrag, list, slcSet, setCnvsDrag, setCnvsPos } =
-    useSubjectStore();
-  // const [pxy, setPxy] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const {
+    getCnvsPxy,
+    getCnvsDrag,
+    idx2family,
+    idx2sbj,
+    slcSet,
+    setCnvsDrag,
+    setCnvsPos,
+  } = useSubjectStore();
   const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const rafRef = useRef(0);
 
@@ -41,20 +47,53 @@ const SbjCnvs = () => {
 
   return (
     <div className="sbj-cnvs">
-      {list.map((s) => {
-        if (s.sbjType === "SUBJECT") {
-          const isSelected = slcSet.has(s.idx);
+      <div>
+        {[...idx2family].map(([idx, info]) => {
+          if (idx < 0) return null;
+          let [x1, x2, y1, y2]: (number | null)[] = [null, null, null, null];
+          const kids = info.kids ?? [];
+          for (const kid of kids) {
+            const k = idx2sbj.get(kid);
+            if (!k || k.sbjType === "COURSE") return;
+            if (x1 === null || k.x < x1) x1 = k.x;
+            if (x2 === null || k.x > x2) x2 = k.x;
+            if (y1 === null || k.y < y1) y1 = k.y;
+            if (y2 === null || k.y > y2) y2 = k.y;
+          }
+          if (x1 === null || x2 === null || y1 === null || y2 === null)
+            return null;
           return (
-            <SbjCnvsItem
-              key={`sbj-cnvs-item-${s.idx}`}
-              info={s}
-              dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
-              isSelected={isSelected}
-            />
+            <div
+              key={`sbj-cnvs-crs-${idx}`}
+              className="sbj-cnvs-crs"
+              style={{
+                position: "absolute",
+                width: `${x2 - x1}px`,
+                height: `${y2 - y1}px`,
+                left: `${x1}px`,
+                top: `${y1}px`,
+              }}
+            ></div>
           );
-        }
-        return null;
-      })}
+        })}
+      </div>
+      <div>
+        {[...idx2sbj].map(([idx, s]) => {
+          if (s.sbjType === "SUBJECT") {
+            const isSelected = slcSet.has(idx);
+            return (
+              <SbjCnvsItem
+                key={`sbj-cnvs-item-${idx}`}
+                idx={idx}
+                info={{ ttl: s.ttl, x: s.x, y: s.y }}
+                dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
+                isSelected={isSelected}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
     </div>
   );
 };

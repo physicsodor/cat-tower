@@ -3,14 +3,16 @@ import type { Curriculum } from "../types/Curriculum";
 import { getFlatIdxs, type FamilyMap } from "./familyOp";
 import { setDif } from "./setOp";
 
-type SbjInfo = {
-  sbjType: Curriculum["sbjType"];
-  ttl: string;
-  cnt?: string;
-  dsc?: string;
-  x?: number;
-  y?: number;
-};
+type SbjInfo =
+  | { sbjType: "COURSE"; ttl: string }
+  | {
+      sbjType: "SUBJECT";
+      ttl: string;
+      cnt: string;
+      dsc: string;
+      x: number;
+      y: number;
+    };
 // type SbjMap = ReadonlyMap<number, SbjInfo>;
 
 const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
@@ -139,4 +141,11 @@ const getNewItem = (
       };
 };
 
-export { buildSbjMap, addSubject, addCourse, deleteSubject, deleteCourse };
+export {
+  buildSbjMap,
+  type SbjInfo,
+  addSubject,
+  addCourse,
+  deleteSubject,
+  deleteCourse,
+};

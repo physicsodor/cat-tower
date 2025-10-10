@@ -79,6 +79,9 @@
       margin-bottom: calc(-1 * var(--G-L));
     }
   }
+  .sbj-cnvs-crs {
+    background-color: m.C-alpha(--C-LL, 0.5);
+  }
 }
 
 .ghost {

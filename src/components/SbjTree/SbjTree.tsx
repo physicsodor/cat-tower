@@ -29,7 +29,10 @@ const SbjTree = ({ idx = -1, ttl = "Subject Tree:" }: Props) => {
 
   return (
     <div className={`sbj-tree`} onPointerDown={prevent}>
-      <SbjTreeTitle {...{ idx, ttl, isOpen, onToggle }} />
+      <SbjTreeTitle
+        key={`sbj-tree-title-${idx}`}
+        {...{ idx, ttl, isOpen, onToggle }}
+      />
       <div className={makeClassName("sbj-tree-contents", !isOpen && "hidden")}>
         {(idx2family.get(idx)?.kids ?? []).map((k) => {
           const s = idx2sbj.get(k);
