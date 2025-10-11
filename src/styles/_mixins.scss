@@ -1,5 +1,6 @@
 @use "variables" as v;
 
+// 변수 세팅
 @mixin C-setting($H-step) {
   @if map-has-key(v.$H-steps, $H-step) == false {
     @error "Unknown hue number: #{$H-step}";
@@ -13,13 +14,39 @@
     --C-#{$LL}: oklch(#{$L} #{$C} #{$H});
   }
 }
-
 @function C-alpha($C-name, $alpha) {
   @return unquote("oklch(from var(#{$C-name}) l c h / #{$alpha})");
 }
-
 @mixin G-setting {
   @each $GG, $G in v.$Gap {
     --G-#{$GG}: #{$G};
   }
+}
+
+// fixed 화면 꽉차게
+@mixin fixed-full($z-index) {
+  position: fixed;
+  z-index: $z-index;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+@mixin fixed-item($z-index) {
+  --ex-transform: none;
+  position: fixed;
+  z-index: $z-index;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%) var(--ex-transform);
+}
+
+@mixin fixed-item-center($z-index) {
+  --ex-transform: none;
+  position: fixed;
+  z-index: $z-index;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) var(--ex-transform);
 }

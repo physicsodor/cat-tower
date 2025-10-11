@@ -4,66 +4,25 @@
   @include m.G-setting;
   @include m.C-setting(7);
 }
-
-.sbj-tree {
-  width: fit-content;
-  background-color: var(--C-LL);
-
-  .sbj-tree-title {
-    padding-left: var(--G-L);
-    background-color: var(--C-L);
-    * {
-      display: inline-block;
-    }
-  }
-
-  .sbj-tree-contents {
-    border-left: var(--G-S) solid var(--C-L);
-    margin-left: var(--G-L);
-    padding-left: var(--G-M);
-    overflow: hidden;
-    &.hidden {
-      display: none;
-    }
-  }
-
-  .sbj-tree-next {
-    height: var(--G-M);
-  }
-
-  .sbj-tree-item {
-    background-color: transparent;
-    padding-left: var(--G-M);
-    padding-right: var(--G-L);
-    border: none;
-    &.-slc {
-      background-color: var(--C-B);
-    }
-  }
-
-  .-ovr {
-    &.-pre {
-      border-top: var(--G-S) solid black;
-    }
-    &.-nxt {
-      border-bottom: var(--G-S) solid black;
-    }
-  }
-}
+// z-index
+// 000 sbj-cnvs-curve
+// 001 sbj-cnvs
+// 002 sbj-cnvs-crs
+// 003 sbj-cnvs-item
+// 100 sbj-ctrl
 
 .sbj-cnvs {
-  position: relative;
+  --margin: var(--G-XL);
+  @include m.fixed-full(1);
 
   .sbj-cnvs-item {
-    position: absolute;
-    left: 0;
-    top: 0;
-    --BACK: var(--C-LL);
+    @include m.fixed-item-center(3);
+    --back: var(--C-LL);
     &.-slc {
-      --BACK: var(--C-L);
+      --back: var(--C-L);
     }
     .ttl {
-      background-color: var(--BACK);
+      background-color: var(--back);
       padding: var(--G-L);
     }
     .in,
@@ -80,11 +39,62 @@
       margin-bottom: calc(-1 * var(--G-L));
     }
   }
+  .sbj-cnvs-crs {
+    @include m.fixed-item(2);
+    background-color: m.C-alpha(--C-LL, 0.5);
+  }
   .sbj-cnvs-curve {
+    @include m.fixed-full(0);
     border: 1pt solid red;
-    position: absolute;
-    left: 0;
-    top: 0;
+  }
+}
+
+.sbj-ctrl {
+  @include m.fixed-item(100);
+  .sbj-tree {
+    width: fit-content;
+    background-color: var(--C-LL);
+
+    .sbj-tree-title {
+      padding-left: var(--G-L);
+      background-color: var(--C-L);
+      * {
+        display: inline-block;
+      }
+    }
+
+    .sbj-tree-contents {
+      border-left: var(--G-S) solid var(--C-L);
+      margin-left: var(--G-L);
+      padding-left: var(--G-M);
+      overflow: hidden;
+      &.hidden {
+        display: none;
+      }
+    }
+
+    .sbj-tree-next {
+      height: var(--G-M);
+    }
+
+    .sbj-tree-item {
+      background-color: transparent;
+      padding-left: var(--G-M);
+      padding-right: var(--G-L);
+      border: none;
+      &.-slc {
+        background-color: var(--C-B);
+      }
+    }
+
+    .-ovr {
+      &.-pre {
+        border-top: var(--G-S) solid black;
+      }
+      &.-nxt {
+        border-bottom: var(--G-S) solid black;
+      }
+    }
   }
 }
 

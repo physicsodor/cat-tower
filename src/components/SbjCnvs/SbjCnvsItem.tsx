@@ -55,18 +55,20 @@ const SbjCnvsItem = ({
   );
 
   return (
-    <div
-      ref={setRef}
-      className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
-      style={{
-        transform: `translate(${info.x + dx}px, ${info.y + dy}px)`,
-      }}
-    >
-      <div className="in">
-        {JSON.stringify(getPxy())},{JSON.stringify(exy)},{JSON.stringify(oxy)}
+    <div>
+      <div
+        ref={setRef}
+        className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
+        style={{
+          ["--ex-transform" as string]: `translate(${info.x + dx}px, ${
+            info.y + dy
+          }px)`,
+        }}
+      >
+        <div className="in" />
+        <SbjCnvsTitle idx={idx} ttl={info.ttl} />
+        <div ref={outRef} className="out" onPointerDown={onDown} />
       </div>
-      <SbjCnvsTitle idx={idx} ttl={info.ttl} />
-      <div ref={outRef} className="out" onPointerDown={onDown}></div>
       <SbjCnvsCurve pxy={getPxy()} exy={exy} oxy={oxy} />
     </div>
   );

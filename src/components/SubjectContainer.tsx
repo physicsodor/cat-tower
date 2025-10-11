@@ -8,7 +8,6 @@ const SubjectContainer = () => {
   return (
     <SubjectProvider>
       <SbjCtrl />
-      <SbjTree />
       {/* <SbjTest /> */}
       <SbjCnvs />
     </SubjectProvider>
