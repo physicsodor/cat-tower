@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import SbjCnvsItem from "./SbjCnvsItem";
 import { useSubjectStore } from "../../context/useSubjectStore";
-import SbjCnvsCrs from "./sbjCnvsCrs";
+import SbjCnvsCrs from "./SbjCnvsCrs";
 
 type PE = React.PointerEvent | PointerEvent;
 
@@ -25,19 +25,24 @@ const SbjCnvs = () => {
   const cnvsRef = useRef<HTMLDivElement | null>(null);
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const rafRef = useRef(0);
+  const fromRef = useRef(-1);
+
+  const getOxy = useCallback(() => {
+    if (!cnvsRef.current) return { ox: 0, oy: 0 };
+    const cnvsRect = cnvsRef.current.getBoundingClientRect();
+    return { ox: cnvsRect.left, oy: cnvsRect.top };
+  }, []);
 
   const crs2lrtb = useMemo(() => {
     type LRTB = { l: number; r: number; t: number; b: number };
-    if (!cnvsRef.current) return new Map<number, LRTB>();
-    const cnvsRect = cnvsRef.current.getBoundingClientRect();
-    const [x0, y0] = [cnvsRect.left, cnvsRect.top];
     const map = new Map<number, LRTB>();
     const cnvsDrag = getCnvsDrag();
+    const { ox, oy } = getOxy();
     for (const [idx, f] of idx2family) {
-      let [l, r, t, b]: (number | null)[] = [null, null, null, null];
       if (idx < 0) continue;
       const kids = f.kids;
       if (!kids) continue;
+      let [l, r, t, b]: (number | null)[] = [null, null, null, null];
       for (const k of kids) {
         const { dx, dy } = cnvsDrag.has(k) ? dxy : { dx: 0, dy: 0 };
         const kid = itemsRef.current.get(k);
@@ -48,14 +53,14 @@ const SbjCnvs = () => {
         if (t === null || t > rect.top + dy) t = rect.top;
         if (b === null || b < rect.bottom + dy) b = rect.bottom;
       }
-      l = l === null ? 0 : l - x0;
-      r = r === null ? 0 : r - x0;
-      t = t === null ? 0 : t - y0;
-      b = b === null ? 0 : b - y0;
+      l = l === null ? 0 : l - ox;
+      r = r === null ? 0 : r - ox;
+      t = t === null ? 0 : t - oy;
+      b = b === null ? 0 : b - oy;
       map.set(idx, { l, r, t, b });
     }
     return map;
-  }, [idx2family, getCnvsDrag, dxy]);
+  }, [idx2family, getCnvsDrag, dxy, getOxy]);
 
   const onGlobalMove = useCallback(
     (e: PE) => {
@@ -85,6 +90,11 @@ const SbjCnvs = () => {
     };
   }, [onGlobalMove, onGlobalUp]);
 
+  const setFrom = useCallback((idx: number) => {
+    fromRef.current = idx;
+  }, []);
+  const getFrom = useCallback(() => fromRef.current, []);
+
   return (
     <div ref={cnvsRef} className="sbj-cnvs">
       <div>
@@ -110,9 +120,12 @@ const SbjCnvs = () => {
                   if (x) itemsRef.current.set(idx, x);
                   else itemsRef.current.delete(idx);
                 }}
+                setFrom={() => setFrom(idx)}
+                getFrom={getFrom}
                 idx={idx}
                 info={{ ttl: s.ttl, x: s.x, y: s.y }}
                 dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
+                oxy={getOxy()}
                 isSelected={isSelected}
               />
             );

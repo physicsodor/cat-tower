@@ -58,11 +58,12 @@
     position: absolute;
     left: 0;
     top: 0;
-    background-color: var(--C-LL);
+    --BACK: var(--C-LL);
     &.-slc {
-      background-color: var(--C-L);
+      --BACK: var(--C-L);
     }
     .ttl {
+      background-color: var(--BACK);
       padding: var(--G-L);
     }
     .in,
@@ -79,11 +80,11 @@
       margin-bottom: calc(-1 * var(--G-L));
     }
   }
-  .sbj-cnvs-crs {
+  .sbj-cnvs-curve {
+    border: 1pt solid red;
     position: absolute;
     left: 0;
     top: 0;
-    background-color: m.C-alpha(--C-D, 0.5);
   }
 }
 
