@@ -80,7 +80,10 @@
     }
   }
   .sbj-cnvs-crs {
-    background-color: m.C-alpha(--C-LL, 0.5);
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: m.C-alpha(--C-D, 0.5);
   }
 }
 

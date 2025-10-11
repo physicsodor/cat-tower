@@ -1,6 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import SbjCnvsItem from "./SbjCnvsItem";
 import { useSubjectStore } from "../../context/useSubjectStore";
+import SbjCnvsCrs from "./sbjCnvsCrs";
 
 type PE = React.PointerEvent | PointerEvent;
 
@@ -15,7 +22,40 @@ const SbjCnvs = () => {
     setCnvsPos,
   } = useSubjectStore();
   const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  const cnvsRef = useRef<HTMLDivElement | null>(null);
+  const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const rafRef = useRef(0);
+
+  const crs2lrtb = useMemo(() => {
+    type LRTB = { l: number; r: number; t: number; b: number };
+    if (!cnvsRef.current) return new Map<number, LRTB>();
+    const cnvsRect = cnvsRef.current.getBoundingClientRect();
+    const [x0, y0] = [cnvsRect.left, cnvsRect.top];
+    const map = new Map<number, LRTB>();
+    const cnvsDrag = getCnvsDrag();
+    for (const [idx, f] of idx2family) {
+      let [l, r, t, b]: (number | null)[] = [null, null, null, null];
+      if (idx < 0) continue;
+      const kids = f.kids;
+      if (!kids) continue;
+      for (const k of kids) {
+        const { dx, dy } = cnvsDrag.has(k) ? dxy : { dx: 0, dy: 0 };
+        const kid = itemsRef.current.get(k);
+        if (!kid) continue;
+        const rect = kid.getBoundingClientRect();
+        if (l === null || l > rect.left + dx) l = rect.left;
+        if (r === null || r < rect.right + dx) r = rect.right;
+        if (t === null || t > rect.top + dy) t = rect.top;
+        if (b === null || b < rect.bottom + dy) b = rect.bottom;
+      }
+      l = l === null ? 0 : l - x0;
+      r = r === null ? 0 : r - x0;
+      t = t === null ? 0 : t - y0;
+      b = b === null ? 0 : b - y0;
+      map.set(idx, { l, r, t, b });
+    }
+    return map;
+  }, [idx2family, getCnvsDrag, dxy]);
 
   const onGlobalMove = useCallback(
     (e: PE) => {
@@ -46,36 +86,18 @@ const SbjCnvs = () => {
   }, [onGlobalMove, onGlobalUp]);
 
   return (
-    <div className="sbj-cnvs">
+    <div ref={cnvsRef} className="sbj-cnvs">
       <div>
-        {[...idx2family].map(([idx, info]) => {
-          if (idx < 0) return null;
-          let [x1, x2, y1, y2]: (number | null)[] = [null, null, null, null];
-          const kids = info.kids ?? [];
-          for (const kid of kids) {
-            const k = idx2sbj.get(kid);
-            if (!k || k.sbjType === "COURSE") return;
-            if (x1 === null || k.x < x1) x1 = k.x;
-            if (x2 === null || k.x > x2) x2 = k.x;
-            if (y1 === null || k.y < y1) y1 = k.y;
-            if (y2 === null || k.y > y2) y2 = k.y;
-          }
-          if (x1 === null || x2 === null || y1 === null || y2 === null)
-            return null;
-          return (
-            <div
-              key={`sbj-cnvs-crs-${idx}`}
-              className="sbj-cnvs-crs"
-              style={{
-                position: "absolute",
-                width: `${x2 - x1}px`,
-                height: `${y2 - y1}px`,
-                left: `${x1}px`,
-                top: `${y1}px`,
-              }}
-            ></div>
-          );
-        })}
+        {[...crs2lrtb].map(([idx, lrtb]) => (
+          <SbjCnvsCrs
+            key={`sbj-cnvs-crs-${idx}`}
+            setRef={(x) => {
+              if (x) itemsRef.current.set(idx, x);
+              else itemsRef.current.delete(idx);
+            }}
+            {...{ idx, ...lrtb }}
+          />
+        ))}
       </div>
       <div>
         {[...idx2sbj].map(([idx, s]) => {
@@ -84,6 +106,10 @@ const SbjCnvs = () => {
             return (
               <SbjCnvsItem
                 key={`sbj-cnvs-item-${idx}`}
+                setRef={(x) => {
+                  if (x) itemsRef.current.set(idx, x);
+                  else itemsRef.current.delete(idx);
+                }}
                 idx={idx}
                 info={{ ttl: s.ttl, x: s.x, y: s.y }}
                 dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
