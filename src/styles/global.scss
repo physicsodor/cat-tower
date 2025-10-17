@@ -1,22 +1,21 @@
 @use "mixins" as m;
-
 :root {
   @include m.G-setting;
   @include m.C-setting(7);
+  --z-sbj-cnvs-curve: 0;
+  --z-sbj-cnvs: 1;
+  --z-sbj-cnvs-crs: 2;
+  --z-sbj-cnvs-item: 3;
+  --z-sbj-ctrl: 100;
+  --z-ghost: 999;
 }
-// z-index
-// 000 sbj-cnvs-curve
-// 001 sbj-cnvs
-// 002 sbj-cnvs-crs
-// 003 sbj-cnvs-item
-// 100 sbj-ctrl
 
 .sbj-cnvs {
   --margin: var(--G-XL);
-  @include m.fixed-full(1);
+  @include m.fixed-full(--z-sbj-cnvs);
 
-  .sbj-cnvs-item {
-    @include m.fixed-item-center(3);
+  &-item {
+    @include m.fixed-item-center(--z-sbj-cnvs-item);
     --back: var(--C-LL);
     &.-slc {
       --back: var(--C-L);
@@ -39,31 +38,37 @@
       margin-bottom: calc(-1 * var(--G-L));
     }
   }
-  .sbj-cnvs-crs {
-    @include m.fixed-item(2);
+  &-crs {
+    @include m.fixed-item(--z-sbj-cnvs-crs);
     background-color: m.C-alpha(--C-LL, 0.5);
   }
-  .sbj-cnvs-curve {
-    @include m.fixed-full(0);
-    border: 1pt solid red;
+  &-curve {
+    @include m.fixed-full(--z-sbj-cnvs-curve);
+    svg {
+      width: 100%;
+      height: 100%;
+      path {
+        stroke: var(--C-DD);
+        stroke-width: var(--G-M);
+        fill: none;
+      }
+    }
   }
 }
 
 .sbj-ctrl {
-  @include m.fixed-item(100);
+  @include m.fixed-item(--z-sbj-ctrl);
   .sbj-tree {
     width: fit-content;
     background-color: var(--C-LL);
 
-    .sbj-tree-title {
+    &-title {
+      display: flex;
       padding-left: var(--G-L);
       background-color: var(--C-L);
-      * {
-        display: inline-block;
-      }
     }
 
-    .sbj-tree-contents {
+    &-contents {
       border-left: var(--G-S) solid var(--C-L);
       margin-left: var(--G-L);
       padding-left: var(--G-M);
@@ -73,20 +78,22 @@
       }
     }
 
-    .sbj-tree-next {
+    &-next {
       height: var(--G-M);
     }
 
-    .sbj-tree-item {
+    &-item {
       background-color: transparent;
       padding-left: var(--G-M);
       padding-right: var(--G-L);
       border: none;
+      &:hover {
+        background-color: rgb(0 0 0/0.1);
+      }
       &.-slc {
         background-color: var(--C-B);
       }
     }
-
     .-ovr {
       &.-pre {
         border-top: var(--G-S) solid black;
@@ -102,5 +109,38 @@
   position: fixed;
   pointer-events: none;
   opacity: 0.5;
-  z-index: 999;
+  z-index: var(--z-ghost);
+}
+
+.bttn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto 0;
+  svg {
+    rect {
+      fill: m.C-alpha(--C-L, 0.7);
+      stroke: rgb(0 0 0/0.2);
+    }
+    g {
+      stroke: var(--C-DD);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+  }
+  svg:hover > rect {
+    fill: m.C-alpha(--C-LL, 0.7);
+  }
+  svg:active {
+    rect {
+      fill: m.C-alpha(--C-DD, 0.7);
+    }
+    g {
+      stroke: var(--C-LL);
+    }
+  }
+  &.del {
+    @include m.C-setting(1);
+  }
 }

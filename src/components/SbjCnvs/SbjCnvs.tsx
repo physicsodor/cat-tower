@@ -1,7 +1,7 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -10,6 +10,7 @@ import { useSubjectStore } from "../../context/useSubjectStore";
 import SbjCnvsCrs from "./SbjCnvsCrs";
 
 type PE = React.PointerEvent | PointerEvent;
+type LRTB = { l: number; r: number; t: number; b: number };
 
 const SbjCnvs = () => {
   const {
@@ -22,45 +23,37 @@ const SbjCnvs = () => {
     setCnvsPos,
   } = useSubjectStore();
   const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
-  const cnvsRef = useRef<HTMLDivElement | null>(null);
+  const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const rafRef = useRef(0);
   const fromRef = useRef(-1);
 
-  const getOxy = useCallback(() => {
-    if (!cnvsRef.current) return { ox: 0, oy: 0 };
-    const cnvsRect = cnvsRef.current.getBoundingClientRect();
-    return { ox: cnvsRect.left, oy: cnvsRect.top };
-  }, []);
-
-  const crs2lrtb = useMemo(() => {
-    type LRTB = { l: number; r: number; t: number; b: number };
+  useLayoutEffect(() => {
     const map = new Map<number, LRTB>();
-    const cnvsDrag = getCnvsDrag();
-    const { ox, oy } = getOxy();
     for (const [idx, f] of idx2family) {
       if (idx < 0) continue;
       const kids = f.kids;
       if (!kids) continue;
-      let [l, r, t, b]: (number | null)[] = [null, null, null, null];
+
+      let lrtb: LRTB | null = null;
       for (const k of kids) {
-        const { dx, dy } = cnvsDrag.has(k) ? dxy : { dx: 0, dy: 0 };
         const kid = itemsRef.current.get(k);
         if (!kid) continue;
         const rect = kid.getBoundingClientRect();
-        if (l === null || l > rect.left + dx) l = rect.left;
-        if (r === null || r < rect.right + dx) r = rect.right;
-        if (t === null || t > rect.top + dy) t = rect.top;
-        if (b === null || b < rect.bottom + dy) b = rect.bottom;
+        if (lrtb === null)
+          lrtb = { l: rect.left, r: rect.right, t: rect.top, b: rect.bottom };
+        else
+          lrtb = {
+            l: Math.min(lrtb.l, rect.left),
+            r: Math.max(lrtb.r, rect.right),
+            t: Math.min(lrtb.t, rect.top),
+            b: Math.max(lrtb.b, rect.bottom),
+          };
       }
-      l = l === null ? 0 : l - ox;
-      r = r === null ? 0 : r - ox;
-      t = t === null ? 0 : t - oy;
-      b = b === null ? 0 : b - oy;
-      map.set(idx, { l, r, t, b });
+      if (lrtb !== null) map.set(idx, lrtb);
     }
-    return map;
-  }, [idx2family, getCnvsDrag, dxy, getOxy]);
+    setLrtbMap(map);
+  }, [idx2family, dxy]);
 
   const onGlobalMove = useCallback(
     (e: PE) => {
@@ -96,9 +89,9 @@ const SbjCnvs = () => {
   const getFrom = useCallback(() => fromRef.current, []);
 
   return (
-    <div ref={cnvsRef} className="sbj-cnvs">
+    <div className="sbj-cnvs">
       <div>
-        {[...crs2lrtb].map(([idx, lrtb]) => (
+        {[...lrtbMap].map(([idx, lrtb]) => (
           <SbjCnvsCrs
             key={`sbj-cnvs-crs-${idx}`}
             setRef={(x) => {
@@ -125,7 +118,6 @@ const SbjCnvs = () => {
                 idx={idx}
                 info={{ ttl: s.ttl, x: s.x, y: s.y }}
                 dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
-                oxy={getOxy()}
                 isSelected={isSelected}
               />
             );

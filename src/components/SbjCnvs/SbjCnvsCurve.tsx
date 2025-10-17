@@ -1,19 +1,20 @@
 type Props = {
   pxy: { px: number; py: number };
   exy: { ex: number; ey: number } | null;
-  oxy: { ox: number; oy: number };
 };
 
-const SbjCnvsCurve = ({ pxy: { px, py }, exy, oxy: { ox, oy } }: Props) => {
+const SbjCnvsCurve = ({ pxy: { px, py }, exy }: Props) => {
   if (!exy) return null;
   const { ex, ey } = exy;
-  const d = `M ${px - ox} ${py - oy} C ${px - ox} ${(py + ey) / 2 - oy}, ${
-    ex - ox
-  } ${(py + ey) / 2 - oy}, ${ex - ox} ${ey - oy}`;
+  const m =
+    ey > py
+      ? `${px} ${(py + ey) / 2}, ${ex} ${(py + ey) / 2}`
+      : `${(px + ex) / 2} ${py}, ${(px + ex) / 2} ${ey}`;
+  const d = `M ${px} ${py} C ${m}, ${ex} ${ey}`;
   return (
     <div className="sbj-cnvs-curve">
-      <svg width="100%" height="100%">
-        <path d={d} stroke="var(--C-DD)" strokeWidth={3} fill="none" />
+      <svg>
+        <path d={d} />
       </svg>
     </div>
   );

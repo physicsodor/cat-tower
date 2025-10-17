@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { makeClassName } from "../../utils/makeClassName";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import SbjCnvsTitle from "./SbjCnvsTitle";
@@ -12,7 +12,6 @@ type Props = {
   idx: number;
   info: { ttl: string; x: number; y: number };
   dxy: { dx: number; dy: number };
-  oxy: { ox: number; oy: number };
   isSelected: boolean;
 };
 
@@ -23,7 +22,6 @@ const SbjCnvsItem = ({
   getFrom,
   info,
   dxy: { dx, dy },
-  oxy,
   isSelected,
 }: Props) => {
   const [exy, setExy] = useState<{ ex: number; ey: number } | null>(null);
@@ -31,7 +29,7 @@ const SbjCnvsItem = ({
   const getPxy = useCallback(() => {
     if (!outRef.current) return { px: 0, py: 0 };
     const rect = outRef.current.getBoundingClientRect();
-    return { px: rect.left + rect.width / 2, py: rect.top };
+    return { px: rect.left + rect.width / 2, py: rect.top + rect.height / 2 };
   }, []);
 
   const onGlobalMove = useCallback((e: PE) => {
@@ -69,7 +67,7 @@ const SbjCnvsItem = ({
         <SbjCnvsTitle idx={idx} ttl={info.ttl} />
         <div ref={outRef} className="out" onPointerDown={onDown} />
       </div>
-      <SbjCnvsCurve pxy={getPxy()} exy={exy} oxy={oxy} />
+      <SbjCnvsCurve pxy={getPxy()} exy={exy} />
     </div>
   );
 };

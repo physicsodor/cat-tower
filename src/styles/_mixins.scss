@@ -24,28 +24,30 @@
 }
 
 // fixed 화면 꽉차게
-@mixin fixed-full($z-index) {
+@mixin fixed($z-index-name) {
   position: fixed;
-  z-index: $z-index;
+  z-index: var($z-index-name);
+}
+
+@mixin fixed-full($z-index-name) {
+  @include fixed($z-index-name);
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
 }
 
-@mixin fixed-item($z-index) {
+@mixin fixed-item($z-index-name) {
+  @include fixed($z-index-name);
   --ex-transform: none;
-  position: fixed;
-  z-index: $z-index;
   left: 0;
   top: 0;
   transform: translate(-50%, -50%) var(--ex-transform);
 }
 
-@mixin fixed-item-center($z-index) {
+@mixin fixed-item-center($z-index-name) {
+  @include fixed($z-index-name);
   --ex-transform: none;
-  position: fixed;
-  z-index: $z-index;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) var(--ex-transform);

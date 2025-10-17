@@ -3,6 +3,9 @@ import { useDragGhost } from "../../hooks/useDragGhost";
 import { makeClassName } from "../../utils/makeClassName";
 import { useSubjectStore } from "../../context/useSubjectStore";
 import type { BroDir } from "../../utils/familyOp";
+import BttnVert from "../Bttn/BttnVert";
+import BttnPM from "../Bttn/BttnPM";
+import BttnDel from "../Bttn/BttnDel";
 
 type Props = {
   idx: number;
@@ -10,7 +13,7 @@ type Props = {
   isOpen: boolean;
   onToggle: () => void;
 };
-type PE = React.PointerEvent<HTMLDivElement>;
+type PE = React.PointerEvent | PointerEvent;
 
 const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
   const { setTreeDrag, getTreeDrag, delCrs, setTreeBro, setTreeMom } =
@@ -38,6 +41,7 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
   };
 
   const onDown = (e: PE) => {
+    e.preventDefault();
     down(e);
     setTreeDrag(new Set([idx]));
   };
@@ -52,18 +56,12 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
         dir === "RIGHT" && "-nxt"
       )}
     >
-      {idx >= 0 ? (
-        <div onPointerDown={onDown}>
-          <button>=</button>
-        </div>
-      ) : null}
-      {/* {idx >= 0 ? ( */}
+      {idx >= 0 ? <BttnVert onDown={onDown} /> : null}
       <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
         {ttl}
       </div>
-      {/* ) : null} */}
-      <button onClick={onToggle}>{isOpen ? "-" : "+"}</button>
-      {idx >= 0 ? <button onClick={() => delCrs(idx)}>제거</button> : null}
+      <BttnPM isPlus={!isOpen} onDown={onToggle} />
+      {idx >= 0 && isOpen ? <BttnDel onDown={() => delCrs(idx)} /> : null}
     </div>
   );
 };
