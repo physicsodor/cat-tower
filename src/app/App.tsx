@@ -1,4 +1,4 @@
-import SubjectContainer from "./components/SubjectContainer";
+import SubjectContainer from "../components/SubjectContainer";
 
 function App() {
   return (

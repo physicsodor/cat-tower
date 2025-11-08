@@ -38,13 +38,22 @@
     .out {
       margin-bottom: calc(-1 * var(--G-L));
     }
+    .sum{
+      width: fit-content;
+      height: 0;
+      margin-left: auto;
+      transform: translate(100%, 100%);
+      div{
+        width: fit-content;
+        white-space: 0;
+      }
+    }
   }
   &-crs {
-    @include m.fixed-item(--z-sbj-cnvs-crs);
-    &-bck {
-      @include m.fixed-item(--z-sbj-cnvs-crs-bck);
-      background-color: m.C-alpha(--C-LL, 0.5);
-    }
+    --z: --z-sbj-cnvs-crs;
+    &.-bck{--z:var(--z-sbj-cnvs-crs-bck); background-color: m.C-alpha(--C-LL, 0.5);}
+    @include m.fixed-item(--z);
+    @include m.box-lrtb-gap(--G-XL);
   }
   &-curve {
     @include m.fixed-full(--z-sbj-cnvs-curve);

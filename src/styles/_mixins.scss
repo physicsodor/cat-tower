@@ -52,3 +52,12 @@
   top: 50%;
   transform: translate(-50%, -50%) var(--ex-transform);
 }
+
+@mixin box-lrtb-gap($G) {
+  width: calc(var(--r) - var(--l) + 2 * var(#{$G}));
+  height: calc(var(--b) - var(--t) + 2 * var(#{$G}));
+  transform: translate(
+    calc(var(--l) - var(#{$G})),
+    calc(var(--t) - var(#{$G}))
+  );
+}

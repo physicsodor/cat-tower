@@ -23,7 +23,7 @@ const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
               if (x) items.set(idx, x);
               else items.delete(idx);
             }}
-            {...{ idx, ...lrtb, back }}
+            {...{ idx, lrtb, back }}
           />
         );
       })}

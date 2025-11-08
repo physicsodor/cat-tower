@@ -5,12 +5,12 @@ import SbjCnvsTitle from "./SbjCnvsTitle";
 import { useSubjectStore } from "../../context/useSubjectStore";
 
 type PE = React.PointerEvent | PointerEvent;
+// type ME = React.MouseEvent | MouseEvent;
 
 type Props = {
   setRef: (x: HTMLDivElement | null) => void;
-  // setFrom: () => void;
   idx: number;
-  info: { ttl: string; x: number; y: number };
+  info: { ttl: string; cnt: string; dsc: string; x: number; y: number };
   dxy: { dx: number; dy: number };
   isSelected: boolean;
 };
@@ -18,13 +18,13 @@ type Props = {
 const SbjCnvsItem = ({
   idx,
   setRef,
-  // setFrom,
   info,
   dxy: { dx, dy },
   isSelected,
 }: Props) => {
   const { setPreFrom, setCnvsPre } = useSubjectStore();
   const [exy, setExy] = useState<{ ex: number; ey: number } | null>(null);
+  const [isOver, setIsOver] = useState(true);
   const outRef = useRef<HTMLDivElement | null>(null);
 
   const getPxy = useCallback(() => {
@@ -59,7 +59,10 @@ const SbjCnvsItem = ({
   }, [idx, setCnvsPre]);
 
   return (
-    <div>
+    <div
+      onMouseOver={() => setIsOver(true)}
+      onMouseLeave={() => setIsOver(false)}
+    >
       <div
         ref={setRef}
         className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
@@ -69,6 +72,14 @@ const SbjCnvsItem = ({
           }px)`,
         }}
       >
+        {isOver ? (
+          <div className="sum">
+            <div>{info.ttl}</div>
+            <div>{!info.cnt ? "내용" : info.cnt}</div>
+            <div>{!info.dsc ? "설명" : info.dsc}</div>
+            <div></div>
+          </div>
+        ) : null}
         <div className="in" onPointerUp={onUp} />
         <SbjCnvsTitle idx={idx} ttl={info.ttl} />
         <div ref={outRef} className="out" onPointerDown={onDown} />

@@ -2,7 +2,7 @@ import { useSubjectStore } from "../../context/useSubjectStore";
 import SbjTree from "../SbjTree/SbjTree";
 
 const SbjCtrl = () => {
-  const { addCrs, addSbj, delSbj, idx2chain } = useSubjectStore();
+  const { addCrs, addSbj, delSbj } = useSubjectStore();
   return (
     <div className="sbj-ctrl">
       <div>

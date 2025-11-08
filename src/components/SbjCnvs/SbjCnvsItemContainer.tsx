@@ -21,7 +21,7 @@ const SbjCnvsItemContainer = ({ items, dxy }: Props) => {
                 else items.delete(idx);
               }}
               idx={idx}
-              info={{ ttl: s.ttl, x: s.x, y: s.y }}
+              info={s}
               dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
               isSelected={isSelected}
             />
