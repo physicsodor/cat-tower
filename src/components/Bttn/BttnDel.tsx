@@ -36,3 +36,4 @@ const BttnDel = ({ size = "1.4rem", onDown = () => {} }: Props) => {
 };
 
 export default BttnDel;
+

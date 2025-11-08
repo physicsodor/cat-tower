@@ -3,3 +3,4 @@ export const r = 5;
 export const th = 3;
 
 export const o = (x: number) => ((1 + x) * sz) / 2;
+
