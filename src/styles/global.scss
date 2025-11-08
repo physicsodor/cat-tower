@@ -3,9 +3,10 @@
   @include m.G-setting;
   @include m.C-setting(7);
   --z-sbj-cnvs-curve: 0;
-  --z-sbj-cnvs: 1;
-  --z-sbj-cnvs-crs: 2;
-  --z-sbj-cnvs-item: 3;
+  --z-sbj-cnvs-crs-bck: 1
+  --z-sbj-cnvs: 2;
+  --z-sbj-cnvs-crs: 3;
+  --z-sbj-cnvs-item: 4;
   --z-sbj-ctrl: 100;
   --z-ghost: 999;
 }
@@ -40,7 +41,10 @@
   }
   &-crs {
     @include m.fixed-item(--z-sbj-cnvs-crs);
-    background-color: m.C-alpha(--C-LL, 0.5);
+    &-bck {
+      @include m.fixed-item(--z-sbj-cnvs-crs-bck);
+      background-color: m.C-alpha(--C-LL, 0.5);
+    }
   }
   &-curve {
     @include m.fixed-full(--z-sbj-cnvs-curve);

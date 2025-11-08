@@ -82,17 +82,22 @@ export const useSubject = () => {
     [idx2family]
   );
 
+  const setPreFrom = useCallback((idx: number) => {
+    preFromRef.current = idx;
+  }, []);
+  const getPreFrom = useCallback(() => preFromRef.current, []);
+
   const setCnvsPre = useCallback(
     (idx: number) => {
-      const { newList } = setPre<Subject, Course>(
-        list,
+      const { updator } = setPre<Subject, Course>(
+        idx2chain,
         preFromRef.current,
         idx
       );
-      setList(newList);
+      setList(updator);
       preFromRef.current = -1;
     },
-    [list]
+    [idx2chain]
   );
 
   const setCnvsPos = (
@@ -127,6 +132,8 @@ export const useSubject = () => {
     list,
     idx2sbj,
     idx2family,
+    idx2chain,
+    // preFrom,
     addSbj,
     addCrs,
     delSbj,
@@ -143,5 +150,7 @@ export const useSubject = () => {
     setCnvsPos,
     setCnvsPxy,
     getCnvsPxy,
+    setPreFrom,
+    getPreFrom,
   };
 };

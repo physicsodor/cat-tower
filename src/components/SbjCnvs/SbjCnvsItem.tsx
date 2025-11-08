@@ -2,13 +2,13 @@ import React, { useCallback, useRef, useState } from "react";
 import { makeClassName } from "../../utils/makeClassName";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import SbjCnvsTitle from "./SbjCnvsTitle";
+import { useSubjectStore } from "../../context/useSubjectStore";
 
 type PE = React.PointerEvent | PointerEvent;
 
 type Props = {
   setRef: (x: HTMLDivElement | null) => void;
-  setFrom: () => void;
-  getFrom: () => void;
+  // setFrom: () => void;
   idx: number;
   info: { ttl: string; x: number; y: number };
   dxy: { dx: number; dy: number };
@@ -18,14 +18,15 @@ type Props = {
 const SbjCnvsItem = ({
   idx,
   setRef,
-  setFrom,
-  getFrom,
+  // setFrom,
   info,
   dxy: { dx, dy },
   isSelected,
 }: Props) => {
+  const { setPreFrom, setCnvsPre } = useSubjectStore();
   const [exy, setExy] = useState<{ ex: number; ey: number } | null>(null);
   const outRef = useRef<HTMLDivElement | null>(null);
+
   const getPxy = useCallback(() => {
     if (!outRef.current) return { px: 0, py: 0 };
     const rect = outRef.current.getBoundingClientRect();
@@ -38,19 +39,24 @@ const SbjCnvsItem = ({
 
   const onGlobalUp = useCallback(() => {
     setExy(null);
+    setPreFrom(-1);
     window.removeEventListener("pointermove", onGlobalMove);
     window.removeEventListener("pointerup", onGlobalUp);
-  }, [onGlobalMove]);
+  }, [onGlobalMove, setPreFrom]);
 
   const onDown = useCallback(
     (e: PE) => {
       e.preventDefault();
-      setFrom();
+      setPreFrom(idx);
       window.addEventListener("pointermove", onGlobalMove);
       window.addEventListener("pointerup", onGlobalUp);
     },
-    [onGlobalMove, onGlobalUp, setFrom]
+    [onGlobalMove, onGlobalUp, setPreFrom, idx]
   );
+
+  const onUp = useCallback(() => {
+    setCnvsPre(idx);
+  }, [idx, setCnvsPre]);
 
   return (
     <div>
@@ -63,7 +69,7 @@ const SbjCnvsItem = ({
           }px)`,
         }}
       >
-        <div className="in" />
+        <div className="in" onPointerUp={onUp} />
         <SbjCnvsTitle idx={idx} ttl={info.ttl} />
         <div ref={outRef} className="out" onPointerDown={onDown} />
       </div>

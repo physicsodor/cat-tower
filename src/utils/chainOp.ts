@@ -56,14 +56,55 @@ const buildChainMap = <T extends Chain, S extends IdxItem>(
 };
 
 const setPre = <T extends Chain, S extends IdxItem>(
-  list: ReadonlyArray<T | S>,
+  idx2chain: ChainMap,
   idxFrom: number,
   idxTo: number
-): { newList: (T | S)[] } => {
-  if (idxFrom < 0) return { newList: list as (T | S)[] };
-  const idx2chain = buildChainMap<T, S>(list);
-  const newList = [...list];
-  return { newList };
+): { updator: (list: ReadonlyArray<T | S>) => (T | S)[] } => {
+  const DEF = { updator: (list: ReadonlyArray<T | S>) => list as (T | S)[] };
+
+  const fromChain = idx2chain.get(idxFrom);
+  if (!fromChain) return DEF;
+  const toChain = idx2chain.get(idxTo);
+  if (!toChain) return DEF;
+
+  // if idxFrom, idxTo make a cycle, then do not update.
+  if (toChain.nxtSet?.has(idxFrom)) return DEF;
+
+  // if idxFrom, idxTo make shortcuts, then remove the shortcuts.
+  if (fromChain.nxtSet?.has(idxTo)) return DEF;
+  const kill = new Map<number, number[]>();
+  if (fromChain.nxt && toChain.nxtSet) {
+    for (const n of fromChain.nxt) {
+      if (toChain.nxtSet.has(n)) kill.set(n, [idxFrom]);
+    }
+  }
+  if (fromChain.preSet) {
+    const arr = [];
+    for (const p of fromChain.preSet) {
+      if (idx2chain.get(p)?.nxt?.has(idxTo)) arr.push(p);
+    }
+    if (arr.length > 0) kill.set(idxTo, arr);
+  }
+
+  const updator = (list: ReadonlyArray<T | S>) => {
+    return list.map((x) => {
+      if (!isChain<T>(x)) return x;
+      const pre = new Set(x.pre);
+      let noChange = true;
+      if (x.idx === idxTo) {
+        noChange = false;
+        pre.add(idxFrom);
+      }
+      const k = kill.get(x.idx);
+      if (k) {
+        noChange = false;
+        for (const i of k) pre.delete(i);
+      }
+      return noChange ? x : { ...x, pre };
+    });
+  };
+
+  return { updator };
 };
 
 export { buildChainMap, setPre };
