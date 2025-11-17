@@ -16,4 +16,3 @@ export interface Course extends Family {
   ttl: string;
   sbjType: "COURSE";
 }
-

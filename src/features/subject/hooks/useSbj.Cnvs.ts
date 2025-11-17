@@ -22,7 +22,7 @@ export const useSbjCnvs = (
       setList(updator);
       preFrom.set(-1);
     },
-    [idx2chain, preFrom, setList]
+    [idx2chain, setList, preFrom]
   );
 
   const setCnvsPos = (

@@ -1,7 +1,7 @@
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import type { Curriculum } from "@/features/subject/types/Curriculum";
 import { getFlatIdxs, type FamilyMap } from "@/features/subject/utils/familyOp";
-import { setDif } from "@/features/subject/utils/setOp";
+import { setDif } from "@/utils/setOp";
 
 type SbjInfo =
   | { sbjType: "COURSE"; ttl: string }

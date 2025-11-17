@@ -1,6 +1,6 @@
 import { isChain, type Chain } from "@/features/subject/types/Chain";
 import type { IdxItem } from "@/features/subject/types/IdxItem";
-import { setAdd } from "@/features/subject/utils/setOp";
+import { setAdd } from "@/utils/setOp";
 
 type ChainInfo = {
   pre?: Set<number>;

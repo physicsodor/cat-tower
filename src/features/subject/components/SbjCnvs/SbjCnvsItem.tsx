@@ -28,7 +28,7 @@ const SbjCnvsItem = ({
 }: Props) => {
   const { setCnvsPre, preFrom } = useSbjStore();
   const [exy, setExy] = useState<{ ex: number; ey: number } | null>(null);
-  const [isOver, setIsOver] = useState(true);
+  const [isOver, setIsOver] = useState(false);
   const outRef = useRef<HTMLDivElement | null>(null);
 
   const getPxy = useCallback(() => {

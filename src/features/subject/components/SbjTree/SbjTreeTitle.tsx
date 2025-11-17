@@ -6,7 +6,6 @@ import BttnVert from "@/components/Bttn/BttnVert";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
 import { useSbjStore } from "@/features/subject/context/SbjContext";
-import { useSbjTreeStore } from "@/features/subject/context/SbjTreeContext";
 
 type Props = {
   idx: number;
@@ -17,8 +16,7 @@ type Props = {
 type PE = React.PointerEvent | PointerEvent;
 
 const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
-  const { delCrs } = useSbjStore();
-  const { treeDrag, setTreeBro, setTreeMom } = useSbjTreeStore();
+  const { delCrs, treeDrag, setTreeBro, setTreeMom } = useSbjStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 

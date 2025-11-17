@@ -3,14 +3,12 @@ import React, { useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
 import type { BroDir } from "@/features/subject/utils/familyOp";
 import { useSbjStore } from "../../context/SbjContext";
-import { useSbjTreeStore } from "../../context/SbjTreeContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; ttl: string };
 
 const SbjTreeItem = ({ idx, ttl }: Props) => {
-  const { slcSet, slcSbj } = useSbjStore();
-  const { treeDrag, setTreeBro } = useSbjTreeStore();
+  const { slcSet, slcSbj, treeDrag, setTreeBro } = useSbjStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 

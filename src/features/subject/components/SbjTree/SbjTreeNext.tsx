@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjTreeStore } from "../../context/SbjTreeContext";
+import { useSbjStore } from "../../context/SbjContext";
 
 type Props = { idx: number };
 type PE = React.PointerEvent<HTMLDivElement>;
 
 const SbjTreeNext = ({ idx }: Props) => {
-  const { treeDrag, setTreeBro } = useSbjTreeStore();
+  const { treeDrag, setTreeBro } = useSbjStore();
   const [isOn, setIsOn] = useState(false);
 
   const onUp = (e: PE) => {

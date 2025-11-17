@@ -4,20 +4,20 @@ import type { Curriculum } from "@/features/subject/types/Curriculum";
 export const useSbjState = () => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
   const [slcSet, setSlcSet] = useState(new Set<number>());
-  // const treeDragRef = useRef(new Set<number>());
+  const treeDragRef = useRef(new Set<number>());
   const cnvsDragRef = useRef(new Set<number>());
   const cnvsPxyRef = useRef({ px: 0, py: 0 });
   const preFromRef = useRef(-1);
 
-  // const treeDrag = useMemo(
-  //   () => ({
-  //     get: () => treeDragRef.current,
-  //     set: (s: Set<number>) => {
-  //       treeDragRef.current = s;
-  //     },
-  //   }),
-  //   []
-  // );
+  const treeDrag = useMemo(
+    () => ({
+      get: () => treeDragRef.current,
+      set: (s: Set<number>) => {
+        treeDragRef.current = s;
+      },
+    }),
+    []
+  );
   const cnvsDrag = useMemo(
     () => ({
       get: () => cnvsDragRef.current,
@@ -51,7 +51,7 @@ export const useSbjState = () => {
     setList,
     slcSet,
     setSlcSet,
-    // treeDrag,
+    treeDrag,
     cnvsDrag,
     cnvsPxy,
     preFrom,

@@ -4,14 +4,12 @@ import SbjTreeNext from "./SbjTreeNext";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjStore } from "../../context/SbjContext";
-import { useSbjTreeStore } from "../../context/SbjTreeContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx?: number; ttl?: string };
 
 const SbjTreeBox = ({ idx = -1, ttl = "Subject Tree:" }: Props) => {
-  const { idx2sbj, idx2family } = useSbjStore();
-  const { treeDrag } = useSbjTreeStore();
+  const { idx2sbj, idx2family, treeDrag } = useSbjStore();
 
   const [isOpen, setIsOpen] = useState(idx !== -1);
 
