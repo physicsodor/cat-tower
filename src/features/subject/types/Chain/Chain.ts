@@ -1,4 +1,4 @@
-import type { IdxItem } from "./IdxItem";
+import type { IdxItem } from "@/features/subject/types/IdxItem/IdxItem";
 
 export interface Chain extends IdxItem {
   pre: Set<number>;

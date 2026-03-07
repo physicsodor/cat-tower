@@ -1,20 +1,20 @@
 import { useCallback } from "react";
 
 export const useSbjSelection = (
-  slcSet: ReadonlySet<number>,
-  setSlcSet: React.Dispatch<React.SetStateAction<Set<number>>>
+  selectedSet: ReadonlySet<number>,
+  setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>
 ) => {
-  const slcSbj = useCallback(
+  const selectItem = useCallback(
     (e: PointerEvent | React.PointerEvent, idx: number) => {
-      let s = new Set(slcSet);
+      let s = new Set(selectedSet);
       if (e.ctrlKey) s.add(idx);
       else if (e.shiftKey) s.delete(idx);
-      else if (!slcSet.has(idx)) s = new Set([idx]);
-      setSlcSet(s);
+      else if (!selectedSet.has(idx)) s = new Set([idx]);
+      setSelectedSet(s);
       return s;
     },
-    [slcSet, setSlcSet]
+    [selectedSet, setSelectedSet]
   );
 
-  return { slcSbj };
+  return { selectItem };
 };

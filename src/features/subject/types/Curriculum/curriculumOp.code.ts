@@ -1,4 +1,4 @@
-﻿import type { Course, Curriculum, Subject } from "../types/Curriculum";
+﻿import type { Course, Curriculum, Subject } from "./Curriculum";
 import { zipText, unzipText } from "@/utils/textZip";
 
 type XCourse = Course;
@@ -19,7 +19,7 @@ export const decodeList = (s: string): Curriculum[] => {
     const isRecord = (x: unknown): x is Record<string, unknown> =>
       typeof x === "object" && x !== null;
     const isXCourse = (x: unknown): x is XCourse =>
-      isRecord(x) && x["sbjType"] === "COURSE" && typeof x["ttl"] === "string";
+      isRecord(x) && x["sbjType"] === "COURSE" && typeof x["title"] === "string";
     const isXSubject = (x: unknown): x is XSubject => {
       if (!isRecord(x) || x["sbjType"] !== "SUBJECT") return false;
       const pre = (x as Record<string, unknown>)["pre"];

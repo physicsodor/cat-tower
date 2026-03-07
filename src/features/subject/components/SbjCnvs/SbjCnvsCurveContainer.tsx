@@ -18,8 +18,8 @@ const SbjCnvsCurveContainer = ({ lrtbMap }: Props) => {
           return (
             <SbjCnvsCurve
               key={`sbj-cnvs-curve-${i}-${idx}`}
-              pxy={{ px: (fromLrtb.l + fromLrtb.r) / 2, py: fromLrtb.b }}
-              exy={{ ex: (toLrtb.l + toLrtb.r) / 2, ey: toLrtb.t }}
+              sourcePos={{ x: (fromLrtb.l + fromLrtb.r) / 2, y: fromLrtb.b }}
+              mousePos={{ x: (toLrtb.l + toLrtb.r) / 2, y: toLrtb.t }}
             />
           );
         });

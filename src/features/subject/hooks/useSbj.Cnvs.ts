@@ -3,26 +3,26 @@ import type {
   Course,
   Curriculum,
   Subject,
-} from "@/features/subject/types/Curriculum";
-import { setPre, type ChainMap } from "@/features/subject/utils/chainOp";
+} from "@/features/subject/types/Curriculum/Curriculum";
+import { setPre, type ChainMap } from "@/features/subject/types/Chain/chainOp";
 import type { GetSet } from "@/types/GetSet";
 
 export const useSbjCnvs = (
   idx2chain: ChainMap,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
-  preFrom: GetSet<number>
+  preSource: GetSet<number>
 ) => {
   const setCnvsPre = useCallback(
     (idx: number) => {
-      const { updator } = setPre<Subject, Course>(
+      const { updater } = setPre<Subject, Course>(
         idx2chain,
-        preFrom.get(),
+        preSource.get(),
         idx
       );
-      setList(updator);
-      preFrom.set(-1);
+      setList(updater);
+      preSource.set(-1);
     },
-    [idx2chain, setList, preFrom]
+    [idx2chain, setList, preSource]
   );
 
   const setCnvsPos = (

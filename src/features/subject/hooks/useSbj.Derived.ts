@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { buildSbjMap } from "@/features/subject/utils/curriculumOp";
-import { buildFamilyMap } from "@/features/subject/utils/familyOp";
-import { buildChainMap } from "@/features/subject/utils/chainOp";
-import type { Curriculum } from "@/features/subject/types/Curriculum";
+import { buildSbjMap } from "@/features/subject/types/Curriculum/curriculumOp";
+import { buildFamilyMap } from "@/features/subject/types/Family/familyOp";
+import { buildChainMap } from "@/features/subject/types/Chain/chainOp";
+import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 
 export const useSbjDerived = (list: ReadonlyArray<Curriculum>) => {
   const idx2sbj = useMemo(() => buildSbjMap(list), [list]);

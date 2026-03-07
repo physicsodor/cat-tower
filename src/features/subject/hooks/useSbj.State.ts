@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum";
+import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 
 export const useSbjState = () => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
-  const [slcSet, setSlcSet] = useState(new Set<number>());
+  const [selectedSet, setSelectedSet] = useState(new Set<number>());
   const treeDragRef = useRef(new Set<number>());
   const cnvsDragRef = useRef(new Set<number>());
-  const cnvsPxyRef = useRef({ px: 0, py: 0 });
-  const preFromRef = useRef(-1);
+  const cnvsDragStartRef = useRef({ x: 0, y: 0 });
+  const preSourceRef = useRef(-1);
 
   const treeDrag = useMemo(
     () => ({
@@ -27,20 +27,20 @@ export const useSbjState = () => {
     }),
     []
   );
-  const cnvsPxy = useMemo(
+  const cnvsDragStart = useMemo(
     () => ({
-      get: () => cnvsPxyRef.current,
-      set: (s: { px: number; py: number }) => {
-        cnvsPxyRef.current = s;
+      get: () => cnvsDragStartRef.current,
+      set: (s: { x: number; y: number }) => {
+        cnvsDragStartRef.current = s;
       },
     }),
     []
   );
-  const preFrom = useMemo(
+  const preSource = useMemo(
     () => ({
-      get: () => preFromRef.current,
+      get: () => preSourceRef.current,
       set: (s: number) => {
-        preFromRef.current = s;
+        preSourceRef.current = s;
       },
     }),
     []
@@ -49,11 +49,11 @@ export const useSbjState = () => {
   return {
     list,
     setList,
-    slcSet,
-    setSlcSet,
+    selectedSet,
+    setSelectedSet,
     treeDrag,
     cnvsDrag,
-    cnvsPxy,
-    preFrom,
+    cnvsDragStart,
+    preSource,
   };
 };

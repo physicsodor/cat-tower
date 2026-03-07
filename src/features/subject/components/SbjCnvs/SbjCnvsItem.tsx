@@ -9,9 +9,9 @@ type Props = {
   setRef: (e: HTMLDivElement) => void;
   idx: number;
   info: {
-    ttl: string;
-    cnt: string;
-    dsc: string;
+    title: string;
+    content: string;
+    description: string;
     x: number;
     y: number;
   };
@@ -26,36 +26,36 @@ const SbjCnvsItem = ({
   dxy: { dx, dy },
   isSelected,
 }: Props) => {
-  const { setCnvsPre, preFrom } = useSbjStore();
-  const [exy, setExy] = useState<{ ex: number; ey: number } | null>(null);
+  const { setCnvsPre, preSource } = useSbjStore();
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [isOver, setIsOver] = useState(false);
   const outRef = useRef<HTMLDivElement | null>(null);
 
-  const getPxy = useCallback(() => {
-    if (!outRef.current) return { px: 0, py: 0 };
+  const getSourcePos = useCallback(() => {
+    if (!outRef.current) return { x: 0, y: 0 };
     const rect = outRef.current.getBoundingClientRect();
-    return { px: rect.left + rect.width / 2, py: rect.top + rect.height / 2 };
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   }, []);
 
   const onGlobalMove = useCallback((e: PE) => {
-    setExy({ ex: e.clientX, ey: e.clientY });
+    setMousePos({ x: e.clientX, y: e.clientY });
   }, []);
 
   const onGlobalUp = useCallback(() => {
-    setExy(null);
-    preFrom.set(-1);
+    setMousePos(null);
+    preSource.set(-1);
     window.removeEventListener("pointermove", onGlobalMove);
     window.removeEventListener("pointerup", onGlobalUp);
-  }, [onGlobalMove, preFrom]);
+  }, [onGlobalMove, preSource]);
 
   const onDown = useCallback(
     (e: PE) => {
       e.preventDefault();
-      preFrom.set(idx);
+      preSource.set(idx);
       window.addEventListener("pointermove", onGlobalMove);
       window.addEventListener("pointerup", onGlobalUp);
     },
-    [onGlobalMove, onGlobalUp, preFrom, idx]
+    [onGlobalMove, onGlobalUp, preSource, idx]
   );
 
   const onUp = useCallback(() => {
@@ -78,17 +78,17 @@ const SbjCnvsItem = ({
       >
         {isOver ? (
           <div className="sum">
-            <div>{info.ttl}</div>
-            <div>{!info.cnt ? "내용" : info.cnt}</div>
-            <div>{!info.dsc ? "설명" : info.dsc}</div>
+            <div>{info.title}</div>
+            <div>{!info.content ? "내용" : info.content}</div>
+            <div>{!info.description ? "설명" : info.description}</div>
             <div></div>
           </div>
         ) : null}
         <div className="in" onPointerUp={onUp} />
-        <SbjCnvsTitle idx={idx} ttl={info.ttl} />
+        <SbjCnvsTitle idx={idx} title={info.title} />
         <div ref={outRef} className="out" onPointerDown={onDown} />
       </div>
-      <SbjCnvsCurve pxy={getPxy()} exy={exy} />
+      <SbjCnvsCurve sourcePos={getSourcePos()} mousePos={mousePos} />
     </div>
   );
 };

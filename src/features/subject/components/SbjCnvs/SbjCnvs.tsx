@@ -14,7 +14,7 @@ type PE = React.PointerEvent | PointerEvent;
 type LRTB = { l: number; r: number; t: number; b: number };
 
 const SbjCnvs = () => {
-  const { cnvsPxy, cnvsDrag, idx2family, setCnvsPos } = useSbjStore();
+  const { cnvsDragStart, cnvsDrag, idx2family, setCnvsPos } = useSbjStore();
   const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
@@ -58,13 +58,13 @@ const SbjCnvs = () => {
   const onGlobalMove = useCallback(
     (e: PE) => {
       if (cnvsDrag.get().size <= 0) return;
-      const { px, py } = cnvsPxy.get();
+      const { x, y } = cnvsDragStart.get();
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() =>
-        setDxy({ dx: e.clientX - px, dy: e.clientY - py })
+        setDxy({ dx: e.clientX - x, dy: e.clientY - y })
       );
     },
-    [cnvsDrag, cnvsPxy]
+    [cnvsDrag, cnvsDragStart]
   );
 
   const onGlobalUp = useCallback(() => {

@@ -1,43 +1,43 @@
 import { useCallback } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum";
+import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import {
   addCourse,
   addSubject,
   deleteCourse,
   deleteSubject,
-} from "@/features/subject/utils/curriculumOp";
-import type { FamilyMap } from "../utils/familyOp";
+} from "@/features/subject/types/Curriculum/curriculumOp";
+import type { FamilyMap } from "../types/Family/familyOp";
 
 export const useSbjCrud = (
   idx2family: FamilyMap,
-  slcSet: ReadonlySet<number>,
+  selectedSet: ReadonlySet<number>,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
-  setSlcSet: React.Dispatch<React.SetStateAction<Set<number>>>
+  setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>
 ) => {
   const addSbj = useCallback(() => {
-    const { newIdx, updator } = addSubject(idx2family);
-    setList(updator);
-    setSlcSet(new Set([newIdx]));
-  }, [idx2family, setList, setSlcSet]);
+    const { newIdx, updater } = addSubject(idx2family);
+    setList(updater);
+    setSelectedSet(new Set([newIdx]));
+  }, [idx2family, setList, setSelectedSet]);
 
   const addCrs = useCallback(() => {
-    const { updator } = addCourse(idx2family, slcSet);
-    setList(updator);
-  }, [idx2family, slcSet, setList]);
+    const { updater } = addCourse(idx2family, selectedSet);
+    setList(updater);
+  }, [idx2family, selectedSet, setList]);
 
   const delSbj = useCallback(() => {
-    const { updator } = deleteSubject(slcSet);
-    setList(updator);
-    setSlcSet(new Set());
-  }, [slcSet, setList, setSlcSet]);
+    const { updater } = deleteSubject(selectedSet);
+    setList(updater);
+    setSelectedSet(new Set());
+  }, [selectedSet, setList, setSelectedSet]);
 
   const delCrs = useCallback(
     (idx: number) => {
-      const { updator } = deleteCourse(idx2family, idx);
-      setList(updator);
-      setSlcSet(new Set(idx2family.get(idx)?.kids ?? []));
+      const { updater } = deleteCourse(idx2family, idx);
+      setList(updater);
+      setSelectedSet(new Set(idx2family.get(idx)?.kids ?? []));
     },
-    [idx2family, setList, setSlcSet]
+    [idx2family, setList, setSelectedSet]
   );
 
   return { addSbj, addCrs, delSbj, delCrs };

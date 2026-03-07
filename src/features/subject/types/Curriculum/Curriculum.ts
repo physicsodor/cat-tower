@@ -1,18 +1,18 @@
-import type { Chain } from "./Chain";
-import { type Family } from "./Family";
+import type { Chain } from "../Chain/Chain";
+import { type Family } from "../Family/Family";
 
 export type Curriculum = Subject | Course;
 
 export interface Subject extends Family, Chain {
-  ttl: string;
-  cnt: string;
-  dsc: string;
+  title: string;
+  content: string;
+  description: string;
   x: number;
   y: number;
   sbjType: "SUBJECT";
 }
 
 export interface Course extends Family {
-  ttl: string;
+  title: string;
   sbjType: "COURSE";
 }

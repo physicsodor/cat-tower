@@ -1,5 +1,5 @@
-import { isChain, type Chain } from "@/features/subject/types/Chain";
-import type { IdxItem } from "@/features/subject/types/IdxItem";
+import { isChain, type Chain } from "@/features/subject/types/Chain/Chain";
+import type { IdxItem } from "@/features/subject/types/IdxItem/IdxItem";
 import { setAdd } from "@/utils/setOp";
 
 type ChainInfo = {
@@ -59,8 +59,8 @@ const setPre = <T extends Chain, S extends IdxItem>(
   idx2chain: ChainMap,
   idxFrom: number,
   idxTo: number
-): { updator: (list: ReadonlyArray<T | S>) => (T | S)[] } => {
-  const DEF = { updator: (list: ReadonlyArray<T | S>) => list as (T | S)[] };
+): { updater: (list: ReadonlyArray<T | S>) => (T | S)[] } => {
+  const DEF = { updater: (list: ReadonlyArray<T | S>) => list as (T | S)[] };
 
   const fromChain = idx2chain.get(idxFrom);
   if (!fromChain) return DEF;
@@ -86,7 +86,7 @@ const setPre = <T extends Chain, S extends IdxItem>(
     if (arr.length > 0) kill.set(idxTo, arr);
   }
 
-  const updator = (list: ReadonlyArray<T | S>) => {
+  const updater = (list: ReadonlyArray<T | S>) => {
     return list.map((x) => {
       if (!isChain<T>(x)) return x;
       const pre = new Set(x.pre);
@@ -104,7 +104,7 @@ const setPre = <T extends Chain, S extends IdxItem>(
     });
   };
 
-  return { updator };
+  return { updater };
 };
 
 export type { ChainMap };

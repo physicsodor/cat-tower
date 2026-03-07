@@ -1,17 +1,5 @@
 import { generateNKeysBetween } from "fractional-indexing";
-import type { Family } from "@/features/subject/types/Family";
-
-type FamilyInfo = {
-  mom?: number;
-  bro?: string;
-  kids?: number[];
-  left?: string;
-  right?: string;
-  first?: string;
-  last?: string;
-};
-type FamilyMap = ReadonlyMap<number, FamilyInfo>;
-type BroDir = "LEFT" | "RIGHT";
+import type { Family, FamilyInfo, FamilyMap, BroDir } from "@/features/subject/types/Family/Family";
 
 const buildFamilyMap = <T extends Family>(
   list: ReadonlyArray<T>
@@ -24,11 +12,6 @@ const buildFamilyMap = <T extends Family>(
     kids.push(x.idx);
     idx2kids.set(x.mom, kids);
   }
-  const _cmp = (a: number, b: number) => {
-    const broA = idx2info.get(a)?.bro ?? "";
-    const broB = idx2info.get(b)?.bro ?? "";
-    return broA === broB ? 0 : broA < broB ? -1 : 1;
-  };
   for (const [idx, kids] of idx2kids) {
     if (kids.length === 0) continue;
     let info = idx2info.get(idx) ?? {};
@@ -49,6 +32,11 @@ const buildFamilyMap = <T extends Family>(
       idx2info.set(kids[i], info);
     }
   }
+  function _cmp(a: number, b: number) {
+    const broA = idx2info.get(a)?.bro ?? "";
+    const broB = idx2info.get(b)?.bro ?? "";
+    return broA === broB ? 0 : broA < broB ? -1 : 1;
+  }
   return idx2info;
 };
 
@@ -56,18 +44,18 @@ const setMom = <T extends Family>(
   idx2family: FamilyMap,
   targetSet: ReadonlySet<number>,
   mom: number
-): { updator: (list: ReadonlyArray<T>) => T[] } => {
+): { updater: (list: ReadonlyArray<T>) => T[] } => {
   if (isMomCyclic(idx2family, targetSet, mom))
-    return { updator: (x) => x as T[] };
+    return { updater: (x) => x as T[] };
   const { flatIdxs } = getFlatIdxs(idx2family, targetSet);
   const firstBro = idx2family.get(mom)?.first ?? null;
   const bros = generateNKeysBetween(null, firstBro, targetSet.size);
   const idx2bro = new Map(flatIdxs.map((x, i) => [x, bros[i]]));
-  const updator = (list: ReadonlyArray<T>) =>
+  const updater = (list: ReadonlyArray<T>) =>
     list.map((x) =>
       targetSet.has(x.idx) ? { ...x, mom, bro: idx2bro.get(x.idx) ?? "" } : x
     );
-  return { updator };
+  return { updater };
 };
 
 const setBro = <T extends Family>(
@@ -75,23 +63,23 @@ const setBro = <T extends Family>(
   targetSet: ReadonlySet<number>,
   idx: number,
   dir: BroDir
-): { updator: (list: ReadonlyArray<T>) => T[] } => {
+): { updater: (list: ReadonlyArray<T>) => T[] } => {
   const info = idx2family.get(idx);
-  if (!info) return { updator: (x) => x as T[] };
+  if (!info) return { updater: (x) => x as T[] };
   const mom = info.mom ?? -1;
   if (isMomCyclic(idx2family, targetSet, mom))
-    return { updator: (x) => x as T[] };
+    return { updater: (x) => x as T[] };
   const bro = info.bro ?? null;
   const left = dir === "LEFT" ? info.left ?? null : bro;
   const right = dir === "LEFT" ? bro : info.right ?? null;
   const bros = generateNKeysBetween(left, right, targetSet.size);
   const { flatIdxs } = getFlatIdxs(idx2family, targetSet);
   const idx2bro = new Map(flatIdxs.map((x, i) => [x, bros[i]]));
-  const updator = (list: ReadonlyArray<T>) =>
+  const updater = (list: ReadonlyArray<T>) =>
     list.map((x) =>
       targetSet.has(x.idx) ? { ...x, mom, bro: idx2bro.get(x.idx) ?? "" } : x
     );
-  return { updator };
+  return { updater };
 };
 
 const isMomCyclic = (

@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum";
+import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import { supabase } from "@/lib/supabase";
-import { decodeList, encodeList } from "../utils/curriculumOp.code";
+import { decodeList, encodeList } from "../types/Curriculum/curriculumOp.code";
 
 /*
   useSbjSync (한국어)

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDragGhost } from "@/hooks/useDragGhost";
 import { makeClassName } from "@/utils/makeClassName";
-import type { BroDir } from "@/features/subject/utils/familyOp";
+import type { BroDir } from "@/features/subject/types/Family/familyOp";
 import BttnVert from "@/components/Bttn/BttnVert";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
@@ -9,13 +9,13 @@ import { useSbjStore } from "@/features/subject/context/SbjContext";
 
 type Props = {
   idx: number;
-  ttl: string;
+  title: string;
   isOpen: boolean;
   onToggle: () => void;
 };
 type PE = React.PointerEvent | PointerEvent;
 
-const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
+const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
   const { delCrs, treeDrag, setTreeBro, setTreeMom } = useSbjStore();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
@@ -57,7 +57,7 @@ const SbjTreeTitle = ({ idx, ttl, isOpen, onToggle }: Props) => {
     >
       {idx >= 0 ? <BttnVert onDown={onDown} /> : null}
       <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
-        {ttl}
+        {title}
       </div>
       <BttnPM isPlus={!isOpen} onDown={onToggle} />
       {idx >= 0 && isOpen ? <BttnDel onDown={() => delCrs(idx)} /> : null}

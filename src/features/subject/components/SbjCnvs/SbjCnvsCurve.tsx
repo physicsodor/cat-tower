@@ -1,11 +1,11 @@
 type Props = {
-  pxy: { px: number; py: number };
-  exy: { ex: number; ey: number } | null;
+  sourcePos: { x: number; y: number };
+  mousePos: { x: number; y: number } | null;
 };
 
-const SbjCnvsCurve = ({ pxy: { px, py }, exy }: Props) => {
-  if (!exy) return null;
-  const { ex, ey } = exy;
+const SbjCnvsCurve = ({ sourcePos: { x: px, y: py }, mousePos }: Props) => {
+  if (!mousePos) return null;
+  const { x: ex, y: ey } = mousePos;
   const m =
     ey > py
       ? `${px} ${(py + ey) / 2}, ${ex} ${(py + ey) / 2}`
@@ -21,4 +21,3 @@ const SbjCnvsCurve = ({ pxy: { px, py }, exy }: Props) => {
 };
 
 export default SbjCnvsCurve;
-

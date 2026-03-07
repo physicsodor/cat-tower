@@ -12,13 +12,13 @@ export const useSbj = () => {
   const derived = useSbjDerived(state.list);
   const crud = useSbjCrud(
     derived.idx2family,
-    state.slcSet,
+    state.selectedSet,
     state.setList,
-    state.setSlcSet
+    state.setSelectedSet
   );
-  const selection = useSbjSelection(state.slcSet, state.setSlcSet);
+  const selection = useSbjSelection(state.selectedSet, state.setSelectedSet);
   const tree = useSbjTree(derived.idx2family, state.setList, state.treeDrag);
-  const cnvs = useSbjCnvs(derived.idx2chain, state.setList, state.preFrom);
+  const cnvs = useSbjCnvs(derived.idx2chain, state.setList, state.preSource);
 
   return {
     ...state,

@@ -1,14 +1,14 @@
 import { useDragGhost } from "@/hooks/useDragGhost";
 import React, { useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
-import type { BroDir } from "@/features/subject/utils/familyOp";
+import type { BroDir } from "@/features/subject/types/Family/familyOp";
 import { useSbjStore } from "../../context/SbjContext";
 
 type PE = React.PointerEvent | PointerEvent;
-type Props = { idx: number; ttl: string };
+type Props = { idx: number; title: string };
 
-const SbjTreeItem = ({ idx, ttl }: Props) => {
-  const { slcSet, slcSbj, treeDrag, setTreeBro } = useSbjStore();
+const SbjTreeItem = ({ idx, title }: Props) => {
+  const { selectedSet, selectItem, treeDrag, setTreeBro } = useSbjStore();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 
@@ -37,7 +37,7 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
   /** 선택 후 drag 시작 */
   const onDown = (e: PE) => {
     e.preventDefault();
-    const s = slcSbj(e, idx);
+    const s = selectItem(e, idx);
     if (s.has(idx)) {
       treeDrag.set(s);
       ghost_down(e);
@@ -50,7 +50,7 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
       className={makeClassName(
         "sbj-tree-item",
         "-ovr",
-        slcSet.has(idx) && "-slc",
+        selectedSet.has(idx) && "-slc",
         dir === "LEFT" && "-pre",
         dir === "RIGHT" && "-nxt"
       )}
@@ -61,7 +61,7 @@ const SbjTreeItem = ({ idx, ttl }: Props) => {
         onPointerUp={onUp}
         onPointerLeave={onLeave}
       >
-        {ttl}
+        {title}
       </div>
     </div>
   );

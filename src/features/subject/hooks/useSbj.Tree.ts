@@ -1,11 +1,11 @@
 import { useCallback } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum";
+import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import {
   setBro,
   setMom,
   type BroDir,
   type FamilyMap,
-} from "@/features/subject/utils/familyOp";
+} from "@/features/subject/types/Family/familyOp";
 import type { GetSet } from "@/types/GetSet";
 
 export const useSbjTree = (
