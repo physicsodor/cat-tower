@@ -1,6 +1,6 @@
 import { isChain, type Chain } from "@/features/subject/types/Chain/Chain";
 import type { IdxItem } from "@/features/subject/types/IdxItem/IdxItem";
-import { setAdd } from "@/utils/setOp";
+import { setAdd, setDif } from "@/utils/setOp";
 
 type ChainInfo = {
   pre?: Set<number>;
@@ -11,7 +11,7 @@ type ChainInfo = {
 type ChainMap = Map<number, ChainInfo>;
 
 const buildChainMap = <T extends Chain, S extends IdxItem>(
-  list: ReadonlyArray<T | S>
+  list: ReadonlyArray<T | S>,
 ) => {
   const idx2chain = new Map<number, ChainInfo>();
   for (const x of list) {
@@ -28,7 +28,7 @@ const buildChainMap = <T extends Chain, S extends IdxItem>(
   const _getSet = (
     idx: number,
     mode: "pre" | "nxt",
-    visited: Set<number>
+    visited: Set<number>,
   ): Set<number> => {
     const info = idx2chain.get(idx);
     if (!info) return new Set();
@@ -58,7 +58,7 @@ const buildChainMap = <T extends Chain, S extends IdxItem>(
 const setPre = <T extends Chain, S extends IdxItem>(
   idx2chain: ChainMap,
   idxFrom: number,
-  idxTo: number
+  idxTo: number,
 ): { updater: (list: ReadonlyArray<T | S>) => (T | S)[] } => {
   const DEF = { updater: (list: ReadonlyArray<T | S>) => list as (T | S)[] };
 
@@ -107,5 +107,17 @@ const setPre = <T extends Chain, S extends IdxItem>(
   return { updater };
 };
 
+const removePre = <T extends Chain, S extends IdxItem>(
+  targetSet: ReadonlySet<number>,
+): { updater: (list: ReadonlyArray<T | S>) => (T | S)[] } => {
+  const updater = (list: ReadonlyArray<T | S>) =>
+    list.map((x) => {
+      if (!isChain<T>(x)) return x;
+      const pre = setDif(x.pre, targetSet);
+      return pre.size === x.pre.size ? x : { ...x, pre };
+    });
+  return { updater };
+};
+
 export type { ChainMap };
-export { buildChainMap, setPre };
+export { buildChainMap, setPre, removePre };

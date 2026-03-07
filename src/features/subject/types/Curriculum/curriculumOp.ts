@@ -1,10 +1,16 @@
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
-import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
+import type {
+  Course,
+  Curriculum,
+  Subject,
+} from "@/features/subject/types/Curriculum/Curriculum";
 import {
   getFlatIdxs,
+  reparentKids,
   type FamilyMap,
 } from "@/features/subject/types/Family/familyOp";
-import { setDif } from "@/utils/setOp";
+import { getNewIdx } from "../IdxItem/idxItemOp";
+import { removePre } from "../Chain/chainOp";
 
 type SbjInfo =
   | { sbjType: "COURSE"; title: string }
@@ -32,13 +38,12 @@ const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
 };
 
 const addSubject = (
-  idx2family: FamilyMap
+  idx2family: FamilyMap,
 ): {
   newIdx: number;
   updater: (list: ReadonlyArray<Curriculum>) => Curriculum[];
 } => {
-  let newIdx = 0;
-  while (idx2family.has(newIdx)) newIdx++;
+  const newIdx = getNewIdx(idx2family);
   const mom = -1;
   const lastBro = idx2family.get(mom)?.last ?? null;
   const newBro = generateKeyBetween(lastBro, null);
@@ -49,10 +54,9 @@ const addSubject = (
 
 const addCourse = (
   idx2family: FamilyMap,
-  targetSet: ReadonlySet<number>
+  targetSet: ReadonlySet<number>,
 ): { updater: (list: ReadonlyArray<Curriculum>) => Curriculum[] } => {
-  let newIdx = 0;
-  while (idx2family.has(newIdx)) newIdx++;
+  const newIdx = getNewIdx(idx2family);
   const { commonMom, flatIdxs } = getFlatIdxs(idx2family, targetSet);
   const lastBro = idx2family.get(commonMom)?.last ?? null;
   const newBro = generateKeyBetween(lastBro, null);
@@ -72,55 +76,22 @@ const addCourse = (
 };
 
 const deleteSubject = (
-  targetSet: ReadonlySet<number>
+  targetSet: ReadonlySet<number>,
 ): { updater: (list: ReadonlyArray<Curriculum>) => Curriculum[] } => {
-  const updater = (list: ReadonlyArray<Curriculum>) => {
-    const newList: Curriculum[] = [];
-    for (const x of list) {
-      if (targetSet.has(x.idx)) continue;
-      if (x.sbjType === "COURSE") newList.push(x);
-      else {
-        const pre = setDif(x.pre, targetSet);
-        newList.push({ ...x, pre });
-      }
-    }
-    return newList;
-  };
+  const { updater: cleanPre } = removePre<Subject, Course>(targetSet);
+  const updater = (list: ReadonlyArray<Curriculum>) =>
+    cleanPre(list.filter((x) => !targetSet.has(x.idx))) as Curriculum[];
   return { updater };
 };
 
-const deleteCourse = (
-  idx2family: FamilyMap,
-  idx: number
-): {
-  updater: (list: ReadonlyArray<Curriculum>) => Curriculum[];
-} => {
-  const info = idx2family.get(idx);
-  if (!info) return { updater: (x) => x as Curriculum[] };
-  const mom = info.mom ?? -1;
-  const kids = info.kids ?? [];
-  const left = info.left ?? null;
-  const right = info.right ?? null;
-  const bros = generateNKeysBetween(left, right, kids.length);
-  const idx2bro = new Map(kids.map((k, i) => [k, bros[i]]));
-  const updater = (list: ReadonlyArray<Curriculum>) => {
-    const newList: Curriculum[] = [];
-    for (const x of list) {
-      if (x.idx === idx) continue;
-      if (x.mom === idx)
-        newList.push({ ...x, mom, bro: idx2bro.get(x.idx) ?? "" });
-      else newList.push(x);
-    }
-    return newList;
-  };
-  return { updater };
-};
+const deleteCourse = (idx2family: FamilyMap, idx: number) =>
+  reparentKids<Curriculum>(idx2family, idx);
 
 const getNewItem = (
   idx: number,
   mom: number,
   bro: string,
-  sbjType: Curriculum["sbjType"]
+  sbjType: Curriculum["sbjType"],
 ): Curriculum => {
   return sbjType === "COURSE"
     ? {
