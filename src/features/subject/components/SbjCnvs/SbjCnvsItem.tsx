@@ -5,11 +5,30 @@ import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../context/SbjDataContext";
 
 type PE = React.PointerEvent | PointerEvent;
+
+const encoder = new TextEncoder();
+const getDesc = (info: { description: string; content: string }): string => {
+  if (info.description) return info.description;
+  if (info.content) {
+    if (encoder.encode(info.content).length <= 20) return info.content;
+    let byteCount = 0;
+    let result = "";
+    for (const char of info.content) {
+      const b = encoder.encode(char).length;
+      if (byteCount + b > 20) break;
+      byteCount += b;
+      result += char;
+    }
+    return result + "...";
+  }
+  return "내용 없음";
+};
 type Props = {
   setRef: (e: HTMLDivElement) => void;
   idx: number;
   info: {
     title: string;
+    short?: string;
     content: string;
     description: string;
     x: number;
@@ -34,7 +53,7 @@ const SbjCnvsItem = ({
   isNxt,
   onHoverChange,
 }: Props) => {
-  const { setCnvsPre, preSource } = useSbjData();
+  const { setCnvsPre, preSource, delSbjOne, openEdit } = useSbjData();
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [isOver, setIsOver] = useState(false);
   const outRef = useRef<HTMLDivElement | null>(null);
@@ -93,13 +112,15 @@ const SbjCnvsItem = ({
         {isOver ? (
           <div className="sum">
             <div>{info.title}</div>
-            <div>{!info.content ? "내용" : info.content}</div>
-            <div>{!info.description ? "설명" : info.description}</div>
-            <div></div>
+            <div>{getDesc(info)}</div>
           </div>
         ) : null}
+        <div className="item-actions">
+          <button className="item-action -add" onPointerDown={(e) => e.stopPropagation()} onClick={() => openEdit(idx)}>✱</button>
+          <button className="item-action -del" onPointerDown={(e) => e.stopPropagation()} onClick={() => delSbjOne(idx)}>✕</button>
+        </div>
         <div className="in" onPointerUp={onUp} />
-        <SbjCnvsTitle idx={idx} title={info.title} />
+        <SbjCnvsTitle idx={idx} title={info.short || info.title} />
         <div ref={outRef} className="out" onPointerDown={onDown} />
       </div>
       <SbjCnvsCurve sourcePos={getSourcePos()} mousePos={mousePos} />

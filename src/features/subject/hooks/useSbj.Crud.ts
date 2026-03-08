@@ -31,6 +31,12 @@ export const useSbjCrud = (
     setSelectedSet(new Set());
   }, [getSelected, setList, setSelectedSet]);
 
+  const delSbjOne = useCallback((idx: number) => {
+    const { updater } = deleteSubject(new Set([idx]));
+    setList(updater);
+    setSelectedSet((prev) => { const s = new Set(prev); s.delete(idx); return s; });
+  }, [setList, setSelectedSet]);
+
   const delCrs = useCallback(
     (idx: number) => {
       const { updater } = deleteCourse(idx2family, idx);
@@ -40,5 +46,5 @@ export const useSbjCrud = (
     [idx2family, setList, setSelectedSet]
   );
 
-  return { addSbj, addCrs, delSbj, delCrs };
+  return { addSbj, addCrs, delSbj, delSbjOne, delCrs };
 };

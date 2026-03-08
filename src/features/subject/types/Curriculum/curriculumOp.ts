@@ -17,6 +17,7 @@ type SbjInfo =
   | {
       sbjType: "SUBJECT";
       title: string;
+      short?: string;
       content: string;
       description: string;
       x: number;
@@ -30,8 +31,8 @@ const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
     const { title, sbjType } = item;
     if (sbjType === "COURSE") idx2sbj.set(item.idx, { title, sbjType });
     else {
-      const { content, description, x, y } = item;
-      idx2sbj.set(item.idx, { title, sbjType, content, description, x, y });
+      const { content, description, x, y, short } = item;
+      idx2sbj.set(item.idx, { title, sbjType, content, description, x, y, short });
     }
   }
   return idx2sbj;

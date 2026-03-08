@@ -57,8 +57,21 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const idx2family = useMemo(() => buildFamilyMap(list), [list]);
   const idx2chain = useMemo(() => buildChainMap(list), [list]);
 
+  // Edit modal state
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const openEdit = useCallback((idx: number) => setEditingIdx(idx), []);
+  const closeEdit = useCallback(() => setEditingIdx(null), []);
+  const updateSbj = useCallback(
+    (idx: number, fields: { title: string; short?: string; content: string; description: string }) => {
+      setList((prev) => prev.map((item) =>
+        item.idx === idx && item.sbjType === "SUBJECT" ? { ...item, ...fields } : item
+      ));
+    },
+    []
+  );
+
   // Operations
-  const { addSbj, addCrs, delSbj, delCrs } = useSbjCrud(
+  const { addSbj, addCrs, delSbj, delSbjOne, delCrs } = useSbjCrud(
     idx2family,
     getSelected,
     setList,
@@ -92,6 +105,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       addSbj,
       addCrs,
       delSbj,
+      delSbjOne,
       delCrs,
       setTreeMom,
       setTreeBro,
@@ -101,13 +115,18 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       cnvsDrag,
       cnvsDragStart,
       preSource,
+      editingIdx,
+      openEdit,
+      closeEdit,
+      updateSbj,
     }),
     [
       idx2sbj, idx2family, idx2chain,
-      addSbj, addCrs, delSbj, delCrs,
+      addSbj, addCrs, delSbj, delSbjOne, delCrs,
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos,
       treeDrag, cnvsDrag, cnvsDragStart, preSource,
+      editingIdx, openEdit, closeEdit, updateSbj,
     ]
   );
 

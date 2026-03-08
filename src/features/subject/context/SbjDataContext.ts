@@ -11,6 +11,7 @@ type SbjDataContextValue = {
   addSbj: () => void;
   addCrs: () => void;
   delSbj: () => void;
+  delSbjOne: (idx: number) => void;
   delCrs: (idx: number) => void;
   setTreeMom: (trg: Set<number>, mom: number) => void;
   setTreeBro: (trg: Set<number>, idx: number, dir: BroDir) => void;
@@ -20,6 +21,10 @@ type SbjDataContextValue = {
   cnvsDrag: GetSet<Set<number>>;
   cnvsDragStart: GetSet<{ x: number; y: number }>;
   preSource: GetSet<number>;
+  editingIdx: number | null;
+  openEdit: (idx: number) => void;
+  closeEdit: () => void;
+  updateSbj: (idx: number, fields: { title: string; short?: string; content: string; description: string }) => void;
 };
 
 export const SbjDataContext = createContext<SbjDataContextValue | null>(null);
