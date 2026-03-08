@@ -6,7 +6,7 @@ import {
   type BroDir,
   type FamilyMap,
 } from "@/features/subject/types/Family/familyOp";
-import type { GetSet } from "@/types/GetSet";
+import type { GetSet } from "@/utils/GetSet";
 
 export const useSbjTree = (
   idx2family: FamilyMap,
@@ -15,8 +15,8 @@ export const useSbjTree = (
 ) => {
   const setTreeMom = useCallback(
     (trg: Set<number>, mom: number) => {
-      const { updator } = setMom<Curriculum>(idx2family, trg, mom);
-      setList(updator);
+      const { updater } = setMom<Curriculum>(idx2family, trg, mom);
+      setList(updater);
       treeDrag.set(new Set());
     },
     [idx2family, setList, treeDrag]
@@ -24,8 +24,8 @@ export const useSbjTree = (
 
   const setTreeBro = useCallback(
     (trg: Set<number>, idx: number, dir: BroDir) => {
-      const { updator } = setBro<Curriculum>(idx2family, trg, idx, dir);
-      setList(updator);
+      const { updater } = setBro<Curriculum>(idx2family, trg, idx, dir);
+      setList(updater);
       treeDrag.set(new Set());
     },
     [idx2family, setList, treeDrag]

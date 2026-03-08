@@ -8,13 +8,13 @@ import {
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type LRTB = { l: number; r: number; t: number; b: number };
 
 const SbjCnvs = () => {
-  const { cnvsDragStart, cnvsDrag, idx2family, setCnvsPos } = useSbjStore();
+  const { cnvsDragStart, cnvsDrag, idx2family, setCnvsPos } = useSbjData();
   const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
   const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());

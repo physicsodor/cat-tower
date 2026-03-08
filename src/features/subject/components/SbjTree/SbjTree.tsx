@@ -1,9 +1,11 @@
-import AuthDebug from "@/AuthDebug";
-import { useSbjStore } from "../../context/SbjContext";
+import AuthDebug from "@/features/auth/AuthDebug";
+import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSyncStore } from "../../context/SbjSyncContext";
 import SbjTreeBox from "./SbjTreeBox";
 
 const SbjTree = () => {
-  const { addCrs, addSbj, delSbj, saveNow } = useSbjStore();
+  const { addCrs, addSbj, delSbj } = useSbjData();
+  const { saveNow } = useSbjSyncStore();
   return (
     <div className="sbj-ctrl">
       <AuthDebug />

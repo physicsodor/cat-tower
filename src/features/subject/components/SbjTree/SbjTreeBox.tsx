@@ -3,13 +3,13 @@ import SbjTreeTitle from "./SbjTreeTitle";
 import SbjTreeNext from "./SbjTreeNext";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx?: number; title?: string };
 
 const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
-  const { idx2sbj, idx2family, treeDrag } = useSbjStore();
+  const { idx2sbj, idx2family, treeDrag } = useSbjData();
 
   const [isOpen, setIsOpen] = useState(idx !== -1);
 

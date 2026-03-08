@@ -1,4 +1,5 @@
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSelect } from "../../context/SbjSelectContext";
 import SbjCnvsItem from "./SbjCnvsItem";
 
 type Props = {
@@ -7,12 +8,13 @@ type Props = {
 };
 
 const SbjCnvsItemContainer = ({ items, dxy }: Props) => {
-  const { idx2sbj, slcSet } = useSbjStore();
+  const { idx2sbj } = useSbjData();
+  const { selectedSet } = useSbjSelect();
   return (
     <div>
       {[...idx2sbj].map(([idx, s]) => {
         if (s.sbjType === "SUBJECT") {
-          const isSelected = slcSet.has(idx);
+          const isSelected = selectedSet.has(idx);
           return (
             <SbjCnvsItem
               key={`sbj-cnvs-item-${idx}`}

@@ -1,4 +1,4 @@
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
 import SbjCnvsCrs from "./SbjCnvsCrs";
 
 type LRTB = { l: number; r: number; t: number; b: number };
@@ -9,7 +9,7 @@ type Props = {
 };
 
 const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
-  const { idx2family } = useSbjStore();
+  const { idx2family } = useSbjData();
   return (
     <div>
       {[...idx2family].map(([idx, f]) => {

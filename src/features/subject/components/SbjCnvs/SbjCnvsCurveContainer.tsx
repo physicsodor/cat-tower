@@ -1,11 +1,11 @@
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 
 type LRTB = { l: number; r: number; t: number; b: number };
 type Props = { lrtbMap: ReadonlyMap<number, LRTB> };
 
 const SbjCnvsCurveContainer = ({ lrtbMap }: Props) => {
-  const { idx2chain } = useSbjStore();
+  const { idx2chain } = useSbjData();
   return (
     <div>
       {[...idx2chain].map(([idx, c]) => {

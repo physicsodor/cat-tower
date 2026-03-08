@@ -10,7 +10,7 @@ import type { FamilyMap } from "../types/Family/familyOp";
 
 export const useSbjCrud = (
   idx2family: FamilyMap,
-  selectedSet: ReadonlySet<number>,
+  getSelected: () => ReadonlySet<number>,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
   setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>
 ) => {
@@ -21,15 +21,15 @@ export const useSbjCrud = (
   }, [idx2family, setList, setSelectedSet]);
 
   const addCrs = useCallback(() => {
-    const { updater } = addCourse(idx2family, selectedSet);
+    const { updater } = addCourse(idx2family, getSelected());
     setList(updater);
-  }, [idx2family, selectedSet, setList]);
+  }, [idx2family, getSelected, setList]);
 
   const delSbj = useCallback(() => {
-    const { updater } = deleteSubject(selectedSet);
+    const { updater } = deleteSubject(getSelected());
     setList(updater);
     setSelectedSet(new Set());
-  }, [selectedSet, setList, setSelectedSet]);
+  }, [getSelected, setList, setSelectedSet]);
 
   const delCrs = useCallback(
     (idx: number) => {

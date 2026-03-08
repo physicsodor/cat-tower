@@ -5,7 +5,7 @@ import type { BroDir } from "@/features/subject/types/Family/familyOp";
 import BttnVert from "@/components/Bttn/BttnVert";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
-import { useSbjStore } from "@/features/subject/context/SbjContext";
+import { useSbjData } from "@/features/subject/context/SbjDataContext";
 
 type Props = {
   idx: number;
@@ -16,7 +16,7 @@ type Props = {
 type PE = React.PointerEvent | PointerEvent;
 
 const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
-  const { delCrs, treeDrag, setTreeBro, setTreeMom } = useSbjStore();
+  const { delCrs, treeDrag, setTreeBro, setTreeMom } = useSbjData();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 

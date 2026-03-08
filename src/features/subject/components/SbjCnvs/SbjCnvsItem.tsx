@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = {
@@ -26,7 +26,7 @@ const SbjCnvsItem = ({
   dxy: { dx, dy },
   isSelected,
 }: Props) => {
-  const { setCnvsPre, preSource } = useSbjStore();
+  const { setCnvsPre, preSource } = useSbjData();
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [isOver, setIsOver] = useState(false);
   const outRef = useRef<HTMLDivElement | null>(null);

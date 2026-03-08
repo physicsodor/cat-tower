@@ -2,13 +2,15 @@ import { useDragGhost } from "@/hooks/useDragGhost";
 import React, { useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
 import type { BroDir } from "@/features/subject/types/Family/familyOp";
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSelect } from "../../context/SbjSelectContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; title: string };
 
 const SbjTreeItem = ({ idx, title }: Props) => {
-  const { selectedSet, selectItem, treeDrag, setTreeBro } = useSbjStore();
+  const { treeDrag, setTreeBro } = useSbjData();
+  const { selectedSet, selectItem } = useSbjSelect();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
 

@@ -5,7 +5,7 @@ import type {
   Subject,
 } from "@/features/subject/types/Curriculum/Curriculum";
 import { setPre, type ChainMap } from "@/features/subject/types/Chain/chainOp";
-import type { GetSet } from "@/types/GetSet";
+import type { GetSet } from "@/utils/GetSet";
 
 export const useSbjCnvs = (
   idx2chain: ChainMap,

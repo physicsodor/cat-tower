@@ -1,10 +1,12 @@
-import { useSbjStore } from "../../context/SbjContext";
+import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSelect } from "../../context/SbjSelectContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; title: string };
 
 const SbjCnvsTitle = ({ idx, title }: Props) => {
-  const { cnvsDragStart, cnvsDrag, selectItem } = useSbjStore();
+  const { cnvsDragStart, cnvsDrag } = useSbjData();
+  const { selectItem } = useSbjSelect();
   const onDown = (e: PE) => {
     e.preventDefault();
     const s = selectItem(e, idx);
