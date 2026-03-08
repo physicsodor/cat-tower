@@ -5,9 +5,10 @@ import SbjCnvsItem from "./SbjCnvsItem";
 type Props = {
   items: Map<number, HTMLDivElement | null>;
   dxy: { dx: number; dy: number };
+  camera: { x: number; y: number; zoom: number };
 };
 
-const SbjCnvsItemContainer = ({ items, dxy }: Props) => {
+const SbjCnvsItemContainer = ({ items, dxy, camera }: Props) => {
   const { idx2sbj } = useSbjData();
   const { selectedSet } = useSbjSelect();
   return (
@@ -25,6 +26,7 @@ const SbjCnvsItemContainer = ({ items, dxy }: Props) => {
               idx={idx}
               info={s}
               dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
+              camera={camera}
               isSelected={isSelected}
             />
           );

@@ -20,6 +20,7 @@
 
   &-item {
     @include m.fixed-item(--z-sbj-cnvs-item);
+    transform-origin: 0 0;
     --back: var(--C-LL);
     &.-slc {
       --back: var(--C-L);
@@ -70,6 +71,22 @@
       border: 1.5px dashed var(--C-D);
       background: m.C-alpha(--C-D, 0.08);
     }
+  }
+
+  &-fit-btn {
+    position: fixed;
+    z-index: var(--z-sbj-ctrl);
+    top: var(--G-M);
+    right: var(--G-M);
+    padding: var(--G-S);
+    background: var(--C-L);
+    border: 1.5px solid var(--C-D);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover { background: var(--C-LL); }
+    &:active { background: var(--C-D); color: var(--C-LL); }
   }
 
   &-curve {

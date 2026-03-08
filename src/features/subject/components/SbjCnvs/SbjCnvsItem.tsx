@@ -1,7 +1,4 @@
 import { useCallback, useRef, useState } from "react";
-
-const _cx = window.innerWidth / 2;
-const _cy = window.innerHeight / 2;
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
@@ -19,6 +16,7 @@ type Props = {
     y: number;
   };
   dxy: { dx: number; dy: number };
+  camera: { x: number; y: number; zoom: number };
   isSelected: boolean;
 };
 
@@ -27,6 +25,7 @@ const SbjCnvsItem = ({
   idx,
   info,
   dxy: { dx, dy },
+  camera,
   isSelected,
 }: Props) => {
   const { setCnvsPre, preSource } = useSbjData();
@@ -53,6 +52,7 @@ const SbjCnvsItem = ({
 
   const onDown = useCallback(
     (e: PE) => {
+      if (e.button !== 0) return;
       e.preventDefault();
       preSource.set(idx);
       window.addEventListener("pointermove", onGlobalMove);
@@ -61,9 +61,16 @@ const SbjCnvsItem = ({
     [onGlobalMove, onGlobalUp, preSource, idx]
   );
 
-  const onUp = useCallback(() => {
-    setCnvsPre(idx);
-  }, [idx, setCnvsPre]);
+  const onUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return;
+      setCnvsPre(idx);
+    },
+    [idx, setCnvsPre]
+  );
+
+  const viewX = camera.x + info.x * camera.zoom + dx;
+  const viewY = camera.y + info.y * camera.zoom + dy;
 
   return (
     <div
@@ -74,7 +81,7 @@ const SbjCnvsItem = ({
         ref={setRef}
         className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
         style={{
-          ["--ex-transform" as string]: `translate(${_cx + info.x + dx}px, ${_cy + info.y + dy}px)`,
+          transform: `translate(${viewX}px, ${viewY}px) scale(${camera.zoom}) translate(-50%, -50%)`,
         }}
       >
         {isOver ? (
