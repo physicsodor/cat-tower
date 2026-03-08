@@ -18,6 +18,9 @@ type Props = {
   dxy: { dx: number; dy: number };
   camera: { x: number; y: number; zoom: number };
   isSelected: boolean;
+  isPre: boolean;
+  isNxt: boolean;
+  onHoverChange: (idx: number | null) => void;
 };
 
 const SbjCnvsItem = ({
@@ -27,6 +30,9 @@ const SbjCnvsItem = ({
   dxy: { dx, dy },
   camera,
   isSelected,
+  isPre,
+  isNxt,
+  onHoverChange,
 }: Props) => {
   const { setCnvsPre, preSource } = useSbjData();
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
@@ -74,12 +80,12 @@ const SbjCnvsItem = ({
 
   return (
     <div
-      onMouseOver={() => setIsOver(true)}
-      onMouseLeave={() => setIsOver(false)}
+      onMouseOver={() => { setIsOver(true); onHoverChange(idx); }}
+      onMouseLeave={() => { setIsOver(false); onHoverChange(null); }}
     >
       <div
         ref={setRef}
-        className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
+        className={makeClassName("sbj-cnvs-item", isSelected && "-slc", isPre && "-pre", isNxt && "-nxt")}
         style={{
           transform: `translate(${viewX}px, ${viewY}px) scale(${camera.zoom}) translate(-50%, -50%)`,
         }}

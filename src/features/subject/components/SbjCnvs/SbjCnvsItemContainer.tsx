@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSbjData } from "../../context/SbjDataContext";
 import { useSbjSelect } from "../../context/SbjSelectContext";
 import SbjCnvsItem from "./SbjCnvsItem";
@@ -9,8 +10,14 @@ type Props = {
 };
 
 const SbjCnvsItemContainer = ({ items, dxy, camera }: Props) => {
-  const { idx2sbj } = useSbjData();
+  const { idx2sbj, idx2chain } = useSbjData();
   const { selectedSet } = useSbjSelect();
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const chain = hoveredIdx !== null ? idx2chain.get(hoveredIdx) : null;
+  const preSet = chain?.preSet ?? null;
+  const nxtSet = chain?.nxtSet ?? null;
+
   return (
     <div>
       {[...idx2sbj].map(([idx, s]) => {
@@ -28,6 +35,9 @@ const SbjCnvsItemContainer = ({ items, dxy, camera }: Props) => {
               dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
               camera={camera}
               isSelected={isSelected}
+              isPre={preSet?.has(idx) ?? false}
+              isNxt={nxtSet?.has(idx) ?? false}
+              onHoverChange={setHoveredIdx}
             />
           );
         }
