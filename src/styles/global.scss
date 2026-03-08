@@ -73,12 +73,24 @@
     }
   }
 
-  &-fit-btn {
+  &-controls {
     position: fixed;
     z-index: var(--z-sbj-ctrl);
     top: var(--G-M);
     right: var(--G-M);
-    padding: var(--G-S);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--G-S);
+  }
+
+  &-controls-btns {
+    display: flex;
+    gap: var(--G-S);
+  }
+
+  &-icon-btn {
+    padding: var(--G-M) var(--G-L);
     background: var(--C-L);
     border: 1.5px solid var(--C-D);
     cursor: pointer;
@@ -87,6 +99,13 @@
     justify-content: center;
     &:hover { background: var(--C-LL); }
     &:active { background: var(--C-D); color: var(--C-LL); }
+  }
+
+  &-zoom-label {
+    color: var(--C-DD);
+    padding: var(--G-M) var(--G-L);
+    background: var(--C-L);
+    border: 1px solid var(--C-D);
   }
 
   &-curve {
@@ -195,6 +214,27 @@
       }
     }
   }
+}
+
+.sbj-auth-panel {
+  position: fixed;
+  z-index: var(--z-sbj-ctrl);
+  bottom: var(--G-M);
+  right: var(--G-M);
+  display: flex;
+  gap: var(--G-S);
+  align-items: center;
+}
+
+.sbj-auth-btn,
+.sbj-auth-save-btn {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  &:hover { background: var(--C-LL); }
+  &:active { background: var(--C-D); color: var(--C-LL); }
+  &:disabled { opacity: 0.4; cursor: default; }
 }
 
 .ghost {

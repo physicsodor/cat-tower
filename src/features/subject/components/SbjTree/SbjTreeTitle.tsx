@@ -59,7 +59,7 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
       <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
         {title}
       </div>
-      <BttnPM isPlus={!isOpen} onDown={onToggle} />
+      {idx >= 0 ? <BttnPM isPlus={!isOpen} onDown={onToggle} /> : null}
       {idx >= 0 && isOpen ? <BttnDel onDown={() => delCrs(idx)} /> : null}
     </div>
   );

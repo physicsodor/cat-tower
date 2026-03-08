@@ -11,7 +11,7 @@ type Props = { idx?: number; title?: string };
 const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
   const { idx2sbj, idx2family, treeDrag } = useSbjData();
 
-  const [isOpen, setIsOpen] = useState(idx !== -1);
+  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
     const onGlobalUp = (e: PE) => {

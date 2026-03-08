@@ -1,15 +1,21 @@
 import { useRef, useState } from "react";
-import AuthDebug from "@/features/auth/AuthDebug";
 import { useSbjData } from "../../context/SbjDataContext";
-import { useSbjSyncStore } from "../../context/SbjSyncContext";
 import SbjTreeBox from "./SbjTreeBox";
+
+const MARGIN = 16; // 1rem
+const HANDLE = 32;
+
+const clampPos = (x: number, y: number) => ({
+  x: Math.max(MARGIN, Math.min(x, window.innerWidth - HANDLE - MARGIN)),
+  y: Math.max(MARGIN, Math.min(y, window.innerHeight - HANDLE - MARGIN)),
+});
 
 const SbjTree = () => {
   const { addCrs, addSbj, delSbj } = useSbjData();
-  const { saveNow } = useSbjSyncStore();
 
   const [pos, setPos] = useState({ x: 16, y: 16 });
   const [open, setOpen] = useState(true);
+  const [dragging, setDragging] = useState(false);
 
   const drag = useRef<{
     startX: number;
@@ -21,6 +27,7 @@ const SbjTree = () => {
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    setDragging(true);
     drag.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -39,14 +46,22 @@ const SbjTree = () => {
   };
 
   const onPointerUp = () => {
-    if (drag.current && !drag.current.moved) setOpen((o) => !o);
+    const moved = drag.current?.moved ?? false;
     drag.current = null;
+    setDragging(false);
+    setPos((prev) => clampPos(prev.x, prev.y));
+    if (!moved) setOpen((o) => !o);
   };
 
   return (
     <div
       className="sbj-ctrl"
-      style={{ left: pos.x, top: pos.y, transform: "none" }}
+      style={{
+        left: pos.x,
+        top: pos.y,
+        transform: "none",
+        transition: dragging ? "none" : "left 0.25s ease, top 0.25s ease",
+      }}
     >
       <div
         className="sbj-ctrl-handle"
@@ -67,9 +82,7 @@ const SbjTree = () => {
         </svg>
       </div>
       <div className={`sbj-ctrl-panel${open ? " open" : ""}`}>
-        <AuthDebug />
         <div className="sbj-ctrl-btns">
-          <button onClick={saveNow}>저장</button>
           <button onClick={addSbj}>추가</button>
           <button onClick={delSbj}>제거</button>
           <button onClick={addCrs}>그룹 만들기</button>

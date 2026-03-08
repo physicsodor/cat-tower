@@ -274,6 +274,20 @@ const SbjCnvs = () => {
     };
   }, [onGlobalMove, onGlobalUp]);
 
+  // 100% zoom reset centered on viewport center
+  const onZoomReset = useCallback(() => {
+    setCamera(prev => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const ratio = 1 / prev.zoom;
+      return {
+        zoom: 1,
+        x: cx - (cx - prev.x) * ratio,
+        y: cy - (cy - prev.y) * ratio,
+      };
+    });
+  }, []);
+
   // Fit button: center all items at MIN_ZOOM
   const onFit = useCallback(() => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -319,12 +333,20 @@ const SbjCnvs = () => {
           }}
         />
       )}
-      <button className="sbj-cnvs-fit-btn" onClick={onFit}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <rect x="3.5" y="3.5" width="9" height="9" rx="0.5"/>
-          <path d="M1 4V1h3M15 4V1h-3M1 12v3h3M15 12v3h-3"/>
-        </svg>
-      </button>
+      <div className="sbj-cnvs-controls">
+        <div className="sbj-cnvs-controls-btns">
+          <button className="sbj-cnvs-icon-btn" onClick={onFit} title="Fit all">
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <rect x="3.5" y="3.5" width="9" height="9" rx="0.5"/>
+              <path d="M1 4V1h3M15 4V1h-3M1 12v3h3M15 12v3h-3"/>
+            </svg>
+          </button>
+          <button className="sbj-cnvs-icon-btn" onClick={onZoomReset} title="Reset to 100%">
+            1:1
+          </button>
+        </div>
+        <div className="sbj-cnvs-zoom-label">{Math.round(camera.zoom * 100)}%</div>
+      </div>
     </div>
   );
 };
