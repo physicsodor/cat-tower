@@ -1,4 +1,7 @@
 import { useCallback, useRef, useState } from "react";
+
+const _cx = window.innerWidth / 2;
+const _cy = window.innerHeight / 2;
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
@@ -71,9 +74,7 @@ const SbjCnvsItem = ({
         ref={setRef}
         className={makeClassName("sbj-cnvs-item", isSelected && "-slc")}
         style={{
-          ["--ex-transform" as string]: `translate(${info.x + dx}px, ${
-            info.y + dy
-          }px)`,
+          ["--ex-transform" as string]: `translate(${_cx + info.x + dx}px, ${_cy + info.y + dy}px)`,
         }}
       >
         {isOver ? (

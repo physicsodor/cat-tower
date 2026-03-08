@@ -19,7 +19,7 @@
   user-select: none;
 
   &-item {
-    @include m.fixed-item-center(--z-sbj-cnvs-item);
+    @include m.fixed-item(--z-sbj-cnvs-item);
     --back: var(--C-LL);
     &.-slc {
       --back: var(--C-L);
