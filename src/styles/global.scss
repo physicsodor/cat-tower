@@ -70,7 +70,51 @@
 }
 
 .sbj-ctrl {
-  @include m.fixed-item(--z-sbj-ctrl);
+  position: fixed;
+  z-index: var(--z-sbj-ctrl);
+
+  &-handle {
+    width: 32px;
+    height: 32px;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    &:active { cursor: grabbing; }
+    svg {
+      display: block;
+      circle {
+        fill: var(--C-L);
+        stroke: var(--C-D);
+        stroke-width: 1.5;
+      }
+      line {
+        stroke: var(--C-DD);
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+    }
+    &:hover svg circle { fill: var(--C-LL); }
+    &:active svg circle { fill: var(--C-D); }
+    &:active svg line { stroke: var(--C-LL); }
+  }
+
+  &-panel {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+    &.open {
+      max-height: 80vh;
+      opacity: 1;
+    }
+  }
+
+  &-btns {
+    display: flex;
+    gap: var(--G-S);
+    padding: var(--G-S);
+  }
+
   .sbj-tree {
     width: fit-content;
     background-color: var(--C-LL);
