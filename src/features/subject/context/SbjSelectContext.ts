@@ -6,6 +6,7 @@ type SbjSelectContextValue = {
     e: PointerEvent | React.PointerEvent,
     idx: number
   ) => Set<number>;
+  selectMany: (s: Set<number>) => void;
 };
 
 export const SbjSelectContext =

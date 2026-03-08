@@ -68,6 +68,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { setCnvsPre, setCnvsPos } = useSbjCnvs(idx2chain, setList, preSource);
   const sync = useSbjSync(list, setList);
 
+  const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
+
   // selectItem depends on selectedSet — lives in SbjSelectContext
   const selectItem = useCallback(
     (e: PointerEvent | React.PointerEvent, idx: number) => {
@@ -111,8 +113,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
 
   // SbjSelectContext: changes when user clicks to select
   const selectValue = useMemo(
-    () => ({ selectedSet, selectItem }),
-    [selectedSet, selectItem]
+    () => ({ selectedSet, selectItem, selectMany }),
+    [selectedSet, selectItem, selectMany]
   );
 
   return (

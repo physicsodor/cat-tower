@@ -8,12 +8,15 @@
   --z-sbj-cnvs-crs: 3;
   --z-sbj-cnvs-item: 4;
   --z-sbj-ctrl: 100;
+  --z-sbj-cnvs-marquee: 5;
   --z-ghost: 999;
 }
 
 .sbj-cnvs {
   --margin: var(--G-XL);
   @include m.fixed-full(--z-sbj-cnvs);
+  background-color: oklch(99% 0.01 90);
+  user-select: none;
 
   &-item {
     @include m.fixed-item-center(--z-sbj-cnvs-item);
@@ -55,8 +58,23 @@
     @include m.fixed-item(--z);
     @include m.box-lrtb-gap(--G-XL);
   }
+  &-marquee {
+    position: fixed;
+    pointer-events: none;
+    z-index: var(--z-sbj-cnvs-marquee);
+    &.-window {
+      border: 1.5px solid var(--C-B);
+      background: m.C-alpha(--C-B, 0.08);
+    }
+    &.-cross {
+      border: 1.5px dashed var(--C-D);
+      background: m.C-alpha(--C-D, 0.08);
+    }
+  }
+
   &-curve {
     @include m.fixed-full(--z-sbj-cnvs-curve);
+    pointer-events: none;
     svg {
       width: 100%;
       height: 100%;
