@@ -6,10 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  InfiniteCanvasContext,
-  type Camera,
-} from "./InfiniteCanvasContext";
+import { InfiniteCanvasContext, type Camera } from "./InfiniteCanvasContext";
 import "./InfiniteCanvas.scss";
 
 type PE = React.PointerEvent | PointerEvent;
@@ -29,8 +26,11 @@ type Props = {
   onItemDragEnd?: (worldDx: number, worldDy: number) => void;
   /** Called with the screen-space marquee box after mouse release. */
   onMarqueeSelect?: (
-    selL: number, selR: number, selT: number, selB: number,
-    mode: "window" | "cross"
+    selL: number,
+    selR: number,
+    selT: number,
+    selB: number,
+    mode: "window" | "cross",
   ) => void;
   /**
    * Called when the fit button is pressed.
@@ -56,8 +56,8 @@ type Props = {
 const InfiniteCanvas = ({
   children,
   className,
-  minZoom = 0.3,
-  maxZoom = 2.0,
+  minZoom = 0.5,
+  maxZoom = 1.0,
   marqueeSuppressSelector,
   onItemDragEnd,
   onMarqueeSelect,
@@ -69,7 +69,9 @@ const InfiniteCanvas = ({
     zoom: 1,
   }));
   const cameraRef = useRef<Camera>(camera);
-  useEffect(() => { cameraRef.current = camera; }, [camera]);
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera]);
 
   const [dxy, setDxy] = useState({ dx: 0, dy: 0 });
   // Ref copy for reading in callbacks without creating dep cycles
@@ -97,37 +99,62 @@ const InfiniteCanvas = ({
   const isPinching = useRef(false);
   const touchPoints = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{
-    dist: number; midX: number; midY: number;
-    camX: number; camY: number; camZoom: number;
+    dist: number;
+    midX: number;
+    midY: number;
+    camX: number;
+    camY: number;
+    camZoom: number;
   } | null>(null);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  const onBgDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button === 2) {
-      isPanning.current = true;
-      panStart.current = {
-        px: e.clientX, py: e.clientY,
-        cx: cameraRef.current.x, cy: cameraRef.current.y,
+  const onBgDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button === 2) {
+        isPanning.current = true;
+        panStart.current = {
+          px: e.clientX,
+          py: e.clientY,
+          cx: cameraRef.current.x,
+          cy: cameraRef.current.y,
+        };
+        return;
+      }
+      if (e.button !== 0 || isPinching.current) return;
+      if (
+        marqueeSuppressSelector &&
+        (e.target as Element).closest(marqueeSuppressSelector)
+      )
+        return;
+      const m: Marquee = {
+        startX: e.clientX,
+        startY: e.clientY,
+        curX: e.clientX,
+        curY: e.clientY,
       };
-      return;
-    }
-    if (e.button !== 0 || isPinching.current) return;
-    if (marqueeSuppressSelector && (e.target as Element).closest(marqueeSuppressSelector)) return;
-    const m: Marquee = { startX: e.clientX, startY: e.clientY, curX: e.clientX, curY: e.clientY };
-    marqueeRef.current = m;
-    setMarquee(m);
-  }, [marqueeSuppressSelector]);
+      marqueeRef.current = m;
+      setMarquee(m);
+    },
+    [marqueeSuppressSelector],
+  );
 
   const onGlobalMove = useCallback((e: PE) => {
     if (isPanning.current) {
       const { px, py, cx, cy } = panStart.current;
-      setCamera(prev => ({ ...prev, x: cx + e.clientX - px, y: cy + e.clientY - py }));
+      setCamera((prev) => ({
+        ...prev,
+        x: cx + e.clientX - px,
+        y: cy + e.clientY - py,
+      }));
       return;
     }
     if (isPinching.current) return;
     if (isDragging.current) {
-      const newDxy = { dx: e.clientX - dragStart.current.x, dy: e.clientY - dragStart.current.y };
+      const newDxy = {
+        dx: e.clientX - dragStart.current.x,
+        dy: e.clientY - dragStart.current.y,
+      };
       dxyRef.current = newDxy;
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => setDxy({ ...newDxy }));
@@ -179,8 +206,11 @@ const InfiniteCanvas = ({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-      setCamera(prev => {
-        const newZoom = Math.max(minZoom, Math.min(maxZoom, prev.zoom * factor));
+      setCamera((prev) => {
+        const newZoom = Math.max(
+          minZoom,
+          Math.min(maxZoom, prev.zoom * factor),
+        );
         const ratio = newZoom / prev.zoom;
         return {
           zoom: newZoom,
@@ -210,7 +240,14 @@ const InfiniteCanvas = ({
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         const cam = cameraRef.current;
-        pinchStart.current = { dist, midX, midY, camX: cam.x, camY: cam.y, camZoom: cam.zoom };
+        pinchStart.current = {
+          dist,
+          midX,
+          midY,
+          camX: cam.x,
+          camY: cam.y,
+          camZoom: cam.zoom,
+        };
       }
     };
 
@@ -225,7 +262,10 @@ const InfiniteCanvas = ({
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         const ps = pinchStart.current;
-        const newZoom = Math.max(minZoom, Math.min(maxZoom, ps.camZoom * (dist / ps.dist)));
+        const newZoom = Math.max(
+          minZoom,
+          Math.min(maxZoom, ps.camZoom * (dist / ps.dist)),
+        );
         const ratio = newZoom / ps.camZoom;
         setCamera({
           zoom: newZoom,
@@ -236,7 +276,8 @@ const InfiniteCanvas = ({
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      for (const t of e.changedTouches) touchPoints.current.delete(t.identifier);
+      for (const t of e.changedTouches)
+        touchPoints.current.delete(t.identifier);
       if (touchPoints.current.size < 2) {
         isPinching.current = false;
         pinchStart.current = null;
@@ -265,11 +306,15 @@ const InfiniteCanvas = ({
   }, [onGlobalMove, onGlobalUp]);
 
   const onZoomReset = useCallback(() => {
-    setCamera(prev => {
+    setCamera((prev) => {
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
       const ratio = 1 / prev.zoom;
-      return { zoom: 1, x: cx - (cx - prev.x) * ratio, y: cy - (cy - prev.y) * ratio };
+      return {
+        zoom: 1,
+        x: cx - (cx - prev.x) * ratio,
+        y: cy - (cy - prev.y) * ratio,
+      };
     });
   }, []);
 
@@ -281,7 +326,7 @@ const InfiniteCanvas = ({
 
   const ctxValue = useMemo(
     () => ({ camera, dxy, startItemDrag }),
-    [camera, dxy, startItemDrag]
+    [camera, dxy, startItemDrag],
   );
 
   return (
@@ -308,13 +353,25 @@ const InfiniteCanvas = ({
           <div className="ic-controls-btns">
             {onFitRequest && (
               <button className="ic-btn" onClick={onFit} title="Fit all">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="3.5" y="3.5" width="9" height="9" rx="0.5"/>
-                  <path d="M1 4V1h3M15 4V1h-3M1 12v3h3M15 12v3h-3"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
+                  <rect x="3.5" y="3.5" width="9" height="9" rx="0.5" />
+                  <path d="M1 4V1h3M15 4V1h-3M1 12v3h3M15 12v3h-3" />
                 </svg>
               </button>
             )}
-            <button className="ic-btn" onClick={onZoomReset} title="Reset to 100%">
+            <button
+              className="ic-btn"
+              onClick={onZoomReset}
+              title="Reset to 100%"
+            >
               1:1
             </button>
           </div>
