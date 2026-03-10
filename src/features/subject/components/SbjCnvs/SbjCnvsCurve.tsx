@@ -1,9 +1,12 @@
+const BASE_STROKE = 4;
+
 type Props = {
   sourcePos: { x: number; y: number };
   mousePos: { x: number; y: number } | null;
+  zoom: number;
 };
 
-const SbjCnvsCurve = ({ sourcePos: { x: px, y: py }, mousePos }: Props) => {
+const SbjCnvsCurve = ({ sourcePos: { x: px, y: py }, mousePos, zoom }: Props) => {
   if (!mousePos) return null;
   const { x: ex, y: ey } = mousePos;
   const m =
@@ -14,7 +17,7 @@ const SbjCnvsCurve = ({ sourcePos: { x: px, y: py }, mousePos }: Props) => {
   return (
     <div className="sbj-cnvs-curve">
       <svg>
-        <path d={d} />
+        <path d={d} style={{ strokeWidth: BASE_STROKE * zoom }} />
       </svg>
     </div>
   );

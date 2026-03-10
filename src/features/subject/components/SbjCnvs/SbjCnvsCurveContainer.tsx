@@ -2,9 +2,9 @@ import { useSbjData } from "../../context/SbjDataContext";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 
 type LRTB = { l: number; r: number; t: number; b: number };
-type Props = { lrtbMap: ReadonlyMap<number, LRTB> };
+type Props = { lrtbMap: ReadonlyMap<number, LRTB>; zoom: number };
 
-const SbjCnvsCurveContainer = ({ lrtbMap }: Props) => {
+const SbjCnvsCurveContainer = ({ lrtbMap, zoom }: Props) => {
   const { idx2chain } = useSbjData();
   return (
     <div>
@@ -20,6 +20,7 @@ const SbjCnvsCurveContainer = ({ lrtbMap }: Props) => {
               key={`sbj-cnvs-curve-${i}-${idx}`}
               sourcePos={{ x: (fromLrtb.l + fromLrtb.r) / 2, y: fromLrtb.b }}
               mousePos={{ x: (toLrtb.l + toLrtb.r) / 2, y: toLrtb.t }}
+              zoom={zoom}
             />
           );
         });
