@@ -40,7 +40,7 @@ const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
           return s.sbjType === "COURSE" ? (
             <SbjTreeBox key={`sbj-tree-${k}`} idx={k} title={s.title} />
           ) : (
-            <SbjTreeItem key={`sbj-tree-item-${k}`} idx={k} title={s.title} />
+            <SbjTreeItem key={`sbj-tree-item-${k}`} idx={k} title={s.short || s.title} />
           );
         })}
       </div>
