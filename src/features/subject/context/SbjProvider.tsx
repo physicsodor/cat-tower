@@ -33,7 +33,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   // GetSet wrappers (ref-based, never trigger re-renders)
   const treeDragRef = useRef(new Set<number>());
   const cnvsDragRef = useRef(new Set<number>());
-  const cnvsDragStartRef = useRef({ x: 0, y: 0 });
   const preSourceRef = useRef(-1);
   const treeDrag = useMemo<GetSet<Set<number>>>(
     () => ({ get: () => treeDragRef.current, set: (s) => { treeDragRef.current = s; } }),
@@ -41,10 +40,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   );
   const cnvsDrag = useMemo<GetSet<Set<number>>>(
     () => ({ get: () => cnvsDragRef.current, set: (s) => { cnvsDragRef.current = s; } }),
-    []
-  );
-  const cnvsDragStart = useMemo<GetSet<{ x: number; y: number }>>(
-    () => ({ get: () => cnvsDragStartRef.current, set: (s) => { cnvsDragStartRef.current = s; } }),
     []
   );
   const preSource = useMemo<GetSet<number>>(
@@ -113,7 +108,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setCnvsPos,
       treeDrag,
       cnvsDrag,
-      cnvsDragStart,
       preSource,
       editingIdx,
       openEdit,
@@ -125,7 +119,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       addSbj, addCrs, delSbj, delSbjOne, delCrs,
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos,
-      treeDrag, cnvsDrag, cnvsDragStart, preSource,
+      treeDrag, cnvsDrag, preSource,
       editingIdx, openEdit, closeEdit, updateSbj,
     ]
   );

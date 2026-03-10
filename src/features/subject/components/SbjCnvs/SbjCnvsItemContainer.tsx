@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useSbjData } from "../../context/SbjDataContext";
 import { useSbjSelect } from "../../context/SbjSelectContext";
+import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
 import SbjCnvsItem from "./SbjCnvsItem";
 
 type Props = {
   items: Map<number, HTMLDivElement | null>;
-  dxy: { dx: number; dy: number };
-  camera: { x: number; y: number; zoom: number };
 };
 
-const SbjCnvsItemContainer = ({ items, dxy, camera }: Props) => {
+const SbjCnvsItemContainer = ({ items }: Props) => {
   const { idx2sbj, idx2chain } = useSbjData();
   const { selectedSet } = useSbjSelect();
+  const { camera, dxy } = useInfiniteCanvas();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const chain = hoveredIdx !== null ? idx2chain.get(hoveredIdx) : null;

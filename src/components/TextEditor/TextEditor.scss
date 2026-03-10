@@ -1,0 +1,179 @@
+// TextEditor.scss
+// Self-contained styles for TextEditor + MathEditorPopup.
+// CSS variables use project design tokens with sensible fallbacks,
+// so this file works standalone or within a design-system project.
+
+// ── Math editor popup buttons ─────────────────────────────────────────────────
+
+.te-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--G-M, 8px);
+  margin-top: var(--G-S, 4px);
+}
+
+.te-btn {
+  padding: var(--G-M, 8px) var(--G-L, 12px);
+  background: var(--C-L, #e0e0e0);
+  border: 1.5px solid var(--C-D, #aaa);
+  cursor: pointer;
+  font: inherit;
+  &:hover { background: var(--C-LL, #f0f0f0); }
+  &:active { background: var(--C-D, #aaa); color: var(--C-LL, #f5f5f5); }
+  &.-confirm {
+    background: var(--C-B, steelblue);
+    color: var(--C-LL, #f5f5f5);
+    border-color: var(--C-DD, #555);
+    &:hover { background: var(--C-D, #aaa); }
+  }
+}
+
+// ── WYSIWYG editor ────────────────────────────────────────────────────────────
+
+.markup-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--C-D, #aaa);
+  background: white;
+  min-width: 0;
+
+  &-toolbar {
+    display: flex;
+    gap: 1px;
+    padding: var(--G-S, 4px);
+    border-bottom: 1px solid var(--C-D, #aaa);
+    background: var(--C-LL, #f5f5f5);
+  }
+
+  &-btn {
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9em;
+    &:hover { background: var(--C-L, #e0e0e0); border-color: var(--C-D, #aaa); }
+    &:active { background: var(--C-D, #aaa); }
+  }
+
+  &-body {
+    flex: 1;
+    padding: var(--G-S, 4px) var(--G-M, 8px);
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    outline: none;
+    line-height: 1.8;
+    word-break: break-word;
+    cursor: text;
+  }
+}
+
+// ── Display math line wrapper ─────────────────────────────────────────────────
+
+// Full-width inline wrapper — cursor can be placed before/after display math
+.dmath-line {
+  display: inline-block;
+  width: 100%;
+}
+
+// ── Math blocks inside the editor ─────────────────────────────────────────────
+
+.math-block {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px dashed transparent;
+  padding: 0 2px;
+  vertical-align: middle;
+  &:hover { border-color: var(--C-D, #aaa); background: var(--C-LL, #f5f5f5); }
+  &.-display { width: 100%; text-align: center; padding: var(--G-S, 4px) 0; }
+}
+
+.math-placeholder {
+  color: var(--C-D, #aaa);
+  font-style: italic;
+}
+
+// ── Math editor popup ─────────────────────────────────────────────────────────
+
+.math-edit {
+  &-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--math-edit-z, 600);
+    backdrop-filter: blur(2px);
+    background: oklch(0 0 0 / 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-modal {
+    background: var(--C-LL, #f5f5f5);
+    border: 1.5px solid var(--C-D, #aaa);
+    padding: var(--G-XL, 20px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--G-M, 8px);
+    min-width: 360px;
+    max-width: 90vw;
+  }
+
+  &-kind-toggle {
+    display: flex;
+    gap: 1px;
+    background: var(--C-D, #aaa);
+    border: 1px solid var(--C-D, #aaa);
+    border-radius: 3px;
+    overflow: hidden;
+    align-self: flex-start;
+  }
+
+  &-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+    padding: var(--G-M, 8px);
+    border: 1px solid var(--C-D, #aaa);
+    background: white;
+    border-radius: 3px;
+    overflow-x: auto;
+  }
+
+  &-input {
+    padding: var(--G-S, 4px) var(--G-M, 8px);
+    border: 1px solid var(--C-D, #aaa);
+    outline: none;
+    font-family: monospace;
+    font-size: 0.9em;
+    resize: vertical;
+    line-height: 1.5;
+    background: white;
+    &:focus { border-color: var(--C-B, steelblue); }
+  }
+}
+
+// ── Math kind toggle buttons ──────────────────────────────────────────────────
+
+.math-kind-btn {
+  flex: 1;
+  padding: var(--G-S, 4px) var(--G-L, 12px);
+  background: var(--C-L, #e0e0e0);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  &:hover { background: var(--C-LL, #f5f5f5); }
+  &.-active {
+    background: var(--C-B, steelblue);
+    color: var(--C-LL, #f5f5f5);
+    cursor: default;
+  }
+}

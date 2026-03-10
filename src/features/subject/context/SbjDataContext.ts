@@ -19,7 +19,6 @@ type SbjDataContextValue = {
   setCnvsPos: (trg: Set<number>, dxy: { dx: number; dy: number }) => void;
   treeDrag: GetSet<Set<number>>;
   cnvsDrag: GetSet<Set<number>>;
-  cnvsDragStart: GetSet<{ x: number; y: number }>;
   preSource: GetSet<number>;
   editingIdx: number | null;
   openEdit: (idx: number) => void;
