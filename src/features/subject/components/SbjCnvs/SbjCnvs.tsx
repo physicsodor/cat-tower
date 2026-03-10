@@ -1,28 +1,28 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
 import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSelect } from "../../context/SbjSelectContext";
+import InfiniteCanvas, { useInfiniteCanvas, type Camera } from "@/components/InfiniteCanvas";
 
-type PE = React.PointerEvent | PointerEvent;
 type LRTB = { l: number; r: number; t: number; b: number };
 
-const SbjCnvs = () => {
-  const { cnvsDragStart, cnvsDrag, idx2family, setCnvsPos } = useSbjData();
-  const [dxy, setDxy] = useState<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+// ── Inner content (reads camera/dxy from InfiniteCanvasContext) ───────────────
+
+type InnerProps = {
+  itemsRef: React.MutableRefObject<Map<number, HTMLDivElement | null>>;
+  lrtbMapRef: React.MutableRefObject<Map<number, LRTB>>;
+};
+
+const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
+  const { camera, dxy } = useInfiniteCanvas();
+  const { idx2family } = useSbjData();
   const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
-  const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
-  const rafRef = useRef(0);
 
   useLayoutEffect(() => {
     const map = new Map<number, LRTB>();
-    const _getItemLRTB = (idx: number): LRTB | null => {
+    const getItemLRTB = (idx: number): LRTB | null => {
       const item = itemsRef.current.get(idx);
       if (!item) return null;
       const rect = item.getBoundingClientRect();
@@ -33,66 +33,100 @@ const SbjCnvs = () => {
       const kids = f.kids;
       if (!kids) {
         if (map.get(idx)) continue;
-        const lrtb = _getItemLRTB(idx);
+        const lrtb = getItemLRTB(idx);
         if (lrtb) map.set(idx, lrtb);
         continue;
       }
       let lrtb: LRTB | null = null;
       for (const k of kids) {
-        const kidLrtb = _getItemLRTB(k);
+        const kidLrtb = getItemLRTB(k);
         if (!kidLrtb) continue;
         if (lrtb === null) lrtb = kidLrtb;
-        else
-          lrtb = {
-            l: Math.min(lrtb.l, kidLrtb.l),
-            r: Math.max(lrtb.r, kidLrtb.r),
-            t: Math.min(lrtb.t, kidLrtb.t),
-            b: Math.max(lrtb.b, kidLrtb.b),
-          };
+        else lrtb = {
+          l: Math.min(lrtb.l, kidLrtb.l),
+          r: Math.max(lrtb.r, kidLrtb.r),
+          t: Math.min(lrtb.t, kidLrtb.t),
+          b: Math.max(lrtb.b, kidLrtb.b),
+        };
       }
       if (lrtb !== null) map.set(idx, lrtb);
     }
     setLrtbMap(map);
-  }, [idx2family, dxy]);
-
-  const onGlobalMove = useCallback(
-    (e: PE) => {
-      if (cnvsDrag.get().size <= 0) return;
-      const { x, y } = cnvsDragStart.get();
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() =>
-        setDxy({ dx: e.clientX - x, dy: e.clientY - y })
-      );
-    },
-    [cnvsDrag, cnvsDragStart]
-  );
-
-  const onGlobalUp = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    setCnvsPos(cnvsDrag.get(), {
-      dx: Math.round(dxy.dx),
-      dy: Math.round(dxy.dy),
-    });
-    setDxy({ dx: 0, dy: 0 });
-    cnvsDrag.set(new Set());
-  }, [cnvsDrag, setCnvsPos, dxy]);
-
-  useEffect(() => {
-    window.addEventListener("pointermove", onGlobalMove);
-    window.addEventListener("pointerup", onGlobalUp);
-    return () => {
-      window.removeEventListener("pointermove", onGlobalMove);
-      window.removeEventListener("pointerup", onGlobalUp);
-    };
-  }, [onGlobalMove, onGlobalUp]);
+    lrtbMapRef.current = map;
+  }, [idx2family, dxy, camera, lrtbMapRef, itemsRef]);
 
   return (
-    <div className="sbj-cnvs">
+    <>
       <SbjCnvsCrsContainer lrtbMap={lrtbMap} items={itemsRef.current} back />
       <SbjCnvsCurveContainer lrtbMap={lrtbMap} />
       <SbjCnvsCrsContainer lrtbMap={lrtbMap} items={itemsRef.current} />
-      <SbjCnvsItemContainer dxy={dxy} items={itemsRef.current} />
-    </div>
+      <SbjCnvsItemContainer items={itemsRef.current} />
+    </>
+  );
+};
+
+// ── Outer wrapper ─────────────────────────────────────────────────────────────
+
+const SbjCnvs = () => {
+  const { cnvsDrag, idx2sbj, setCnvsPos } = useSbjData();
+  const { selectMany } = useSbjSelect();
+  const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
+  const lrtbMapRef = useRef(new Map<number, LRTB>());
+
+  const onItemDragEnd = useCallback((worldDx: number, worldDy: number) => {
+    const drag = cnvsDrag.get();
+    if (drag.size > 0) {
+      setCnvsPos(drag, { dx: Math.round(worldDx), dy: Math.round(worldDy) });
+      cnvsDrag.set(new Set());
+    }
+  }, [cnvsDrag, setCnvsPos]);
+
+  const onMarqueeSelect = useCallback((
+    selL: number, selR: number, selT: number, selB: number,
+    mode: "window" | "cross"
+  ) => {
+    const selected = new Set<number>();
+    for (const [idx, lrtb] of lrtbMapRef.current) {
+      if (idx < 0) continue;
+      const s = idx2sbj.get(idx);
+      if (!s || s.sbjType !== "SUBJECT") continue;
+      if (mode === "window") {
+        if (lrtb.l >= selL && lrtb.r <= selR && lrtb.t >= selT && lrtb.b <= selB)
+          selected.add(idx);
+      } else {
+        if (lrtb.l < selR && lrtb.r > selL && lrtb.t < selB && lrtb.b > selT)
+          selected.add(idx);
+      }
+    }
+    selectMany(selected);
+  }, [idx2sbj, selectMany]);
+
+  const onFitRequest = useCallback((): Camera | null => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [, s] of idx2sbj) {
+      if (s.sbjType !== "SUBJECT") continue;
+      minX = Math.min(minX, s.x); maxX = Math.max(maxX, s.x);
+      minY = Math.min(minY, s.y); maxY = Math.max(maxY, s.y);
+    }
+    const zoom = 0.3;
+    if (!isFinite(minX)) return { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom };
+    return {
+      zoom,
+      x: window.innerWidth / 2 - (minX + maxX) / 2 * zoom,
+      y: window.innerHeight / 2 - (minY + maxY) / 2 * zoom,
+    };
+  }, [idx2sbj]);
+
+  return (
+    <InfiniteCanvas
+      className="sbj-cnvs"
+      marqueeSuppressSelector=".sbj-cnvs-item"
+      onItemDragEnd={onItemDragEnd}
+      onMarqueeSelect={onMarqueeSelect}
+      onFitRequest={onFitRequest}
+    >
+      <SbjCnvsInner itemsRef={itemsRef} lrtbMapRef={lrtbMapRef} />
+    </InfiniteCanvas>
   );
 };
 

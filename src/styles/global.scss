@@ -3,23 +3,54 @@
   @include m.G-setting;
   @include m.C-setting(7);
   --z-sbj-cnvs-curve: 0;
-  --z-sbj-cnvs-crs-bck: 1
+  --z-sbj-cnvs-crs-bck: 1;
   --z-sbj-cnvs: 2;
   --z-sbj-cnvs-crs: 3;
   --z-sbj-cnvs-item: 4;
   --z-sbj-ctrl: 100;
+  --z-sbj-edit: 500;
   --z-ghost: 999;
+
+  // InfiniteCanvas design-token overrides
+  --ic-z-controls: var(--z-sbj-ctrl);
+  --ic-z-marquee: 5;
+  --ic-btn-bg: var(--C-L);
+  --ic-btn-hover-bg: var(--C-LL);
+  --ic-btn-active-bg: var(--C-D);
+  --ic-btn-active-color: var(--C-LL);
+  --ic-btn-border: var(--C-D);
+  --ic-zoom-label-bg: var(--C-L);
+  --ic-zoom-label-color: var(--C-DD);
+  --ic-marquee-window-color: var(--C-B);
+  --ic-marquee-cross-color: var(--C-D);
+
+  // TextEditor design-token override for math popup z-index
+  --math-edit-z: 600;
 }
 
 .sbj-cnvs {
   --margin: var(--G-XL);
   @include m.fixed-full(--z-sbj-cnvs);
+  // @include m.C-setting(0);
+  // background-color: var(--C-LL);
+  user-select: none;
 
   &-item {
-    @include m.fixed-item-center(--z-sbj-cnvs-item);
+    @include m.fixed-item(--z-sbj-cnvs-item);
+    transform-origin: 0 0;
     --back: var(--C-LL);
+    outline: 0.2rem solid var(--C-D);
+    &:hover {
+      z-index: calc(var(--z-sbj-cnvs-item) + 1);
+    }
     &.-slc {
       --back: var(--C-L);
+    }
+    &.-pre {
+      @include m.C-setting(6);
+    }
+    &.-nxt {
+      @include m.C-setting(8);
     }
     .ttl {
       background-color: var(--back);
@@ -38,25 +69,46 @@
     .out {
       margin-bottom: calc(-1 * var(--G-L));
     }
-    .sum{
-      width: fit-content;
-      height: 0;
-      margin-left: auto;
-      transform: translate(100%, 100%);
-      div{
-        width: fit-content;
-        white-space: 0;
+    .sum {
+      position: absolute;
+      top: 0;
+      left: 100%;
+      width: max-content;
+      pointer-events: none;
+      div {
+        white-space: nowrap;
       }
+    }
+    .item-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+    }
+    .item-action {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: var(--G-S);
+      line-height: 1;
+      &.-add { color: oklch(45% 0.15 140); }
+      &.-del { color: oklch(45% 0.15 20); }
+      &:hover { background: oklch(0 0 0 / 0.08); }
+      &:active { background: oklch(0 0 0 / 0.16); }
     }
   }
   &-crs {
     --z: --z-sbj-cnvs-crs;
-    &.-bck{--z:var(--z-sbj-cnvs-crs-bck); background-color: m.C-alpha(--C-LL, 0.5);}
+    &.-bck {
+      --z: var(--z-sbj-cnvs-crs-bck);
+      background-color: m.C-alpha(--C-LL, 0.5);
+    }
     @include m.fixed-item(--z);
     @include m.box-lrtb-gap(--G-XL);
   }
   &-curve {
     @include m.fixed-full(--z-sbj-cnvs-curve);
+    pointer-events: none;
     svg {
       width: 100%;
       height: 100%;
@@ -79,7 +131,9 @@
     cursor: grab;
     user-select: none;
     touch-action: none;
-    &:active { cursor: grabbing; }
+    &:active {
+      cursor: grabbing;
+    }
     svg {
       display: block;
       circle {
@@ -93,16 +147,24 @@
         stroke-linecap: round;
       }
     }
-    &:hover svg circle { fill: var(--C-LL); }
-    &:active svg circle { fill: var(--C-D); }
-    &:active svg line { stroke: var(--C-LL); }
+    &:hover svg circle {
+      fill: var(--C-LL);
+    }
+    &:active svg circle {
+      fill: var(--C-D);
+    }
+    &:active svg line {
+      stroke: var(--C-LL);
+    }
   }
 
   &-panel {
     max-height: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-height 0.35s ease, opacity 0.25s ease;
+    transition:
+      max-height 0.35s ease,
+      opacity 0.25s ease;
     &.open {
       max-height: 80vh;
       opacity: 1;
@@ -161,6 +223,118 @@
     }
   }
 }
+
+.sbj-auth-panel {
+  position: fixed;
+  z-index: var(--z-sbj-ctrl);
+  bottom: var(--G-M);
+  right: var(--G-M);
+  display: flex;
+  gap: var(--G-S);
+  align-items: center;
+}
+
+.sbj-auth-btn,
+.sbj-auth-save-btn {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.sbj-edit {
+  &-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-sbj-edit);
+    backdrop-filter: blur(4px);
+    background: oklch(0 0 0 / 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  &-modal {
+    background: var(--C-LL);
+    border: 1.5px solid var(--C-D);
+    padding: var(--G-XL);
+    display: flex;
+    flex-direction: column;
+    gap: var(--G-M);
+    min-width: 360px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  &-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--G-M);
+    &.-top {
+      align-items: flex-start;
+      label { padding-top: 0.35em; }
+    }
+    label {
+      min-width: 3em;
+      color: var(--C-DD);
+    }
+    input {
+      flex: 1;
+      border: 1px solid var(--C-D);
+      background: white;
+      padding: var(--G-S) var(--G-M);
+      font: inherit;
+      &::placeholder { color: var(--C-D); }
+    }
+  }
+  &-value {
+    flex: 1;
+    line-height: 1.5;
+    &.-muted { color: var(--C-D); }
+  }
+  &-content {
+    flex: 1;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  &-bytes {
+    color: var(--C-D);
+    font-size: 0.8em;
+    white-space: nowrap;
+  }
+  &-btns {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--G-M);
+    margin-top: var(--G-S);
+  }
+  &-btn {
+    padding: var(--G-M) var(--G-L);
+    background: var(--C-L);
+    border: 1.5px solid var(--C-D);
+    cursor: pointer;
+    &:hover { background: var(--C-LL); }
+    &:active { background: var(--C-D); color: var(--C-LL); }
+    &.-confirm {
+      background: var(--C-B);
+      color: var(--C-LL);
+      border-color: var(--C-DD);
+      &:hover { background: var(--C-D); }
+    }
+  }
+}
+
+// Editor styles moved to src/components/TextEditor/TextEditor.scss
 
 .ghost {
   position: fixed;

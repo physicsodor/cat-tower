@@ -33,7 +33,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   // GetSet wrappers (ref-based, never trigger re-renders)
   const treeDragRef = useRef(new Set<number>());
   const cnvsDragRef = useRef(new Set<number>());
-  const cnvsDragStartRef = useRef({ x: 0, y: 0 });
   const preSourceRef = useRef(-1);
   const treeDrag = useMemo<GetSet<Set<number>>>(
     () => ({ get: () => treeDragRef.current, set: (s) => { treeDragRef.current = s; } }),
@@ -41,10 +40,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   );
   const cnvsDrag = useMemo<GetSet<Set<number>>>(
     () => ({ get: () => cnvsDragRef.current, set: (s) => { cnvsDragRef.current = s; } }),
-    []
-  );
-  const cnvsDragStart = useMemo<GetSet<{ x: number; y: number }>>(
-    () => ({ get: () => cnvsDragStartRef.current, set: (s) => { cnvsDragStartRef.current = s; } }),
     []
   );
   const preSource = useMemo<GetSet<number>>(
@@ -57,8 +52,21 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const idx2family = useMemo(() => buildFamilyMap(list), [list]);
   const idx2chain = useMemo(() => buildChainMap(list), [list]);
 
+  // Edit modal state
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const openEdit = useCallback((idx: number) => setEditingIdx(idx), []);
+  const closeEdit = useCallback(() => setEditingIdx(null), []);
+  const updateSbj = useCallback(
+    (idx: number, fields: { title: string; short?: string; content: string; description: string }) => {
+      setList((prev) => prev.map((item) =>
+        item.idx === idx && item.sbjType === "SUBJECT" ? { ...item, ...fields } : item
+      ));
+    },
+    []
+  );
+
   // Operations
-  const { addSbj, addCrs, delSbj, delCrs } = useSbjCrud(
+  const { addSbj, addCrs, delSbj, delSbjOne, delCrs } = useSbjCrud(
     idx2family,
     getSelected,
     setList,
@@ -67,6 +75,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos } = useSbjCnvs(idx2chain, setList, preSource);
   const sync = useSbjSync(list, setList);
+
+  const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
 
   // selectItem depends on selectedSet — lives in SbjSelectContext
   const selectItem = useCallback(
@@ -90,6 +100,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       addSbj,
       addCrs,
       delSbj,
+      delSbjOne,
       delCrs,
       setTreeMom,
       setTreeBro,
@@ -97,22 +108,26 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setCnvsPos,
       treeDrag,
       cnvsDrag,
-      cnvsDragStart,
       preSource,
+      editingIdx,
+      openEdit,
+      closeEdit,
+      updateSbj,
     }),
     [
       idx2sbj, idx2family, idx2chain,
-      addSbj, addCrs, delSbj, delCrs,
+      addSbj, addCrs, delSbj, delSbjOne, delCrs,
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos,
-      treeDrag, cnvsDrag, cnvsDragStart, preSource,
+      treeDrag, cnvsDrag, preSource,
+      editingIdx, openEdit, closeEdit, updateSbj,
     ]
   );
 
   // SbjSelectContext: changes when user clicks to select
   const selectValue = useMemo(
-    () => ({ selectedSet, selectItem }),
-    [selectedSet, selectItem]
+    () => ({ selectedSet, selectItem, selectMany }),
+    [selectedSet, selectItem, selectMany]
   );
 
   return (
