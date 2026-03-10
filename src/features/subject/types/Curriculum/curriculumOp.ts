@@ -40,6 +40,8 @@ const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
 
 const addSubject = (
   idx2family: FamilyMap,
+  x: number,
+  y: number,
 ): {
   newIdx: number;
   updater: (list: ReadonlyArray<Curriculum>) => Curriculum[];
@@ -48,7 +50,7 @@ const addSubject = (
   const mom = -1;
   const lastBro = idx2family.get(mom)?.last ?? null;
   const newBro = generateKeyBetween(lastBro, null);
-  const newItem = getNewItem(newIdx, mom, newBro, "SUBJECT");
+  const newItem = getNewItem(newIdx, mom, newBro, "SUBJECT", x, y);
   const updater = (list: ReadonlyArray<Curriculum>) => [...list, newItem];
   return { newIdx, updater };
 };
@@ -93,6 +95,8 @@ const getNewItem = (
   mom: number,
   bro: string,
   sbjType: Curriculum["sbjType"],
+  x = 0,
+  y = 0,
 ): Curriculum => {
   return sbjType === "COURSE"
     ? {
@@ -110,8 +114,8 @@ const getNewItem = (
         title: `Subject ${idx}`,
         content: "",
         description: "",
-        x: 0,
-        y: 0,
+        x,
+        y,
         sbjType,
       };
 };

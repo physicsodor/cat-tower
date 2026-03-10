@@ -3,6 +3,7 @@ import type { SbjInfo } from "../types/Curriculum/curriculumOp";
 import type { FamilyMap, BroDir } from "../types/Family/familyOp";
 import type { ChainMap } from "../types/Chain/chainOp";
 import type { GetSet } from "@/utils/GetSet";
+import type { Camera } from "@/components/InfiniteCanvas";
 
 type SbjDataContextValue = {
   idx2sbj: Map<number, SbjInfo>;
@@ -20,6 +21,7 @@ type SbjDataContextValue = {
   treeDrag: GetSet<Set<number>>;
   cnvsDrag: GetSet<Set<number>>;
   preSource: GetSet<number>;
+  syncCamera: (camera: Camera) => void;
   editingIdx: number | null;
   openEdit: (idx: number) => void;
   closeEdit: () => void;

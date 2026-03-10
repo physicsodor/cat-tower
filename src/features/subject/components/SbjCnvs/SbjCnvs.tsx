@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
@@ -17,7 +17,9 @@ type InnerProps = {
 
 const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
   const { camera, dxy } = useInfiniteCanvas();
-  const { idx2family } = useSbjData();
+  const { idx2family, syncCamera } = useSbjData();
+
+  useEffect(() => { syncCamera(camera); }, [camera, syncCamera]);
   const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
 
   useLayoutEffect(() => {

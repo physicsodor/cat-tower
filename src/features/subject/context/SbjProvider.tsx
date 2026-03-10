@@ -18,6 +18,7 @@ import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
 import type { GetSet } from "@/utils/GetSet";
+import type { Camera } from "@/components/InfiniteCanvas";
 
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
@@ -29,6 +30,10 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     selectedSetRef.current = selectedSet;
   }, [selectedSet]);
   const getSelected = useCallback(() => selectedSetRef.current, []);
+
+  // Camera ref — updated by SbjCnvs via syncCamera
+  const cameraRef = useRef<Camera>({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 });
+  const syncCamera = useCallback((c: Camera) => { cameraRef.current = c; }, []);
 
   // GetSet wrappers (ref-based, never trigger re-renders)
   const treeDragRef = useRef(new Set<number>());
@@ -70,7 +75,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     idx2family,
     getSelected,
     setList,
-    setSelectedSet
+    setSelectedSet,
+    cameraRef
   );
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos } = useSbjCnvs(idx2chain, setList, preSource);
@@ -109,6 +115,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       treeDrag,
       cnvsDrag,
       preSource,
+      syncCamera,
       editingIdx,
       openEdit,
       closeEdit,
@@ -120,7 +127,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos,
       treeDrag, cnvsDrag, preSource,
-      editingIdx, openEdit, closeEdit, updateSbj,
+      syncCamera, editingIdx, openEdit, closeEdit, updateSbj,
     ]
   );
 

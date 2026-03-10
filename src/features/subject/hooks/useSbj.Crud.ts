@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, type RefObject } from "react";
 import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import {
   addCourse,
@@ -7,18 +7,23 @@ import {
   deleteSubject,
 } from "@/features/subject/types/Curriculum/curriculumOp";
 import type { FamilyMap } from "../types/Family/familyOp";
+import type { Camera } from "@/components/InfiniteCanvas";
 
 export const useSbjCrud = (
   idx2family: FamilyMap,
   getSelected: () => ReadonlySet<number>,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
-  setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>
+  setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>,
+  cameraRef: RefObject<Camera>
 ) => {
   const addSbj = useCallback(() => {
-    const { newIdx, updater } = addSubject(idx2family);
+    const cam = cameraRef.current;
+    const x = cam ? (window.innerWidth / 2 - cam.x) / cam.zoom : 0;
+    const y = cam ? (window.innerHeight / 2 - cam.y) / cam.zoom : 0;
+    const { newIdx, updater } = addSubject(idx2family, x, y);
     setList(updater);
     setSelectedSet(new Set([newIdx]));
-  }, [idx2family, setList, setSelectedSet]);
+  }, [idx2family, setList, setSelectedSet, cameraRef]);
 
   const addCrs = useCallback(() => {
     const { updater } = addCourse(idx2family, getSelected());
