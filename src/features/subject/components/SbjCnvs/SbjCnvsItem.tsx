@@ -1,25 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../context/SbjDataContext";
+import { stripMarkup, truncateBytes } from "../../utils/markup";
 
 type PE = React.PointerEvent | PointerEvent;
 
-const encoder = new TextEncoder();
 const getDesc = (info: { description: string; content: string }): string => {
   if (info.description) return info.description;
   if (info.content) {
-    if (encoder.encode(info.content).length <= 20) return info.content;
-    let byteCount = 0;
-    let result = "";
-    for (const char of info.content) {
-      const b = encoder.encode(char).length;
-      if (byteCount + b > 20) break;
-      byteCount += b;
-      result += char;
-    }
-    return result + "...";
+    const plain = stripMarkup(info.content).trim();
+    return plain ? truncateBytes(plain, 20, "...") : "내용 없음";
   }
   return "내용 없음";
 };
@@ -57,6 +49,7 @@ const SbjCnvsItem = ({
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [isOver, setIsOver] = useState(false);
   const outRef = useRef<HTMLDivElement | null>(null);
+  const desc = useMemo(() => getDesc(info), [info.description, info.content]);
 
   const getSourcePos = useCallback(() => {
     if (!outRef.current) return { x: 0, y: 0 };
@@ -112,7 +105,7 @@ const SbjCnvsItem = ({
         {isOver ? (
           <div className="sum">
             <div>{info.title}</div>
-            <div>{getDesc(info)}</div>
+            <div>{desc}</div>
           </div>
         ) : null}
         <div className="item-actions">

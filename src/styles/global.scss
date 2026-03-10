@@ -10,6 +10,7 @@
   --z-sbj-ctrl: 100;
   --z-sbj-cnvs-marquee: 5;
   --z-sbj-edit: 500;
+  --z-math-edit: 600;
   --z-ghost: 999;
 }
 
@@ -310,27 +311,41 @@
     display: flex;
     flex-direction: column;
     gap: var(--G-M);
-    min-width: 320px;
+    min-width: 360px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   &-row {
     display: flex;
     align-items: baseline;
     gap: var(--G-M);
+    &.-top {
+      align-items: flex-start;
+      label { padding-top: 0.35em; }
+    }
     label {
       min-width: 3em;
       color: var(--C-DD);
     }
-    input, textarea {
+    input {
       flex: 1;
       border: 1px solid var(--C-D);
       background: white;
       padding: var(--G-S) var(--G-M);
       font: inherit;
+      &::placeholder { color: var(--C-D); }
     }
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
+  }
+  &-value {
+    flex: 1;
+    line-height: 1.5;
+    &.-muted { color: var(--C-D); }
+  }
+  &-content {
+    flex: 1;
+    line-height: 1.5;
+    word-break: break-word;
   }
   &-bytes {
     color: var(--C-D);
@@ -356,6 +371,141 @@
       border-color: var(--C-DD);
       &:hover { background: var(--C-D); }
     }
+  }
+}
+
+.markup-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--C-D);
+  background: white;
+  min-width: 0;
+  &-toolbar {
+    display: flex;
+    gap: 1px;
+    padding: var(--G-S);
+    border-bottom: 1px solid var(--C-D);
+    background: var(--C-LL);
+  }
+  &-btn {
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9em;
+    &:hover { background: var(--C-L); border-color: var(--C-D); }
+    &:active { background: var(--C-D); }
+  }
+  &-body {
+    flex: 1;
+    padding: var(--G-S) var(--G-M);
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    outline: none;
+    line-height: 1.8;
+    word-break: break-word;
+    cursor: text;
+  }
+}
+
+// Full-width inline wrapper for display math — cursor can be placed before/after
+.dmath-line {
+  display: inline-block;
+  width: 100%;
+}
+
+// Math blocks inside the editor
+.math-block {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px dashed transparent;
+  padding: 0 2px;
+  vertical-align: middle;
+  &:hover { border-color: var(--C-D); background: var(--C-LL); }
+  &.-display { width: 100%; text-align: center; padding: var(--G-S) 0; }
+}
+
+.math-placeholder {
+  color: var(--C-D);
+  font-style: italic;
+}
+
+// Math editor popup (independent overlay, above sbj-edit)
+.math-edit {
+  &-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-math-edit);
+    backdrop-filter: blur(2px);
+    background: oklch(0 0 0 / 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  &-modal {
+    background: var(--C-LL);
+    border: 1.5px solid var(--C-D);
+    padding: var(--G-XL);
+    display: flex;
+    flex-direction: column;
+    gap: var(--G-M);
+    min-width: 360px;
+    max-width: 90vw;
+  }
+  &-kind-toggle {
+    display: flex;
+    gap: 1px;
+    background: var(--C-D);
+    border: 1px solid var(--C-D);
+    border-radius: 3px;
+    overflow: hidden;
+    align-self: flex-start;
+  }
+  &-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+    padding: var(--G-M);
+    border: 1px solid var(--C-D);
+    background: white;
+    border-radius: 3px;
+    overflow-x: auto;
+  }
+  &-input {
+    padding: var(--G-S) var(--G-M);
+    border: 1px solid var(--C-D);
+    outline: none;
+    font-family: monospace;
+    font-size: 0.9em;
+    resize: vertical;
+    line-height: 1.5;
+    background: white;
+    &:focus { border-color: var(--C-B); }
+  }
+}
+
+.math-kind-btn {
+  flex: 1;
+  padding: var(--G-S) var(--G-L);
+  background: var(--C-L);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  &:hover { background: var(--C-LL); }
+  &.-active {
+    background: var(--C-B);
+    color: var(--C-LL);
+    cursor: default;
   }
 }
 
