@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/cat-tower/',
   plugins: [react()],
   resolve: {
     alias: {
