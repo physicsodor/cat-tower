@@ -3,6 +3,8 @@
 // CSS variables use project design tokens with sensible fallbacks,
 // so this file works standalone or within a design-system project.
 
+@use "@/styles/mixins" as m;
+
 // ── Math editor popup buttons ─────────────────────────────────────────────────
 
 .te-btns {
@@ -108,7 +110,7 @@
     inset: 0;
     z-index: var(--math-edit-z, 600);
     backdrop-filter: blur(2px);
-    background: oklch(0 0 0 / 0.2);
+    background: m.black-a(0.2);
     display: flex;
     align-items: center;
     justify-content: center;

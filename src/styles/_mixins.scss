@@ -61,3 +61,18 @@
     calc(var(--t) - var(#{$G}))
   );
 }
+
+// Generates a static oklch color from $L-steps and $H-steps.
+// Uses $C-vivid (absolute chroma 0.15) — suitable for icon/text accent colors.
+@function C($L-step, $H-step) {
+  $L: map-get(v.$L-steps, $L-step);
+  $H: map-get(v.$H-steps, $H-step);
+  @if not $L { @error "Unknown L-step: #{$L-step}"; }
+  @if not $H { @error "Unknown H-step: #{$H-step}"; }
+  @return unquote("oklch(#{$L} #{v.$C-vivid} #{$H})");
+}
+
+// Black with alpha — for overlays, hover/active tints, subtle borders.
+@function black-a($alpha) {
+  @return unquote("oklch(0% 0 0 / #{$alpha})");
+}

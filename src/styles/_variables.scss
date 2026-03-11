@@ -1,4 +1,5 @@
 $L-steps: (
+  DDD: 45%,
   DD: 55%,
   D: 65%,
   B: 75%,
@@ -6,7 +7,10 @@ $L-steps: (
   LL: 95%,
 );
 
+// $C-fixed : percentage chroma — used by C-setting() to generate CSS custom properties
+// $C-vivid  : absolute chroma  — used by C() to generate inline oklch values (e.g. icon/text colors)
 $C-fixed: 15%;
+$C-vivid: 0.15;
 
 $H-steps: (
   0: 0deg,
