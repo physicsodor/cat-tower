@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   markupToHtml, htmlToMarkup, updateMathBlock, buildMathEl,
 } from "./markup";
@@ -139,4 +139,4 @@ const TextEditor = ({ value, onChange }: { value: string; onChange: (v: string) 
   );
 };
 
-export default TextEditor;
+export default memo(TextEditor);
