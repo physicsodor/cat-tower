@@ -130,6 +130,7 @@
 .sbj-ctrl {
   position: fixed;
   z-index: var(--z-sbj-ctrl);
+  user-select: none;
 
   &-handle {
     width: 32px;
