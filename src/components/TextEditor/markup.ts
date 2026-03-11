@@ -134,6 +134,28 @@ export const truncateBytes = (v: string, max: number, suffix = ""): string => {
 export const renderLatex = (latex: string, displayMode: boolean): string =>
   katex.renderToString(latex, { throwOnError: false, output: "html", displayMode });
 
+// ── Math block DOM builder ────────────────────────────────────────────────────
+
+type MathKind = "math" | "dmath";
+
+export const buildMathEl = (kind: MathKind, latex: string): HTMLElement => {
+  const inner = document.createElement("span");
+  inner.contentEditable = "false";
+  inner.className = kind === "dmath" ? "math-block -display" : "math-block";
+  inner.dataset.kind = kind;
+  inner.dataset.latex = latex;
+  inner.innerHTML = latex
+    ? renderLatex(latex, kind === "dmath")
+    : `<span class="math-placeholder">(수식)</span>`;
+  if (kind === "dmath") {
+    const wrapper = document.createElement("span");
+    wrapper.className = "dmath-line";
+    wrapper.appendChild(inner);
+    return wrapper;
+  }
+  return inner;
+};
+
 // ── Markup ↔ HTML (for contentEditable WYSIWYG) ───────────────────────────────
 
 function mathBlockHtml(kind: "math" | "dmath", latex: string): string {
