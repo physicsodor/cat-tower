@@ -40,6 +40,8 @@ type Props = {
    * If not provided, the fit button is not rendered.
    */
   onFitRequest?: () => Camera | null;
+  /** Called when the auto-layout button is pressed. If not provided, the button is not rendered. */
+  onAutoLayout?: () => void;
 };
 
 /**
@@ -64,6 +66,7 @@ const InfiniteCanvas = ({
   onItemDragEnd,
   onMarqueeSelect,
   onFitRequest,
+  onAutoLayout,
 }: Props) => {
   const [camera, setCamera] = useState<Camera>(() => ({
     x: window.innerWidth / 2,
@@ -250,6 +253,26 @@ const InfiniteCanvas = ({
         )}
         <div className="ic-controls">
           <div className="ic-controls-btns">
+            {onAutoLayout && (
+              <button className="ic-btn" onClick={onAutoLayout} title="Auto layout">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="8" cy="2.5" r="1.5" />
+                  <circle cx="3.5" cy="8.5" r="1.5" />
+                  <circle cx="12.5" cy="8.5" r="1.5" />
+                  <circle cx="8" cy="14" r="1.5" />
+                  <path d="M8 4v2M6.4 9.5 5 9M9.6 9.5 11 9M8 12.5v-2" />
+                </svg>
+              </button>
+            )}
             {onFitRequest && (
               <button className="ic-btn" onClick={onFit} title="Fit all">
                 <svg

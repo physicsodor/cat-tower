@@ -82,10 +82,21 @@ const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
 // ── Outer wrapper ─────────────────────────────────────────────────────────────
 
 const SbjCnvs = () => {
-  const { cnvsDrag, idx2sbj, setCnvsPos } = useSbjData();
+  const { cnvsDrag, idx2sbj, setCnvsPos, autoLayout, getZoom } = useSbjData();
   const { selectMany } = useSbjSelect();
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const lrtbMapRef = useRef(new Map<number, LRTB>());
+
+  const onAutoLayout = useCallback(() => {
+    const zoom = getZoom();
+    const sizes = new Map<number, { w: number; h: number }>();
+    for (const [idx, el] of itemsRef.current) {
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      sizes.set(idx, { w: rect.width / zoom, h: rect.height / zoom });
+    }
+    autoLayout(sizes);
+  }, [autoLayout, getZoom]);
 
   const onItemDragEnd = useCallback(
     (worldDx: number, worldDy: number) => {
@@ -157,6 +168,7 @@ const SbjCnvs = () => {
       onItemDragEnd={onItemDragEnd}
       onMarqueeSelect={onMarqueeSelect}
       onFitRequest={onFitRequest}
+      onAutoLayout={onAutoLayout}
     >
       <SbjCnvsInner itemsRef={itemsRef} lrtbMapRef={lrtbMapRef} />
     </InfiniteCanvas>

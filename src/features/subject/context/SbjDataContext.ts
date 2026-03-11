@@ -18,6 +18,8 @@ type SbjDataContextValue = {
   setTreeBro: (trg: Set<number>, idx: number, dir: BroDir) => void;
   setCnvsPre: (idx: number) => void;
   setCnvsPos: (trg: Set<number>, dxy: { dx: number; dy: number }) => void;
+  autoLayout: (sizes?: Map<number, { w: number; h: number }>) => void;
+  getZoom: () => number;
   treeDrag: GetSet<Set<number>>;
   cnvsDrag: GetSet<Set<number>>;
   preSource: GetSet<number>;

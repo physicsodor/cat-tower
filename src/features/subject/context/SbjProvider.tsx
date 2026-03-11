@@ -34,6 +34,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   // Camera ref — updated by SbjCnvs via syncCamera
   const cameraRef = useRef<Camera>({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 });
   const syncCamera = useCallback((c: Camera) => { cameraRef.current = c; }, []);
+  const getZoom = useCallback(() => cameraRef.current.zoom, []);
 
   // GetSet wrappers (ref-based, never trigger re-renders)
   const treeDragRef = useRef(new Set<number>());
@@ -79,7 +80,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     cameraRef
   );
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
-  const { setCnvsPre, setCnvsPos } = useSbjCnvs(idx2chain, setList, preSource);
+  const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(list, idx2chain, idx2family, setList, preSource);
   const sync = useSbjSync(list, setList);
 
   const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
@@ -112,10 +113,12 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setTreeBro,
       setCnvsPre,
       setCnvsPos,
+      autoLayout,
       treeDrag,
       cnvsDrag,
       preSource,
       syncCamera,
+      getZoom,
       editingIdx,
       openEdit,
       closeEdit,
@@ -125,9 +128,9 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       idx2sbj, idx2family, idx2chain,
       addSbj, addCrs, delSbj, delSbjOne, delCrs,
       setTreeMom, setTreeBro,
-      setCnvsPre, setCnvsPos,
+      setCnvsPre, setCnvsPos, autoLayout,
       treeDrag, cnvsDrag, preSource,
-      syncCamera, editingIdx, openEdit, closeEdit, updateSbj,
+      syncCamera, getZoom, editingIdx, openEdit, closeEdit, updateSbj,
     ]
   );
 

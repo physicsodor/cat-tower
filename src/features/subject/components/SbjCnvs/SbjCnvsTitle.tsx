@@ -10,6 +10,7 @@ const SbjCnvsTitle = ({ idx, title }: Props) => {
   const { selectItem } = useSbjSelect();
   const { startItemDrag } = useInfiniteCanvas();
   const onDown = (e: PE) => {
+    if (e.button !== 0) return;
     e.preventDefault();
     const s = selectItem(e, idx);
     if (s.has(idx)) {
