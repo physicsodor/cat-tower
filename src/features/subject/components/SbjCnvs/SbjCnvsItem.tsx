@@ -118,7 +118,7 @@ const SbjCnvsItem = ({
         <SbjCnvsTitle idx={idx} title={info.short || info.title} />
         <div ref={outRef} className="sbj-cnvs-item-out" onPointerDown={onDown} />
       </div>
-      <SbjCnvsCurve sourcePos={getSourcePos()} mousePos={mousePos} />
+      <SbjCnvsCurve sourcePos={getSourcePos()} mousePos={mousePos} zoom={camera.zoom} />
     </div>
   );
 };

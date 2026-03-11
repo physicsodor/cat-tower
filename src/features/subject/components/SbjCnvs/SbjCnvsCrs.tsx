@@ -9,7 +9,7 @@ type Props = {
   back?: boolean;
 };
 
-const SbjCnvsCrs = ({ setRef, idx, lrtb, back = false }: Props) => {
+const SbjCnvsCrs = ({ setRef, idx: _idx, lrtb, back = false }: Props) => {
   return (
     <div
       ref={setRef}
