@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
 import { useSbjData } from "../../context/SbjDataContext";
 import SbjTreeBox from "./SbjTreeBox";
+import BttnPM from "@/components/Bttn/BttnPM";
+import BttnDel from "@/components/Bttn/BttnDel";
+import BttnGrp from "@/components/Bttn/BttnGrp";
 
 const MARGIN = 16; // 1rem
 const HANDLE = 32;
@@ -83,9 +86,9 @@ const SbjTree = () => {
       </div>
       <div className={`sbj-ctrl-panel${open ? " open" : ""}`}>
         <div className="sbj-ctrl-btns">
-          <button onClick={addSbj}>추가</button>
-          <button onClick={delSbj}>제거</button>
-          <button onClick={addCrs}>그룹 만들기</button>
+          <BttnPM isPlus onDown={addSbj} />
+          <BttnDel onDown={delSbj} />
+          <BttnGrp onDown={addCrs} />
         </div>
         <SbjTreeBox />
       </div>
