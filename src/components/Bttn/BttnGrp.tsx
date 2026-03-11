@@ -1,3 +1,4 @@
+import "./Bttn.scss";
 import { sz, r, th } from "./BttnConstants";
 type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;

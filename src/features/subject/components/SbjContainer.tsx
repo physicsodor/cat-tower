@@ -4,7 +4,7 @@ import SbjTree from "./SbjTree/SbjTree";
 import SbjAuthPanel from "./SbjAuthPanel";
 import SbjEditModal from "./SbjEditModal";
 
-const SubjectContainer = () => {
+const SbjContainer = () => {
   return (
     <SbjProvider>
       <SbjAuthPanel />
@@ -15,4 +15,4 @@ const SubjectContainer = () => {
   );
 };
 
-export default SubjectContainer;
+export default SbjContainer;

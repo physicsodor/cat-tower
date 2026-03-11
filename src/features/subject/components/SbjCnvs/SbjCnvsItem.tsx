@@ -103,18 +103,18 @@ const SbjCnvsItem = ({
         }}
       >
         {isOver ? (
-          <div className="sum">
+          <div className="sbj-cnvs-item-sum">
             <div>{info.title}</div>
             <div>{desc}</div>
           </div>
         ) : null}
-        <div className="item-actions">
-          <button className="item-action -add" onPointerDown={(e) => e.stopPropagation()} onClick={() => openEdit(idx)}>✱</button>
-          <button className="item-action -del" onPointerDown={(e) => e.stopPropagation()} onClick={() => delSbjOne(idx)}>✕</button>
+        <div className="sbj-cnvs-item-acts">
+          <button className="sbj-cnvs-item-act -edt" onPointerDown={(e) => e.stopPropagation()} onClick={() => openEdit(idx)}>✱</button>
+          <button className="sbj-cnvs-item-act -del" onPointerDown={(e) => e.stopPropagation()} onClick={() => delSbjOne(idx)}>✕</button>
         </div>
-        <div className="in" onPointerUp={onUp} />
+        <div className="sbj-cnvs-item-in" onPointerUp={onUp} />
         <SbjCnvsTitle idx={idx} title={info.short || info.title} />
-        <div ref={outRef} className="out" onPointerDown={onDown} />
+        <div ref={outRef} className="sbj-cnvs-item-out" onPointerDown={onDown} />
       </div>
       <SbjCnvsCurve sourcePos={getSourcePos()} mousePos={mousePos} />
     </div>

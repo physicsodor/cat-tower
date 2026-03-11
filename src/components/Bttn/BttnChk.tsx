@@ -1,4 +1,5 @@
-import { sz, r, th, o } from "./BttnConstants";
+import "./Bttn.scss";
+import { sz, r, th, pos } from "./BttnConstants";
 type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
@@ -26,7 +27,7 @@ const BttnChk = ({ size = "1.4rem", onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          <path d={`M ${o(-0.5)} ${o(0.1)} L ${o(-0.1)} ${o(0.45)} L ${o(0.5)} ${o(-0.4)}`} />
+          <path d={`M ${pos(-0.5)} ${pos(0.1)} L ${pos(-0.1)} ${pos(0.45)} L ${pos(0.5)} ${pos(-0.4)}`} />
         </g>
       </svg>
     </div>

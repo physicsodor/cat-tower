@@ -1,4 +1,5 @@
-import { sz, r, th, o } from "./BttnConstants";
+import "./Bttn.scss";
+import { sz, r, th, pos } from "./BttnConstants";
 type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
@@ -32,8 +33,8 @@ const BttnPM = ({
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          {isPlus ? <path d={`M ${o(0)} ${o(h)} L ${o(0)} ${o(-h)}`} /> : null}
-          <path d={`M ${o(h)} ${o(0)} L ${o(-h)} ${o(0)}`} />
+          {isPlus ? <path d={`M ${pos(0)} ${pos(h)} L ${pos(0)} ${pos(-h)}`} /> : null}
+          <path d={`M ${pos(h)} ${pos(0)} L ${pos(-h)} ${pos(0)}`} />
         </g>
       </svg>
     </div>

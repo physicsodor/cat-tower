@@ -1,0 +1,42 @@
+// Bttn.scss
+// Self-contained styles for SVG icon buttons.
+// Uses CSS variables — override in your project's :root.
+//
+// Customizable variables:
+//   --bttn-fill        button background fill       (default: rgba(C-L, 0.7))
+//   --bttn-stroke      icon stroke color            (default: C-DD)
+
+@use "@/styles/mixins" as m;
+
+.bttn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto 0;
+  svg {
+    rect {
+      fill: m.C-alpha(--C-L, 0.7);
+      stroke: rgb(0 0 0/0.2);
+    }
+    g {
+      stroke: var(--C-DD);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+  }
+  svg:hover > rect {
+    fill: m.C-alpha(--C-LL, 0.7);
+  }
+  svg:active {
+    rect {
+      fill: m.C-alpha(--C-DD, 0.7);
+    }
+    g {
+      stroke: var(--C-LL);
+    }
+  }
+  &.del {
+    @include m.C-setting(1);
+  }
+}

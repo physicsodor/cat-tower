@@ -1,4 +1,5 @@
-import { sz, r, th, o } from "./BttnConstants";
+import "./Bttn.scss";
+import { sz, r, th, pos } from "./BttnConstants";
 type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
@@ -27,8 +28,8 @@ const BttnDel = ({ size = "1.4rem", onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          <path d={`M ${o(h)} ${o(h)} L ${o(-h)} ${o(-h)}`} />
-          <path d={`M ${o(h)} ${o(-h)} L ${o(-h)} ${o(h)}`} />
+          <path d={`M ${pos(h)} ${pos(h)} L ${pos(-h)} ${pos(-h)}`} />
+          <path d={`M ${pos(h)} ${pos(-h)} L ${pos(-h)} ${pos(h)}`} />
         </g>
       </svg>
     </div>

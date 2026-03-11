@@ -1,9 +1,9 @@
-import SubjectContainer from "@/features/subject/components/SbjContainer";
+import SbjContainer from "@/features/subject/components/SbjContainer";
 
 function App() {
   return (
     <div>
-      <SubjectContainer />
+      <SbjContainer />
     </div>
   );
 }

@@ -42,7 +42,7 @@
     outline: 0.2rem solid var(--C-D);
     &:hover {
       z-index: calc(var(--z-sbj-cnvs-item) + 1);
-      .item-actions {
+      &-acts {
         opacity: 1;
         pointer-events: auto;
       }
@@ -56,24 +56,24 @@
     &.-nxt {
       @include m.C-setting(8);
     }
-    .ttl {
+    &-ttl {
       background-color: var(--back);
       padding: var(--G-L);
     }
-    .in,
-    .out {
+    &-in,
+    &-out {
       width: var(--G-L);
       height: var(--G-L);
       margin: 0 auto;
       background-color: var(--C-B);
     }
-    .in {
+    &-in {
       margin-top: calc(-1 * var(--G-L));
     }
-    .out {
+    &-out {
       margin-bottom: calc(-1 * var(--G-L));
     }
-    .sum {
+    &-sum {
       position: absolute;
       top: 0;
       left: 100%;
@@ -83,7 +83,7 @@
         white-space: nowrap;
       }
     }
-    .item-actions {
+    &-acts {
       position: absolute;
       bottom: 100%;
       right: 0;
@@ -92,13 +92,13 @@
       pointer-events: none;
       transition: opacity 0.15s;
     }
-    .item-action {
+    &-act {
       border: none;
       background: transparent;
       cursor: pointer;
       padding: var(--G-S);
       line-height: 1;
-      &.-add { color: oklch(45% 0.15 140); }
+      &.-edt { color: oklch(45% 0.15 140); }
       &.-del { color: oklch(45% 0.15 20); }
       &:hover { background: oklch(0 0 0 / 0.08); }
       &:active { background: oklch(0 0 0 / 0.16); }
@@ -172,7 +172,7 @@
     transition:
       max-height 0.35s ease,
       opacity 0.25s ease;
-    &.open {
+    &.-opn {
       max-height: 80vh;
       opacity: 1;
     }
@@ -199,7 +199,7 @@
       margin-left: var(--G-L);
       padding-left: var(--G-M);
       overflow: hidden;
-      &.hidden {
+      &.-hdn {
         display: none;
       }
     }
@@ -341,7 +341,8 @@
   }
 }
 
-// Editor styles moved to src/components/TextEditor/TextEditor.scss
+// Editor styles → src/components/TextEditor/TextEditor.scss
+// Bttn styles   → src/components/Bttn/Bttn.scss
 
 .ghost {
   position: fixed;
@@ -350,35 +351,3 @@
   z-index: var(--z-ghost);
 }
 
-.bttn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: auto 0;
-  svg {
-    rect {
-      fill: m.C-alpha(--C-L, 0.7);
-      stroke: rgb(0 0 0/0.2);
-    }
-    g {
-      stroke: var(--C-DD);
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-    }
-  }
-  svg:hover > rect {
-    fill: m.C-alpha(--C-LL, 0.7);
-  }
-  svg:active {
-    rect {
-      fill: m.C-alpha(--C-DD, 0.7);
-    }
-    g {
-      stroke: var(--C-LL);
-    }
-  }
-  &.del {
-    @include m.C-setting(1);
-  }
-}

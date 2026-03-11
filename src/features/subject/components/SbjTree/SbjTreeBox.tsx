@@ -33,7 +33,7 @@ const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
         key={`sbj-tree-title-${idx}`}
         {...{ idx, title, isOpen, onToggle }}
       />
-      <div className={makeClassName("sbj-tree-contents", !isOpen && "hidden")}>
+      <div className={makeClassName("sbj-tree-contents", !isOpen && "-hdn")}>
         {(idx2family.get(idx)?.kids ?? []).map((k) => {
           const s = idx2sbj.get(k);
           if (!s) return null;

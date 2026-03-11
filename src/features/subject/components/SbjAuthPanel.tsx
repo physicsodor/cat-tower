@@ -1,9 +1,9 @@
 import { useAuth } from "@/features/auth/useAuth";
-import { useSbjSyncStore } from "../context/SbjSyncContext";
+import { useSbjSyncCtx } from "../context/SbjSyncContext";
 
 const SbjAuthPanel = () => {
   const { user, signIn, signOut } = useAuth();
-  const { saveNow, dirty, savePending } = useSbjSyncStore();
+  const { saveNow, dirty, savePending } = useSbjSyncCtx();
 
   return (
     <div className="sbj-auth-panel">

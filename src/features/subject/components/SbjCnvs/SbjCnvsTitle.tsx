@@ -19,7 +19,7 @@ const SbjCnvsTitle = ({ idx, title }: Props) => {
   };
 
   return (
-    <div className="ttl" onPointerDown={onDown}>
+    <div className="sbj-cnvs-item-ttl" onPointerDown={onDown}>
       {title}
     </div>
   );

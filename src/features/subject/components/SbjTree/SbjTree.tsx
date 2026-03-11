@@ -84,7 +84,7 @@ const SbjTree = () => {
           )}
         </svg>
       </div>
-      <div className={`sbj-ctrl-panel${open ? " open" : ""}`}>
+      <div className={`sbj-ctrl-panel${open ? " -opn" : ""}`}>
         <div className="sbj-ctrl-btns">
           <BttnPM isPlus onDown={addSbj} />
           <BttnDel onDown={delSbj} />

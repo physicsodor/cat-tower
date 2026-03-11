@@ -1,4 +1,5 @@
-import { sz, r, th, o } from "./BttnConstants";
+import "./Bttn.scss";
+import { sz, r, th, pos } from "./BttnConstants";
 type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
@@ -29,11 +30,11 @@ const BttnVert = ({ size = "1.4rem", onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          <path d={`M ${o(0)} ${o(h1)} L ${o(-b)} ${o(h2)}`} />
-          <path d={`M ${o(0)} ${o(h1)} L ${o(b)} ${o(h2)}`} />
-          <path d={`M ${o(0)} ${o(-h1)} L ${o(-b)} ${o(-h2)}`} />
-          <path d={`M ${o(0)} ${o(-h1)} L ${o(b)} ${o(-h2)}`} />
-          <path d={`M ${o(0)} ${o(h1)} L ${o(0)} ${o(-h1)}`} />
+          <path d={`M ${pos(0)} ${pos(h1)} L ${pos(-b)} ${pos(h2)}`} />
+          <path d={`M ${pos(0)} ${pos(h1)} L ${pos(b)} ${pos(h2)}`} />
+          <path d={`M ${pos(0)} ${pos(-h1)} L ${pos(-b)} ${pos(-h2)}`} />
+          <path d={`M ${pos(0)} ${pos(-h1)} L ${pos(b)} ${pos(-h2)}`} />
+          <path d={`M ${pos(0)} ${pos(h1)} L ${pos(0)} ${pos(-h1)}`} />
         </g>
       </svg>
     </div>
