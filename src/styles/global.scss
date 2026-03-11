@@ -42,6 +42,10 @@
     outline: 0.2rem solid var(--C-D);
     &:hover {
       z-index: calc(var(--z-sbj-cnvs-item) + 1);
+      .item-actions {
+        opacity: 1;
+        pointer-events: auto;
+      }
     }
     &.-slc {
       --back: var(--C-L);
@@ -81,9 +85,12 @@
     }
     .item-actions {
       position: absolute;
-      top: 0;
+      bottom: 100%;
       right: 0;
       display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
     }
     .item-action {
       border: none;
