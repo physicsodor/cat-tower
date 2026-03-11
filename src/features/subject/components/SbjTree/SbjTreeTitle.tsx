@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useDragGhost } from "@/hooks/useDragGhost";
 import { makeClassName } from "@/utils/makeClassName";
 import type { BroDir } from "@/features/subject/types/Family/familyOp";
-import BttnVert from "@/components/Bttn/BttnVert";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
+import BttnChk from "@/components/Bttn/BttnChk";
 import { useSbjData } from "@/features/subject/context/SbjDataContext";
+import { useSbjSelect } from "@/features/subject/context/SbjSelectContext";
 
 type Props = {
   idx: number;
@@ -16,9 +17,22 @@ type Props = {
 type PE = React.PointerEvent | PointerEvent;
 
 const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
-  const { delCrs, treeDrag, setTreeBro, setTreeMom } = useSbjData();
+  const { delCrs, treeDrag, setTreeBro, setTreeMom, idx2sbj, idx2family } = useSbjData();
+  const { selectMany } = useSbjSelect();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
+
+  const onSelectDescendants = () => {
+    const result = new Set<number>();
+    const traverse = (i: number) => {
+      for (const kid of idx2family.get(i)?.kids ?? []) {
+        if (idx2sbj.get(kid)?.sbjType === "SUBJECT") result.add(kid);
+        traverse(kid);
+      }
+    };
+    traverse(idx);
+    selectMany(result);
+  };
 
   const onUp = (e: PE) => {
     e.preventDefault();
@@ -55,10 +69,15 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
         dir === "RIGHT" && "-nxt"
       )}
     >
-      {idx >= 0 ? <BttnVert onDown={onDown} /> : null}
-      <div onPointerMove={onMove} onPointerLeave={onLeave} onPointerUp={onUp}>
+      <div
+        onPointerDown={idx >= 0 ? onDown : undefined}
+        onPointerMove={onMove}
+        onPointerLeave={onLeave}
+        onPointerUp={onUp}
+      >
         {title}
       </div>
+      {idx >= 0 ? <BttnChk onDown={onSelectDescendants} /> : null}
       {idx >= 0 ? <BttnPM isPlus={!isOpen} onDown={onToggle} /> : null}
       {idx >= 0 && isOpen ? <BttnDel onDown={() => delCrs(idx)} /> : null}
     </div>
