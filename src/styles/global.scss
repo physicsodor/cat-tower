@@ -42,7 +42,7 @@
     outline: 0.2rem solid var(--C-D);
     &:hover {
       z-index: calc(var(--z-sbj-cnvs-item) + 1);
-      &-acts {
+      .sbj-cnvs-item-acts {
         opacity: 1;
         pointer-events: auto;
       }
