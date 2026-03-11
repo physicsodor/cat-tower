@@ -1,9 +1,9 @@
 @use "mixins" as m;
 :root {
   @include m.G-setting;
-  @include m.C-setting(1);
-  --z-sbj-cnvs-curve: 0;
-  --z-sbj-cnvs-crs-bck: 1;
+  @include m.C-setting(7);
+  --z-sbj-cnvs-crs-bck: 0;
+  --z-sbj-cnvs-curve: 1;
   --z-sbj-cnvs: 2;
   --z-sbj-cnvs-crs: 3;
   --z-sbj-cnvs-item: 4;
@@ -124,7 +124,7 @@
     --z: --z-sbj-cnvs-crs;
     &.-bck {
       --z: var(--z-sbj-cnvs-crs-bck);
-      background-color: m.C-alpha(--C-LL, 0.5);
+      background-color: m.C-alpha(--C-LL, 0.3);
     }
     @include m.fixed-item(--z);
     @include m.box-lrtb-gap(--G-XL);
