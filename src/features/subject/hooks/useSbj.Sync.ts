@@ -3,6 +3,18 @@ import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum"
 import { supabase } from "@/features/auth/supabase";
 import { decodeList, encodeList } from "../types/Curriculum/curriculumCodec";
 
+/** Subject들의 bounding box 중심이 (0,0)이 되도록 x,y를 평행이동 */
+function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curriculum> {
+  const subjects = list.filter((c): c is Extract<Curriculum, { sbjType: "SUBJECT" }> => c.sbjType === "SUBJECT");
+  if (subjects.length === 0) return list;
+  const xs = subjects.map((s) => s.x);
+  const ys = subjects.map((s) => s.y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  if (cx === 0 && cy === 0) return list;
+  return list.map((c) => c.sbjType === "SUBJECT" ? { ...c, x: c.x - cx, y: c.y - cy } : c);
+}
+
 /*
   useSbjSync (한국어)
   - 목적: 과목 리스트(list)를 Supabase와 동기화하는 최소 로직을 분리합니다.
@@ -78,7 +90,7 @@ export const useSbjSync = (
 
   // 수동 저장 API
   const saveNow = useCallback(async () => {
-    const payload = listRef.current;
+    const payload = normalizeCenter(listRef.current);
     const uid = userIdRef.current;
     if (!uid) return;
     try {
@@ -150,7 +162,7 @@ export const useSbjSync = (
         const body = JSON.stringify([
           {
             user_id: uid,
-            data: encodeList(listRef.current),
+            data: encodeList(normalizeCenter(listRef.current)),
             updated_at: new Date().toISOString(),
           },
         ]);
