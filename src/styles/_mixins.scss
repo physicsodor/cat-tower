@@ -7,9 +7,6 @@
   }
   $H: map-get(v.$H-steps, $H-step);
   $C: v.$C-fixed;
-  @if $H-step == 0 {
-    $C: 0%;
-  }
   @each $LL, $L in v.$L-steps {
     --C-#{$LL}: oklch(#{$L} #{$C} #{$H});
   }

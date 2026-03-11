@@ -35,6 +35,7 @@ const SbjCnvsItemContainer = ({ items }: Props) => {
               dxy={isSelected ? dxy : { dx: 0, dy: 0 }}
               camera={camera}
               isSelected={isSelected}
+              isHovered={idx === hoveredIdx}
               isPre={preSet?.has(idx) ?? false}
               isNxt={nxtSet?.has(idx) ?? false}
               onHoverChange={setHoveredIdx}

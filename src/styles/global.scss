@@ -1,7 +1,7 @@
 @use "mixins" as m;
 :root {
   @include m.G-setting;
-  @include m.C-setting(7);
+  @include m.C-setting(1);
   --z-sbj-cnvs-curve: 0;
   --z-sbj-cnvs-crs-bck: 1;
   --z-sbj-cnvs: 2;
@@ -39,7 +39,15 @@
     @include m.fixed-item(--z-sbj-cnvs-item);
     transform-origin: 0 0;
     --back: var(--C-LL);
-    outline: 0.2rem solid var(--C-D);
+    color: var(--C-DDD);
+    font-weight: bold;
+    text-align: center;
+    min-width: 4.5rem;
+    &.-hvr,
+    &.-pre,
+    &.-nxt {
+      outline: 0.2rem solid var(--C-D);
+    }
     &:hover {
       z-index: calc(var(--z-sbj-cnvs-item) + 1);
       .sbj-cnvs-item-acts {
@@ -98,10 +106,18 @@
       cursor: pointer;
       padding: var(--G-S);
       line-height: 1;
-      &.-edt { color: m.C(DDD, 3); }
-      &.-del { color: m.C(DDD, 1); }
-      &:hover { background: m.black-a(0.08); }
-      &:active { background: m.black-a(0.16); }
+      &.-edt {
+        color: m.C(DDD, 3);
+      }
+      &.-del {
+        color: m.C(DDD, 1);
+      }
+      &:hover {
+        background: m.black-a(0.08);
+      }
+      &:active {
+        background: m.black-a(0.16);
+      }
     }
   }
   &-crs {
@@ -289,7 +305,9 @@
     gap: var(--G-M);
     &.-top {
       align-items: flex-start;
-      label { padding-top: 0.35em; }
+      label {
+        padding-top: 0.35em;
+      }
     }
     label {
       min-width: 3em;
@@ -301,13 +319,17 @@
       background: white;
       padding: var(--G-S) var(--G-M);
       font: inherit;
-      &::placeholder { color: var(--C-D); }
+      &::placeholder {
+        color: var(--C-D);
+      }
     }
   }
   &-value {
     flex: 1;
     line-height: 1.5;
-    &.-muted { color: var(--C-D); }
+    &.-muted {
+      color: var(--C-D);
+    }
   }
   &-content {
     flex: 1;
@@ -330,13 +352,20 @@
     background: var(--C-L);
     border: 1.5px solid var(--C-D);
     cursor: pointer;
-    &:hover { background: var(--C-LL); }
-    &:active { background: var(--C-D); color: var(--C-LL); }
+    &:hover {
+      background: var(--C-LL);
+    }
+    &:active {
+      background: var(--C-D);
+      color: var(--C-LL);
+    }
     &.-confirm {
       background: var(--C-B);
       color: var(--C-LL);
       border-color: var(--C-DD);
-      &:hover { background: var(--C-D); }
+      &:hover {
+        background: var(--C-D);
+      }
     }
   }
 }
@@ -350,4 +379,3 @@
   opacity: 0.5;
   z-index: var(--z-ghost);
 }
-

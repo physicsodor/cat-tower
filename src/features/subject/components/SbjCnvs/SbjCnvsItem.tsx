@@ -29,6 +29,7 @@ type Props = {
   dxy: { dx: number; dy: number };
   camera: { x: number; y: number; zoom: number };
   isSelected: boolean;
+  isHovered: boolean;
   isPre: boolean;
   isNxt: boolean;
   onHoverChange: (idx: number | null) => void;
@@ -41,6 +42,7 @@ const SbjCnvsItem = ({
   dxy: { dx, dy },
   camera,
   isSelected,
+  isHovered,
   isPre,
   isNxt,
   onHoverChange,
@@ -97,7 +99,7 @@ const SbjCnvsItem = ({
     >
       <div
         ref={setRef}
-        className={makeClassName("sbj-cnvs-item", isSelected && "-slc", isPre && "-pre", isNxt && "-nxt")}
+        className={makeClassName("sbj-cnvs-item", isSelected && "-slc", isHovered && "-hvr", isPre && "-pre", isNxt && "-nxt")}
         style={{
           transform: `translate(${viewX}px, ${viewY}px) scale(${camera.zoom}) translate(-50%, -50%)`,
         }}
