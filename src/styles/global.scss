@@ -258,11 +258,17 @@
 }
 
 .sbj-auth-btn,
-.sbj-auth-save-btn {
+.sbj-auth-save-btn,
+.sbj-auth-proj-btn {
   padding: var(--G-M) var(--G-L);
   background: var(--C-L);
   border: 1.5px solid var(--C-D);
   cursor: pointer;
+  font: inherit;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   &:hover {
     background: var(--C-LL);
   }
@@ -274,6 +280,213 @@
     opacity: 0.4;
     cursor: default;
   }
+}
+
+// ─── Project Picker ──────────────────────────────────────────────────────────
+
+$proj-z: 600;
+
+.proj-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $proj-z;
+  background: m.black-a(0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.proj-picker-modal {
+  background: var(--C-LL);
+  border: 1.5px solid var(--C-D);
+  width: min(900px, 94vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.proj-picker-header {
+  display: flex;
+  align-items: center;
+  gap: var(--G-M);
+  padding: var(--G-L) var(--G-XL);
+  border-bottom: 1px solid var(--C-D);
+  flex-shrink: 0;
+}
+
+.proj-picker-heading {
+  font-size: 1.15rem;
+  font-weight: bold;
+  flex: 1;
+  margin: 0;
+}
+
+.proj-picker-search {
+  padding: var(--G-S) var(--G-M);
+  border: 1px solid var(--C-D);
+  background: white;
+  font: inherit;
+  width: 11rem;
+  &::placeholder { color: var(--C-D); }
+}
+
+.proj-picker-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--C-DD);
+  padding: var(--G-S);
+  line-height: 1;
+  &:hover { background: m.black-a(0.07); }
+}
+
+.proj-picker-toolbar {
+  padding: var(--G-M) var(--G-XL);
+  border-bottom: 1px solid var(--C-L);
+  flex-shrink: 0;
+}
+
+.proj-picker-new-btn {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-B);
+  color: var(--C-LL);
+  border: 1.5px solid var(--C-DD);
+  cursor: pointer;
+  font: inherit;
+  font-weight: bold;
+  &:hover { background: var(--C-D); }
+  &:active { background: var(--C-DD); }
+}
+
+.proj-picker-empty {
+  padding: var(--G-XL);
+  color: var(--C-D);
+  text-align: center;
+}
+
+.proj-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--G-L);
+  padding: var(--G-L) var(--G-XL);
+  overflow-y: auto;
+}
+
+// ─── Project Card ────────────────────────────────────────────────────────────
+
+.proj-card {
+  border: 1.5px solid var(--C-D);
+  background: var(--C-LL);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.12s;
+  &:hover { border-color: var(--C-B); }
+  &.-active { border-color: var(--C-B); outline: 2px solid var(--C-B); }
+
+  &-thumb {
+    aspect-ratio: 200 / 130;
+    background: white;
+    overflow: hidden;
+    border-bottom: 1px solid var(--C-L);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-footer {
+    padding: var(--G-M);
+    display: flex;
+    flex-direction: column;
+    gap: var(--G-S);
+  }
+
+  &-title {
+    font-weight: bold;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  &-title-input {
+    font: inherit;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border: 1px solid var(--C-B);
+    padding: 0 var(--G-S);
+    width: 100%;
+    background: white;
+    outline: none;
+  }
+
+  &-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &-date {
+    font-size: 0.78rem;
+    color: var(--C-D);
+  }
+
+  &-menu-wrap {
+    position: relative;
+  }
+
+  &-menu-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--C-DD);
+    padding: 0 var(--G-S);
+    line-height: 1.4;
+    &:hover { background: m.black-a(0.08); }
+  }
+
+  &-menu {
+    position: absolute;
+    bottom: calc(100% + 2px);
+    right: 0;
+    background: var(--C-LL);
+    border: 1.5px solid var(--C-D);
+    z-index: 10;
+    min-width: 8rem;
+    button {
+      display: block;
+      width: 100%;
+      padding: var(--G-M) var(--G-L);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      font-size: 0.9rem;
+      &:hover { background: m.black-a(0.07); }
+      &.-danger { color: m.C(DDD, 1); }
+    }
+  }
+}
+
+.proj-thumb-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.proj-thumb-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--C-D);
+  font-size: 0.85rem;
 }
 
 .sbj-edit {

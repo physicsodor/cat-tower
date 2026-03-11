@@ -1,7 +1,8 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import { supabase } from "@/features/auth/supabase";
 import { decodeList, encodeList } from "../types/Curriculum/curriculumCodec";
+import type { Project } from "../types/Project";
 
 /** Subject들의 bounding box 중심이 (0,0)이 되도록 x,y를 평행이동 */
 function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curriculum> {
@@ -15,169 +16,310 @@ function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curricu
   return list.map((c) => c.sbjType === "SUBJECT" ? { ...c, x: c.x - cx, y: c.y - cy } : c);
 }
 
-/*
-  useSbjSync (한국어)
-  - 목적: 과목 리스트(list)를 Supabase와 동기화하는 최소 로직을 분리합니다.
-  - 정책: 자동 저장 없음. 사용자가 저장 버튼을 눌렀을 때만 저장합니다.
-  - 이탈: 미저장 변경이 있으면 탭/창 종료 시 브라우저 기본 확인창을 띄웁니다.
-          실제로 떠나는 순간(pagehide)에 한해서 keepalive fetch로 한 번 저장을 시도합니다.
+const LAST_PROJECT_KEY = "lastProjectId";
 
-  반환값
-  - loading: 최초 하이드레이션(서버 → 클라이언트) 중인지 여부
-  - savePending: 저장 요청 진행 중 여부
-  - dirty: 마지막 저장 이후 변경 존재 여부(저장 버튼 활성화 판단에 사용)
-  - save(): 현재 list를 즉시 저장하는 함수
-*/
 export const useSbjSync = (
   list: ReadonlyArray<Curriculum>,
   setList: (v: ReadonlyArray<Curriculum>) => void
 ) => {
   const [loading, setLoading] = useState(true);
   const [savePending, setSavePending] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, _setDirty] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProjectId, _setCurrentProjectId] = useState<string | null>(null);
+  const [currentProjectTitle, _setCurrentProjectTitle] = useState<string | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  // Refs for use inside callbacks / event handlers
   const userIdRef = useRef<string | null>(null);
-  const hydratedRef = useRef(false);
   const listRef = useRef(list);
   const lastSavedRef = useRef<string>("[]");
-  const hydratingRef = useRef(false);
-  const lastUidRef = useRef<string | null>(null);
+  const dirtyRef = useRef(false);
+  const currentProjectIdRef = useRef<string | null>(null);
+  const fetchingRef = useRef(false);
 
-  // 최신 list를 ref에 유지
-  useEffect(() => {
-    listRef.current = list;
-  }, [list]);
+  // Keep refs in sync with state
+  useEffect(() => { listRef.current = list; }, [list]);
 
-  // 로그인 후 1회 하이드레이션
-  const fetchInitial = useCallback(
+  const setDirty = useCallback((v: boolean) => {
+    dirtyRef.current = v;
+    _setDirty(v);
+  }, []);
+
+  const setCurrentProjectId = useCallback((id: string | null) => {
+    currentProjectIdRef.current = id;
+    _setCurrentProjectId(id);
+  }, []);
+
+  const setCurrentProjectTitle = useCallback((title: string | null) => {
+    _setCurrentProjectTitle(title);
+  }, []);
+
+  // ─── Fetch projects & hydrate ─────────────────────────────────────────────
+
+  const fetchProjects = useCallback(async (): Promise<Project[]> => {
+    const uid = userIdRef.current;
+    if (!uid) return [];
+    const { data } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", uid)
+      .order("updated_at", { ascending: false });
+    const list = (data ?? []) as Project[];
+    setProjects(list);
+    return list;
+  }, []);
+
+  const fetchAndHydrate = useCallback(
     async (uid: string) => {
-      if (hydratingRef.current) return;
-      if (hydratedRef.current && lastUidRef.current === uid) return;
-      hydratingRef.current = true;
-      lastUidRef.current = uid;
+      if (fetchingRef.current) return;
+      fetchingRef.current = true;
       setLoading(true);
-      const { data, error } = await supabase
-        .from("sbj_lists")
-        .select("data")
-        .eq("user_id", uid)
-        .maybeSingle();
 
-      if (!error && data && !hydratedRef.current) {
-        const raw = typeof data.data === "string" ? data.data : "[]";
-        console.log("A");
-        if ((listRef.current?.length ?? 0) === 0) {
-          console.log("B");
-          const decoded = decodeList(raw);
-          setList(decoded);
-          lastSavedRef.current = encodeList(decoded);
-          setDirty(false);
+      let fetchedProjects = await (async () => {
+        const { data } = await supabase
+          .from("projects")
+          .select("*")
+          .eq("user_id", uid)
+          .order("updated_at", { ascending: false });
+        return (data ?? []) as Project[];
+      })();
+
+      // Migration: if no projects yet, auto-import from legacy sbj_lists
+      if (fetchedProjects.length === 0) {
+        const { data: legacy } = await supabase
+          .from("sbj_lists")
+          .select("data")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (legacy?.data) {
+          const { data: created } = await supabase
+            .from("projects")
+            .insert({ user_id: uid, title: "내 커리큘럼", data: legacy.data })
+            .select()
+            .single();
+          if (created) fetchedProjects = [created as Project];
         }
-        console.log("C");
-
-        hydratedRef.current = true;
       }
 
-      if (!data && !hydratedRef.current) {
-        hydratedRef.current = true;
-        lastSavedRef.current = encodeList(listRef.current);
+      setProjects(fetchedProjects);
+
+      // Auto-load last opened project (or most recent)
+      const lastId = localStorage.getItem(LAST_PROJECT_KEY);
+      const target =
+        fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
+
+      if (target) {
+        const decoded = decodeList(target.data);
+        setList(decoded);
+        lastSavedRef.current = encodeList(decoded);
+        setCurrentProjectId(target.id);
+        setCurrentProjectTitle(target.title);
+        localStorage.setItem(LAST_PROJECT_KEY, target.id);
         setDirty(false);
       }
 
       setLoading(false);
-      hydratingRef.current = false;
+      fetchingRef.current = false;
     },
-    [setList]
+    [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
   );
 
-  // 수동 저장 API
-  const saveNow = useCallback(async () => {
-    const payload = normalizeCenter(listRef.current);
-    const uid = userIdRef.current;
-    if (!uid) return;
-    try {
-      setSavePending(true);
-      await supabase.from("sbj_lists").upsert(
-        {
-          user_id: uid,
-          data: encodeList(payload),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-      lastSavedRef.current = encodeList(payload);
-      setDirty(false);
-    } finally {
-      setSavePending(false);
-    }
-  }, []);
+  // ─── Auth watcher ─────────────────────────────────────────────────────────
 
-  // 세션 감시 + 하이드레이션 트리거
   useEffect(() => {
     let active = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!active) return;
       if (user) {
         userIdRef.current = user.id;
-        if (!hydratedRef.current) void fetchInitial(user.id);
+        void fetchAndHydrate(user.id);
       } else {
         setLoading(false);
       }
     });
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_e, session) => {
-        const uid = session?.user?.id ?? null;
-        userIdRef.current = uid;
-        if (uid) {
-          if (!hydratedRef.current) void fetchInitial(uid);
-        } else setLoading(false);
+    const { data: authListener } = supabase.auth.onAuthStateChange((_e, session) => {
+      const uid = session?.user?.id ?? null;
+      userIdRef.current = uid;
+      if (uid) {
+        // Reset fetch guard on new session so we can hydrate fresh
+        fetchingRef.current = false;
+        void fetchAndHydrate(uid);
+      } else {
+        // Logged out
+        setProjects([]);
+        setCurrentProjectId(null);
+        setCurrentProjectTitle(null);
+        lastSavedRef.current = "[]";
+        setDirty(false);
+        setLoading(false);
       }
-    );
+    });
     return () => {
       active = false;
       authListener.subscription.unsubscribe();
     };
-  }, [fetchInitial]);
+  }, [fetchAndHydrate, setCurrentProjectId, setCurrentProjectTitle, setDirty]);
 
-  // 하이드레이션 후 dirty 추적(현재 상태 스냅샷 vs 마지막 저장 스냅샷 비교)
+  // ─── Dirty tracking ───────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (loading) return;
     const cur = encodeList(list);
     setDirty(cur !== lastSavedRef.current);
-  }, [list]);
+  }, [list, loading, setDirty]);
 
-  // 이탈 전 확인 + 실제 이탈 시 Best‑effort 저장
+  // ─── Save ─────────────────────────────────────────────────────────────────
+
+  const saveNow = useCallback(async () => {
+    const uid = userIdRef.current;
+    if (!uid) return;
+    const payload = normalizeCenter(listRef.current);
+    const encoded = encodeList(payload);
+    setSavePending(true);
+    try {
+      if (currentProjectIdRef.current) {
+        await supabase
+          .from("projects")
+          .update({ data: encoded, updated_at: new Date().toISOString() })
+          .eq("id", currentProjectIdRef.current)
+          .eq("user_id", uid);
+        // Update local projects list
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === currentProjectIdRef.current
+              ? { ...p, data: encoded, updated_at: new Date().toISOString() }
+              : p
+          )
+        );
+      } else {
+        // No current project — create a new one
+        const { data: created } = await supabase
+          .from("projects")
+          .insert({ user_id: uid, title: "새 프로젝트", data: encoded })
+          .select()
+          .single();
+        if (created) {
+          const proj = created as Project;
+          setProjects((prev) => [proj, ...prev]);
+          setCurrentProjectId(proj.id);
+          setCurrentProjectTitle(proj.title);
+          localStorage.setItem(LAST_PROJECT_KEY, proj.id);
+        }
+      }
+      lastSavedRef.current = encoded;
+      setDirty(false);
+    } finally {
+      setSavePending(false);
+    }
+  }, [setCurrentProjectId, setCurrentProjectTitle, setDirty]);
+
+  // ─── Load a project ───────────────────────────────────────────────────────
+
+  const loadProject = useCallback(
+    (project: Project) => {
+      if (dirtyRef.current) {
+        const ok = window.confirm(
+          "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?"
+        );
+        if (!ok) return;
+      }
+      const decoded = decodeList(project.data);
+      setList(decoded);
+      lastSavedRef.current = encodeList(decoded);
+      setCurrentProjectId(project.id);
+      setCurrentProjectTitle(project.title);
+      localStorage.setItem(LAST_PROJECT_KEY, project.id);
+      setDirty(false);
+      setIsPickerOpen(false);
+    },
+    [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
+  );
+
+  // ─── New project ─────────────────────────────────────────────────────────
+
+  const newProject = useCallback(() => {
+    if (dirtyRef.current) {
+      const ok = window.confirm(
+        "저장되지 않은 변경이 있습니다.\n새 프로젝트를 시작하면 변경 내용이 사라집니다.\n계속하시겠습니까?"
+      );
+      if (!ok) return;
+    }
+    setList([]);
+    lastSavedRef.current = "[]";
+    setCurrentProjectId(null);
+    setCurrentProjectTitle("새 프로젝트");
+    localStorage.removeItem(LAST_PROJECT_KEY);
+    setDirty(false);
+    setIsPickerOpen(false);
+  }, [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]);
+
+  // ─── Delete project ───────────────────────────────────────────────────────
+
+  const deleteProject = useCallback(
+    async (id: string) => {
+      const uid = userIdRef.current;
+      if (!uid) return;
+      await supabase.from("projects").delete().eq("id", id).eq("user_id", uid);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      if (currentProjectIdRef.current === id) {
+        setCurrentProjectId(null);
+        setCurrentProjectTitle(null);
+        localStorage.removeItem(LAST_PROJECT_KEY);
+      }
+    },
+    [setCurrentProjectId, setCurrentProjectTitle]
+  );
+
+  // ─── Rename project ───────────────────────────────────────────────────────
+
+  const renameProject = useCallback(
+    async (id: string, title: string) => {
+      const uid = userIdRef.current;
+      if (!uid) return;
+      await supabase.from("projects").update({ title }).eq("id", id).eq("user_id", uid);
+      setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
+      if (currentProjectIdRef.current === id) setCurrentProjectTitle(title);
+    },
+    [setCurrentProjectTitle]
+  );
+
+  // ─── Picker open/close ────────────────────────────────────────────────────
+
+  const openPicker = useCallback(() => {
+    void fetchProjects();
+    setIsPickerOpen(true);
+  }, [fetchProjects]);
+
+  const closePicker = useCallback(() => setIsPickerOpen(false), []);
+
+  // ─── Beforeunload / pagehide ──────────────────────────────────────────────
+
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!dirty) return;
+      if (!dirtyRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
     const onPageHide = () => {
-      if (!dirty) return;
+      if (!dirtyRef.current) return;
       const uid = userIdRef.current;
-      if (!uid) return;
+      const pid = currentProjectIdRef.current;
+      if (!uid || !pid) return;
       try {
-        const url = `${
-          import.meta.env.VITE_SUPABASE_URL
-        }/rest/v1/sbj_lists?on_conflict=user_id`;
-        const body = JSON.stringify([
-          {
-            user_id: uid,
-            data: encodeList(normalizeCenter(listRef.current)),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects?id=eq.${pid}`;
+        const body = JSON.stringify({
+          data: encodeList(normalizeCenter(listRef.current)),
+          updated_at: new Date().toISOString(),
+        });
         const headers: Record<string, string> = {
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           "content-type": "application/json",
-          Prefer: "resolution=merge-duplicates",
         };
-        // 떠나는 순간에만 best‑effort 저장(네트워크/브라우저 제약으로 실패할 수 있음)
-        fetch(url, { method: "POST", headers, body, keepalive: true }).catch(
-          () => {}
-        );
+        fetch(url, { method: "PATCH", headers, body, keepalive: true }).catch(() => {});
       } catch {
-        // 무시
+        // ignore
       }
     };
     window.addEventListener("beforeunload", onBeforeUnload);
@@ -186,12 +328,23 @@ export const useSbjSync = (
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("pagehide", onPageHide);
     };
-  }, [dirty]);
+  }, []);
 
   return {
     loading,
     savePending,
     dirty,
     saveNow,
+    projects,
+    currentProjectId,
+    currentProjectTitle,
+    isPickerOpen,
+    openPicker,
+    closePicker,
+    loadProject,
+    newProject,
+    deleteProject,
+    renameProject,
+    fetchProjects,
   } as const;
 };

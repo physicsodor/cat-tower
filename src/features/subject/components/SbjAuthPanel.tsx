@@ -3,12 +3,26 @@ import { useSbjSyncCtx } from "../context/SbjSyncContext";
 
 const SbjAuthPanel = () => {
   const { user, signIn, signOut } = useAuth();
-  const { saveNow, dirty, savePending } = useSbjSyncCtx();
+  const { saveNow, dirty, savePending, currentProjectTitle, openPicker } = useSbjSyncCtx();
 
   return (
     <div className="sbj-auth-panel">
       {user ? (
         <>
+          {currentProjectTitle && (
+            <button
+              className="sbj-auth-proj-btn"
+              onClick={openPicker}
+              title="프로젝트 전환"
+            >
+              📁 {currentProjectTitle}
+            </button>
+          )}
+          {!currentProjectTitle && (
+            <button className="sbj-auth-proj-btn" onClick={openPicker}>
+              내 프로젝트
+            </button>
+          )}
           <button
             className="sbj-auth-save-btn"
             onClick={saveNow}
