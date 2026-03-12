@@ -147,8 +147,10 @@ export const computeAutoLayout = (
       if ([...compLevels].some((lv) => colOccupied[ci].has(lv))) continue;
       const connected = nodes.some((idx) => {
         const info = idx2chain.get(idx);
-        if (info?.pre) for (const p of info.pre) if (colNodes[ci].has(p)) return true;
-        if (info?.nxt) for (const n of info.nxt) if (colNodes[ci].has(n)) return true;
+        if (info?.preSet)
+          for (const p of info.preSet) if (colNodes[ci].has(p)) return true;
+        if (info?.nxtSet)
+          for (const n of info.nxtSet) if (colNodes[ci].has(n)) return true;
         return false;
       });
       if (connected) {
@@ -180,8 +182,7 @@ export const computeAutoLayout = (
 
   // === 7. 열 x 위치 계산 (GAP_COL 간격, x=0 중심) ===
   const totalWidth =
-    [...colWidth.values()].reduce((a, b) => a + b, 0) +
-    GAP_COL * (numCols - 1);
+    [...colWidth.values()].reduce((a, b) => a + b, 0) + GAP_COL * (numCols - 1);
   const colX = new Map<number, number>();
   let xPos = -totalWidth / 2;
   for (let i = 0; i < numCols; i++) {
