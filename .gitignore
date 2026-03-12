@@ -164,3 +164,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code memory
 .claude/
+
+# Claude Code instructions (local only)
+CLAUDE.md

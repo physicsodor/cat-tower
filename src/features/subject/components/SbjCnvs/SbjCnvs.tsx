@@ -26,7 +26,7 @@ type InnerProps = {
 
 const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
   const { camera, dxy } = useInfiniteCanvas();
-  const { idx2family, syncCamera } = useSbjData();
+  const { idx2sbj, idx2family, syncCamera } = useSbjData();
 
   useEffect(() => {
     syncCamera(camera);
@@ -35,24 +35,21 @@ const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
 
   useLayoutEffect(() => {
     const map = new Map<number, LRTB>();
-    const getItemLRTB = (idx: number): LRTB | null => {
-      const item = itemsRef.current.get(idx);
-      if (!item) return null;
-      const rect = item.getBoundingClientRect();
-      return { l: rect.left, r: rect.right, t: rect.top, b: rect.bottom };
-    };
-    for (const [idx, f] of idx2family) {
-      if (idx < 0) continue;
-      const kids = f.kids;
+    const getLRTB = (idx: number): LRTB | null => {
+      if (map.has(idx)) return map.get(idx)!;
+      const f = idx2family.get(idx);
+      const kids = f?.kids;
       if (!kids) {
-        if (map.get(idx)) continue;
-        const lrtb = getItemLRTB(idx);
-        if (lrtb) map.set(idx, lrtb);
-        continue;
+        const item = itemsRef.current.get(idx);
+        if (!item) return null;
+        const rect = item.getBoundingClientRect();
+        const lrtb = { l: rect.left, r: rect.right, t: rect.top, b: rect.bottom };
+        map.set(idx, lrtb);
+        return lrtb;
       }
       let lrtb: LRTB | null = null;
       for (const k of kids) {
-        const kidLrtb = getItemLRTB(k);
+        const kidLrtb = getLRTB(k);
         if (!kidLrtb) continue;
         if (lrtb === null) lrtb = kidLrtb;
         else
@@ -64,10 +61,15 @@ const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
           };
       }
       if (lrtb !== null) map.set(idx, lrtb);
+      return lrtb;
+    };
+    for (const [idx] of idx2family) {
+      if (idx < 0) continue;
+      getLRTB(idx);
     }
     setLrtbMap(map);
     lrtbMapRef.current = map;
-  }, [idx2family, dxy, camera, lrtbMapRef, itemsRef]);
+  }, [idx2sbj, idx2family, dxy, camera, lrtbMapRef, itemsRef]);
 
   return (
     <>
