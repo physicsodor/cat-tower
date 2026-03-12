@@ -6,6 +6,22 @@ const REM = 16;
 const GAP_ROW = 2 * REM;
 const GAP_COL = 2 * REM;
 
+const makeUF = () => {
+  const par = new Map<number, number>();
+  const find = (x: number): number => {
+    if (!par.has(x)) return x;
+    const r = find(par.get(x)!);
+    par.set(x, r);
+    return r;
+  };
+  const unite = (a: number, b: number) => {
+    const ra = find(a),
+      rb = find(b);
+    if (ra !== rb) par.set(ra, rb);
+  };
+  return { find, unite };
+};
+
 export const computeAutoLayout = (
   list: ReadonlyArray<Curriculum>,
   idx2chain: ChainMap,
@@ -19,20 +35,24 @@ export const computeAutoLayout = (
 
   const getSize = (idx: number) => sizes?.get(idx) ?? { w: 120, h: 40 };
 
-  // === 1. 체인 컴포넌트: A.pre={B}, B.nxt={A} 인 쌍은 반드시 같은 열 ===
-  const parent = new Map<number, number>();
-  const find = (x: number): number => {
-    if (!parent.has(x)) return x;
-    const root = find(parent.get(x)!);
-    parent.set(x, root);
-    return root;
-  };
-  const unite = (a: number, b: number) => {
-    const ra = find(a),
-      rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
-  };
+  // === 1. 파티션: pre/nxt 약연결 컴포넌트 ===
+  // 같은 파티션 내 노드들만 열을 공유할 수 있다.
+  const partUF = makeUF();
+  for (const s of subjects) {
+    const info = idx2chain.get(s.idx);
+    if (info?.pre) for (const p of info.pre) partUF.unite(s.idx, p);
+    if (info?.nxt) for (const n of info.nxt) partUF.unite(s.idx, n);
+  }
 
+  const partitionMap = new Map<number, number[]>(); // partRoot -> nodes
+  for (const s of subjects) {
+    const r = partUF.find(s.idx);
+    if (!partitionMap.has(r)) partitionMap.set(r, []);
+    partitionMap.get(r)!.push(s.idx);
+  }
+
+  // === 2. 체인 컴포넌트: A.pre={B}, B.nxt={A} 인 쌍은 같은 열 ===
+  const chainUF = makeUF();
   for (const s of subjects) {
     const infoA = idx2chain.get(s.idx);
     if (!infoA?.pre || infoA.pre.size !== 1) continue;
@@ -40,17 +60,17 @@ export const computeAutoLayout = (
     const infoB = idx2chain.get(bIdx);
     if (!infoB?.nxt || infoB.nxt.size !== 1) continue;
     if ([...infoB.nxt][0] !== s.idx) continue;
-    unite(s.idx, bIdx);
+    chainUF.unite(s.idx, bIdx);
   }
 
-  const compMap = new Map<number, number[]>(); // root -> nodes
+  const chainCompMap = new Map<number, number[]>(); // chainRoot -> nodes
   for (const s of subjects) {
-    const root = find(s.idx);
-    if (!compMap.has(root)) compMap.set(root, []);
-    compMap.get(root)!.push(s.idx);
+    const r = chainUF.find(s.idx);
+    if (!chainCompMap.has(r)) chainCompMap.set(r, []);
+    chainCompMap.get(r)!.push(s.idx);
   }
 
-  // === 2. 행(level) 할당 ===
+  // === 3. 행(level) 할당 ===
   const levelMap = buildChainLevelMap(idx2chain);
   const levelGroups = new Map<number, number[]>();
   for (const s of subjects) {
@@ -60,7 +80,7 @@ export const computeAutoLayout = (
   }
   const sortedLevels = [...levelGroups.keys()].sort((a, b) => a - b);
 
-  // === 3. Barycenter heuristic으로 각 행 내 노드 순서 결정 ===
+  // === 4. Barycenter heuristic ===
   const subjectX = new Map(subjects.map((s) => [s.idx, s.x]));
   for (const level of sortedLevels) {
     levelGroups
@@ -80,109 +100,198 @@ export const computeAutoLayout = (
       const info = idx2chain.get(idx);
       const neighbors: number[] = [];
       if (info?.pre)
-        for (const pIdx of info.pre)
-          if (neighborPos.has(pIdx)) neighbors.push(pIdx);
+        for (const p of info.pre)
+          if (neighborPos.has(p)) neighbors.push(p);
       if (info?.nxt)
-        for (const nIdx of info.nxt)
-          if (neighborPos.has(nIdx)) neighbors.push(nIdx);
-      if (neighbors.length === 0) {
-        barycenters.set(idx, i);
-      } else {
-        const sum = neighbors.reduce(
-          (acc, nIdx) => acc + (neighborPos.get(nIdx) ?? 0),
-          0,
-        );
-        barycenters.set(idx, sum / neighbors.length);
-      }
+        for (const n of info.nxt)
+          if (neighborPos.has(n)) neighbors.push(n);
+      barycenters.set(
+        idx,
+        neighbors.length === 0
+          ? i
+          : neighbors.reduce((s, n) => s + neighborPos.get(n)!, 0) /
+              neighbors.length,
+      );
     }
     return barycenters;
   };
 
   for (let pass = 0; pass < 4; pass++) {
     for (let i = 1; i < sortedLevels.length; i++) {
-      const group = levelGroups.get(sortedLevels[i])!;
-      const bc = computeBarycenters(group, sortedLevels[i - 1]);
-      group.sort((a, b) => (bc.get(a) ?? 0) - (bc.get(b) ?? 0));
+      const g = levelGroups.get(sortedLevels[i])!;
+      const bc = computeBarycenters(g, sortedLevels[i - 1]);
+      g.sort((a, b) => bc.get(a)! - bc.get(b)!);
     }
     for (let i = sortedLevels.length - 2; i >= 0; i--) {
-      const group = levelGroups.get(sortedLevels[i])!;
-      const bc = computeBarycenters(group, sortedLevels[i + 1]);
-      group.sort((a, b) => (bc.get(a) ?? 0) - (bc.get(b) ?? 0));
+      const g = levelGroups.get(sortedLevels[i])!;
+      const bc = computeBarycenters(g, sortedLevels[i + 1]);
+      g.sort((a, b) => bc.get(a)! - bc.get(b)!);
     }
   }
 
-  // === 4. 컴포넌트 순서 결정: 각 행 내 정규화된 rank의 평균 ===
+  // === 5. 체인 컴포넌트 점수 (정규화 rank 평균) ===
   const nodeNormRank = new Map<number, number>();
   for (const level of sortedLevels) {
-    const group = levelGroups.get(level)!;
-    const n = group.length;
-    for (let i = 0; i < n; i++) {
-      nodeNormRank.set(group[i], n > 1 ? i / (n - 1) : 0);
-    }
+    const g = levelGroups.get(level)!;
+    const n = g.length;
+    for (let i = 0; i < n; i++) nodeNormRank.set(g[i], n > 1 ? i / (n - 1) : 0);
   }
 
-  const compScore = new Map<number, number>();
-  for (const [root, nodes] of compMap) {
-    const avg =
-      nodes.reduce((sum, idx) => sum + (nodeNormRank.get(idx) ?? 0), 0) /
-      nodes.length;
-    compScore.set(root, avg);
+  const chainCompScore = new Map<number, number>();
+  for (const [root, nodes] of chainCompMap) {
+    chainCompScore.set(
+      root,
+      nodes.reduce((s, idx) => s + (nodeNormRank.get(idx) ?? 0), 0) /
+        nodes.length,
+    );
   }
 
-  const sortedComps = [...compMap.entries()].sort(
-    ([ra], [rb]) => (compScore.get(ra) ?? 0) - (compScore.get(rb) ?? 0),
+  // === 6. 파티션별 leftmost fit 열 배정 ===
+  // 파티션 내 레벨 비충돌이면 같은 열 허용, 파티션 간 열 공유 없음.
+  const chainCompToLocalCol = new Map<number, number>();
+
+  // 파티션 순서: 해당 파티션 체인 컴포넌트 점수 평균
+  const partScore = new Map<number, number>();
+  for (const [partRoot, partNodes] of partitionMap) {
+    const roots = [...new Set(partNodes.map((idx) => chainUF.find(idx)))];
+    partScore.set(
+      partRoot,
+      roots.reduce((s, r) => s + (chainCompScore.get(r) ?? 0), 0) /
+        roots.length,
+    );
+  }
+  const sortedPartRoots = [...partitionMap.keys()].sort(
+    (a, b) => (partScore.get(a) ?? 0) - (partScore.get(b) ?? 0),
   );
 
-  // === 5. Leftmost fit 열 배정 ===
-  // 조건: 레벨 비충돌 AND 열 내 기존 노드와 pre/nxt 연결이 있을 것
-  const colOccupied: Set<number>[] = []; // 열 i에 배치된 레벨 집합
-  const colNodes: Set<number>[] = []; // 열 i에 배치된 노드 집합
-  const compToCol = new Map<number, number>(); // root -> 열 인덱스
+  const partColOffset = new Map<number, number>();
+  let globalColOffset = 0;
 
-  for (const [root, nodes] of sortedComps) {
-    const compLevels = new Set(nodes.map((idx) => levelMap.get(idx) ?? 0));
+  for (const partRoot of sortedPartRoots) {
+    const partNodes = partitionMap.get(partRoot)!;
+    const sortedComps = [
+      ...new Set(partNodes.map((idx) => chainUF.find(idx))),
+    ].sort((a, b) => (chainCompScore.get(a) ?? 0) - (chainCompScore.get(b) ?? 0));
 
-    let assigned = -1;
-    for (let ci = 0; ci < colOccupied.length; ci++) {
-      if ([...compLevels].some((lv) => colOccupied[ci].has(lv))) continue;
-      const connected = nodes.some((idx) => {
-        const info = idx2chain.get(idx);
-        if (info?.preSet)
-          for (const p of info.preSet) if (colNodes[ci].has(p)) return true;
-        if (info?.nxtSet)
-          for (const n of info.nxtSet) if (colNodes[ci].has(n)) return true;
-        return false;
-      });
-      if (connected) {
-        assigned = ci;
-        break;
+    const colOccupied: Set<number>[] = [];
+
+    // Leftmost fit
+    for (const root of sortedComps) {
+      const nodes = chainCompMap.get(root)!;
+      const compLevels = new Set(nodes.map((idx) => levelMap.get(idx) ?? 0));
+
+      let assigned = -1;
+      for (let ci = 0; ci < colOccupied.length; ci++) {
+        if (![...compLevels].some((lv) => colOccupied[ci].has(lv))) {
+          assigned = ci;
+          break;
+        }
       }
+      if (assigned === -1) {
+        assigned = colOccupied.length;
+        colOccupied.push(new Set());
+      }
+      for (const lv of compLevels) colOccupied[assigned].add(lv);
+      chainCompToLocalCol.set(root, assigned);
     }
-    if (assigned === -1) {
-      assigned = colOccupied.length;
-      colOccupied.push(new Set());
-      colNodes.push(new Set());
+
+    // Nxt-alignment pass: best-effort move each component to a nxt node's column.
+    // Process highest-level components first so nxt columns are already settled.
+    const realignOrder = [...sortedComps].sort((a, b) => {
+      const maxA = Math.max(...chainCompMap.get(a)!.map((idx) => levelMap.get(idx) ?? 0));
+      const maxB = Math.max(...chainCompMap.get(b)!.map((idx) => levelMap.get(idx) ?? 0));
+      return maxB - maxA;
+    });
+
+    for (const root of realignOrder) {
+      const nodes = chainCompMap.get(root)!;
+
+      // Collect unique local columns of all nxt nodes in this partition
+      const nxtColSet = new Set<number>();
+      for (const idx of nodes) {
+        const info = idx2chain.get(idx);
+        if (!info?.nxt) continue;
+        for (const nIdx of info.nxt) {
+          if (partUF.find(nIdx) !== partRoot) continue;
+          const nLocalCol = chainCompToLocalCol.get(chainUF.find(nIdx));
+          if (nLocalCol !== undefined) nxtColSet.add(nLocalCol);
+        }
+      }
+      if (nxtColSet.size === 0) continue;
+
+      const curCol = chainCompToLocalCol.get(root)!;
+      const compLevels = new Set(nodes.map((idx) => levelMap.get(idx) ?? 0));
+
+      // Median of nxt columns (left median if even count)
+      const nxtCols = [...nxtColSet].sort((a, b) => a - b);
+      const median = nxtCols[Math.floor((nxtCols.length - 1) / 2)];
+
+      // Temporarily remove component from its current column for conflict check
+      for (const lv of compLevels) colOccupied[curCol].delete(lv);
+
+      // Feasible nxt columns: no level conflict at that column
+      const feasible = nxtCols.filter((col) =>
+        col >= colOccupied.length ||
+        ![...compLevels].some((lv) => colOccupied[col].has(lv)),
+      );
+
+      if (feasible.length === 0) {
+        for (const lv of compLevels) colOccupied[curCol].add(lv);
+        continue;
+      }
+
+      // Pick feasible col closest to median (left/smaller on tie)
+      const bestCol = feasible.reduce((best, col) => {
+        const db = Math.abs(best - median);
+        const dc = Math.abs(col - median);
+        return dc < db || (dc === db && col < best) ? col : best;
+      });
+
+      if (bestCol === curCol) {
+        for (const lv of compLevels) colOccupied[curCol].add(lv);
+        continue;
+      }
+
+      while (colOccupied.length <= bestCol) colOccupied.push(new Set());
+      for (const lv of compLevels) colOccupied[bestCol].add(lv);
+      chainCompToLocalCol.set(root, bestCol);
     }
-    for (const lv of compLevels) colOccupied[assigned].add(lv);
-    for (const idx of nodes) colNodes[assigned].add(idx);
-    compToCol.set(root, assigned);
+
+    // Compact: remap local column indices to 0, 1, 2, ... (no gaps)
+    const usedCols = [
+      ...new Set(sortedComps.map((r) => chainCompToLocalCol.get(r)!)),
+    ].sort((a, b) => a - b);
+    const colRemap = new Map(usedCols.map((col, i) => [col, i]));
+    for (const root of sortedComps) {
+      chainCompToLocalCol.set(root, colRemap.get(chainCompToLocalCol.get(root)!)!);
+    }
+
+    partColOffset.set(partRoot, globalColOffset);
+    globalColOffset += usedCols.length;
   }
 
-  const numCols = colOccupied.length;
-  const idxToCol = new Map<number, number>();
-  for (const s of subjects) idxToCol.set(s.idx, compToCol.get(find(s.idx))!);
+  const numCols = globalColOffset;
+  const idxToGlobalCol = new Map<number, number>();
+  for (const s of subjects) {
+    idxToGlobalCol.set(
+      s.idx,
+      partColOffset.get(partUF.find(s.idx))! +
+        chainCompToLocalCol.get(chainUF.find(s.idx))!,
+    );
+  }
 
-  // === 6. 열 너비 = 해당 열 내 최대 노드 너비 ===
+  // === 7. 열 너비 = 해당 열 내 최대 노드 너비 ===
   const colWidth = new Map<number, number>();
   for (let i = 0; i < numCols; i++) colWidth.set(i, 0);
   for (const s of subjects) {
-    const ci = idxToCol.get(s.idx)!;
+    const ci = idxToGlobalCol.get(s.idx)!;
     colWidth.set(ci, Math.max(colWidth.get(ci)!, getSize(s.idx).w));
   }
 
-  // === 7. 열 x 위치 계산 (GAP_COL 간격, x=0 중심) ===
+  // === 8. 열 x 위치 계산 (GAP_COL 간격, x=0 중심) ===
   const totalWidth =
-    [...colWidth.values()].reduce((a, b) => a + b, 0) + GAP_COL * (numCols - 1);
+    [...colWidth.values()].reduce((a, b) => a + b, 0) +
+    GAP_COL * (numCols - 1);
   const colX = new Map<number, number>();
   let xPos = -totalWidth / 2;
   for (let i = 0; i < numCols; i++) {
@@ -191,7 +300,7 @@ export const computeAutoLayout = (
     xPos += w + GAP_COL;
   }
 
-  // === 8. 행 y 위치 계산 ===
+  // === 9. 행 y 위치 계산 ===
   const levelY = new Map<number, number>();
   let currentY = 0;
   for (let i = 0; i < sortedLevels.length; i++) {
@@ -208,15 +317,15 @@ export const computeAutoLayout = (
     levelY.set(level, currentY);
   }
 
-  // === 9. 위치 할당 ===
+  // === 10. 위치 할당 ===
   for (const s of subjects) {
     result.set(s.idx, {
-      x: colX.get(idxToCol.get(s.idx)!)!,
+      x: colX.get(idxToGlobalCol.get(s.idx)!)!,
       y: levelY.get(levelMap.get(s.idx) ?? 0)!,
     });
   }
 
-  // === 10. 전체 바운딩 박스 중앙을 원점으로 이동 ===
+  // === 11. 전체 바운딩 박스 중앙을 원점으로 이동 ===
   let minX = Infinity,
     maxX = -Infinity,
     minY = Infinity,
