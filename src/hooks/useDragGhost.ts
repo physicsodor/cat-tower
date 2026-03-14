@@ -36,13 +36,12 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
       const ghost = target.cloneNode(true) as HTMLElement;
       ghost.className += " ghost";
       ghost.style.display = "flex";
-      ghost.style.left = `${pxyRef.current[0]}px`;
-      ghost.style.top = `${pxyRef.current[1]}px`;
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.top = `${rect.top}px`;
       ghost.style.width = `${rect.width}px`;
       ghost.style.height = `${rect.height}px`;
       document.body.appendChild(ghost);
       ghostRef.current = ghost;
-      console.log(ghost.className);
 
       document.addEventListener("pointermove", onPointerMove);
       document.addEventListener("pointerup", onPointerUp);

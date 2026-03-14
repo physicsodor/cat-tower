@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import React from "react";
 import { useDragGhost } from "@/hooks/useDragGhost";
 import { makeClassName } from "@/utils/makeClassName";
 import type { BroDir } from "@/features/subject/types/Family/familyOp";
@@ -7,6 +8,7 @@ import BttnDel from "@/components/Bttn/BttnDel";
 import BttnChk from "@/components/Bttn/BttnChk";
 import { useSbjData } from "@/features/subject/context/SbjDataContext";
 import { useSbjSelect } from "@/features/subject/context/SbjSelectContext";
+import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
 
 type Props = {
   idx: number;
@@ -14,13 +16,26 @@ type Props = {
   isOpen: boolean;
   onToggle: () => void;
 };
-type PE = React.PointerEvent | PointerEvent;
 
 const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
   const { delCrs, treeDrag, setTreeBro, setTreeMom, idx2sbj, idx2family } = useSbjData();
   const { selectMany } = useSbjSelect();
   const { down, ref } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
+  const globalMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+
+  useEffect(() => {
+    if (ref.current && idx >= 0)
+      treeRegistry.set(idx, {
+        el: ref.current,
+        setDir,
+        onDrop: (dragged, d) => {
+          if (d === "LEFT") setTreeBro(dragged, idx, d);
+          else setTreeMom(dragged, idx);
+        },
+      });
+    return () => { if (idx >= 0) treeRegistry.delete(idx); };
+  });
 
   const onSelectDescendants = () => {
     const result = new Set<number>();
@@ -34,29 +49,49 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
     selectMany(result);
   };
 
-  const onUp = (e: PE) => {
-    e.preventDefault();
-    if (dir === "LEFT") setTreeBro(treeDrag.get(), idx, dir);
-    else if (dir === "RIGHT") setTreeMom(treeDrag.get(), idx);
-    treeDrag.set(new Set());
-    setDir(null);
+  const stopDrag = () => {
+    if (globalMoveRef.current) {
+      document.removeEventListener("pointermove", globalMoveRef.current);
+      globalMoveRef.current = null;
+    }
+    clearAllDirs();
   };
 
-  const onLeave = () => setDir(null);
-
-  const onMove = (e: PE) => {
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (!ref.current || treeDrag.get().size <= 0) return;
-    const rect = ref.current.getBoundingClientRect();
-    const y = rect.top + rect.height / 2;
-    if (e.clientY <= y) setDir("LEFT");
-    else setDir("RIGHT");
-  };
-
-  const onDown = (e: PE) => {
-    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     down(e);
     treeDrag.set(new Set([idx]));
+
+    let prevTargetIdx: number | null = null;
+    const handler = (ev: PointerEvent) => {
+      const target = findDropTarget(ev.clientX, ev.clientY, idx);
+      if (prevTargetIdx !== null && prevTargetIdx !== target?.idx)
+        treeRegistry.get(prevTargetIdx)?.setDir(null);
+      if (target) {
+        treeRegistry.get(target.idx)?.setDir(target.dir);
+        prevTargetIdx = target.idx;
+      } else {
+        prevTargetIdx = null;
+      }
+    };
+    globalMoveRef.current = handler;
+    document.addEventListener("pointermove", handler);
+  };
+
+  const onUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const target = findDropTarget(e.clientX, e.clientY, idx);
+    if (target) treeRegistry.get(target.idx)?.onDrop(treeDrag.get(), target.dir);
+    treeDrag.set(new Set());
+    setDir(null);
+    stopDrag();
+  };
+
+  const onCancel = () => {
+    treeDrag.set(new Set());
+    setDir(null);
+    stopDrag();
   };
 
   return (
@@ -70,10 +105,10 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
       )}
     >
       <div
+        style={{ touchAction: "none" }}
         onPointerDown={idx >= 0 ? onDown : undefined}
-        onPointerMove={onMove}
-        onPointerLeave={onLeave}
         onPointerUp={onUp}
+        onPointerCancel={onCancel}
       >
         {title}
       </div>
