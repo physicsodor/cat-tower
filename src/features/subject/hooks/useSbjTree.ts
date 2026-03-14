@@ -14,7 +14,7 @@ export const useSbjTree = (
   treeDrag: GetSet<Set<number>>
 ) => {
   const setTreeMom = useCallback(
-    (trg: Set<number>, mom: number) => {
+    (trg: ReadonlySet<number>, mom: number) => {
       const { updater } = setMom<Curriculum>(idx2family, trg, mom);
       setList(updater);
       treeDrag.set(new Set());
@@ -23,7 +23,7 @@ export const useSbjTree = (
   );
 
   const setTreeBro = useCallback(
-    (trg: Set<number>, idx: number, dir: BroDir) => {
+    (trg: ReadonlySet<number>, idx: number, dir: BroDir) => {
       const { updater } = setBro<Curriculum>(idx2family, trg, idx, dir);
       setList(updater);
       treeDrag.set(new Set());
