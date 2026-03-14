@@ -90,7 +90,9 @@ const SbjTree = () => {
           <BttnDel onDown={delSbj} />
           <BttnGrp onDown={addCrs} />
         </div>
-        <SbjTreeBox />
+        <div className="sbj-tree-scroll">
+          <SbjTreeBox />
+        </div>
       </div>
     </div>
   );

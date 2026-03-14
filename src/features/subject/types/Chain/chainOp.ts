@@ -17,7 +17,7 @@ const buildChainMap = <T extends Chain, S extends IdxItem>(
   for (const x of list) {
     if (!isChain<T>(x)) continue;
     const xInfo = idx2chain.get(x.idx) ?? {};
-    if (x.pre.size > 0) xInfo.pre = new Set(x.pre);
+    xInfo.pre = new Set(x.pre);
     idx2chain.set(x.idx, xInfo);
     for (const pIdx of x.pre) {
       const pInfo = idx2chain.get(pIdx) ?? {};
@@ -260,7 +260,9 @@ const buildChainLevelMap = (idx2chain: ChainMap): Map<number, number> => {
     }
 
     // ── normalize: 컴포넌트 최솟값을 0으로 ──
-    const minLevel = Math.min(...component.map((idx) => idx2chainLevel.get(idx)!));
+    const minLevel = Math.min(
+      ...component.map((idx) => idx2chainLevel.get(idx)!),
+    );
     if (minLevel !== 0)
       for (const idx of component)
         idx2chainLevel.set(idx, idx2chainLevel.get(idx)! - minLevel);

@@ -49,8 +49,8 @@ const ProjectCard = ({ project, isActive, onLoad, onRename, onDelete }: CardProp
     const handler = (e: MouseEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, [menuOpen]);
 
   const commitRename = () => {

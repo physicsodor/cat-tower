@@ -138,13 +138,15 @@ export const useSbjSync = (
         setLoading(false);
       }
     });
-    const { data: authListener } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const uid = session?.user?.id ?? null;
       userIdRef.current = uid;
       if (uid) {
-        // Reset fetch guard on new session so we can hydrate fresh
-        fetchingRef.current = false;
-        void fetchAndHydrate(uid);
+        if (event === "SIGNED_IN") {
+          // 실제 로그인 시에만 hydration — 토큰 갱신(TOKEN_REFRESHED) 등은 건너뜀
+          fetchingRef.current = false;
+          void fetchAndHydrate(uid);
+        }
       } else {
         // Logged out
         setProjects([]);

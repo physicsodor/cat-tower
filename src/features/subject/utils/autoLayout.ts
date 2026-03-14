@@ -1,349 +1,241 @@
-import { buildChainLevelMap, type ChainMap } from "../types/Chain/chainOp";
-import type { Curriculum, Subject } from "../types/Curriculum/Curriculum";
-import type { FamilyMap } from "../types/Family/familyOp";
+import { buildChainLevelMap, type ChainMap } from "@/features/subject/types/Chain/chainOp";
+import type { Curriculum, Subject } from "@/features/subject/types/Curriculum/Curriculum";
+import type { FamilyMap } from "@/features/subject/types/Family/familyOp";
 
 const REM = 16;
-const GAP_ROW = 2 * REM;
-const GAP_COL = 2 * REM;
+const ROW_GAP = 2 * REM;   // 인접 행 간 최소 간격 (edge-to-edge)
+const COL_GAP = 1.5 * REM; // 인접 열 간 최소 간격 (edge-to-edge)
+const DEFAULT_W = 160;
+const DEFAULT_H = 48;
 
-const makeUF = () => {
-  const par = new Map<number, number>();
-  const find = (x: number): number => {
-    if (!par.has(x)) return x;
-    const r = find(par.get(x)!);
-    par.set(x, r);
-    return r;
-  };
-  const unite = (a: number, b: number) => {
-    const ra = find(a),
-      rb = find(b);
-    if (ra !== rb) par.set(ra, rb);
-  };
-  return { find, unite };
-};
-
-export const computeAutoLayout = (
+export function computeAutoLayout(
   list: ReadonlyArray<Curriculum>,
   idx2chain: ChainMap,
   _idx2family: FamilyMap,
-  sizes?: Map<number, { w: number; h: number }>,
-): Map<number, { x: number; y: number }> => {
-  const result = new Map<number, { x: number; y: number }>();
+  sizes?: Map<number, { w: number; h: number }>
+): Map<number, { x: number; y: number }> {
+  const subjects = list.filter((c): c is Subject => c.sbjType === "SUBJECT");
+  if (subjects.length === 0) return new Map();
 
-  const subjects = list.filter((x): x is Subject => x.sbjType === "SUBJECT");
-  if (subjects.length === 0) return result;
+  const getW = (idx: number) => sizes?.get(idx)?.w ?? DEFAULT_W;
+  const getH = (idx: number) => sizes?.get(idx)?.h ?? DEFAULT_H;
 
-  const getSize = (idx: number) => sizes?.get(idx) ?? { w: 120, h: 40 };
-
-  // === 1. 파티션: pre/nxt 약연결 컴포넌트 ===
-  // 같은 파티션 내 노드들만 열을 공유할 수 있다.
-  const partUF = makeUF();
+  // ── Step 1: 레벨 할당 ──────────────────────────────────────────────────────
+  const idx2level = buildChainLevelMap(idx2chain);
   for (const s of subjects) {
-    const info = idx2chain.get(s.idx);
-    if (info?.pre) for (const p of info.pre) partUF.unite(s.idx, p);
-    if (info?.nxt) for (const n of info.nxt) partUF.unite(s.idx, n);
+    if (!idx2level.has(s.idx)) idx2level.set(s.idx, 0);
   }
 
-  const partitionMap = new Map<number, number[]>(); // partRoot -> nodes
+  // ── Step 2: 레벨별 그룹화 ─────────────────────────────────────────────────
+  const level2idxs = new Map<number, number[]>();
   for (const s of subjects) {
-    const r = partUF.find(s.idx);
-    if (!partitionMap.has(r)) partitionMap.set(r, []);
-    partitionMap.get(r)!.push(s.idx);
+    const lv = idx2level.get(s.idx) ?? 0;
+    if (!level2idxs.has(lv)) level2idxs.set(lv, []);
+    level2idxs.get(lv)!.push(s.idx);
   }
+  const sortedLevels = [...level2idxs.keys()].sort((a, b) => a - b);
 
-  // === 2. 체인 컴포넌트: A.pre={B}, B.nxt={A} 인 쌍은 같은 열 ===
-  const chainUF = makeUF();
-  for (const s of subjects) {
-    const infoA = idx2chain.get(s.idx);
-    if (!infoA?.pre || infoA.pre.size !== 1) continue;
-    const [bIdx] = [...infoA.pre];
-    const infoB = idx2chain.get(bIdx);
-    if (!infoB?.nxt || infoB.nxt.size !== 1) continue;
-    if ([...infoB.nxt][0] !== s.idx) continue;
-    chainUF.unite(s.idx, bIdx);
-  }
-
-  const chainCompMap = new Map<number, number[]>(); // chainRoot -> nodes
-  for (const s of subjects) {
-    const r = chainUF.find(s.idx);
-    if (!chainCompMap.has(r)) chainCompMap.set(r, []);
-    chainCompMap.get(r)!.push(s.idx);
-  }
-
-  // === 3. 행(level) 할당 ===
-  const levelMap = buildChainLevelMap(idx2chain);
-  const levelGroups = new Map<number, number[]>();
-  for (const s of subjects) {
-    const level = levelMap.get(s.idx) ?? 0;
-    if (!levelGroups.has(level)) levelGroups.set(level, []);
-    levelGroups.get(level)!.push(s.idx);
-  }
-  const sortedLevels = [...levelGroups.keys()].sort((a, b) => a - b);
-
-  // === 4. Barycenter heuristic ===
-  const subjectX = new Map(subjects.map((s) => [s.idx, s.x]));
-  for (const level of sortedLevels) {
-    levelGroups
-      .get(level)!
-      .sort((a, b) => (subjectX.get(a) ?? 0) - (subjectX.get(b) ?? 0));
-  }
-
-  const computeBarycenters = (
-    group: number[],
-    neighborLevel: number,
-  ): Map<number, number> => {
-    const neighborGroup = levelGroups.get(neighborLevel);
-    const neighborPos = new Map(neighborGroup?.map((idx, i) => [idx, i]) ?? []);
-    const barycenters = new Map<number, number>();
-    for (let i = 0; i < group.length; i++) {
-      const idx = group[i];
-      const info = idx2chain.get(idx);
-      const neighbors: number[] = [];
-      if (info?.pre)
-        for (const p of info.pre)
-          if (neighborPos.has(p)) neighbors.push(p);
-      if (info?.nxt)
-        for (const n of info.nxt)
-          if (neighborPos.has(n)) neighbors.push(n);
-      barycenters.set(
-        idx,
-        neighbors.length === 0
-          ? i
-          : neighbors.reduce((s, n) => s + neighborPos.get(n)!, 0) /
-              neighbors.length,
-      );
-    }
-    return barycenters;
-  };
-
-  for (let pass = 0; pass < 4; pass++) {
-    for (let i = 1; i < sortedLevels.length; i++) {
-      const g = levelGroups.get(sortedLevels[i])!;
-      const bc = computeBarycenters(g, sortedLevels[i - 1]);
-      g.sort((a, b) => bc.get(a)! - bc.get(b)!);
-    }
-    for (let i = sortedLevels.length - 2; i >= 0; i--) {
-      const g = levelGroups.get(sortedLevels[i])!;
-      const bc = computeBarycenters(g, sortedLevels[i + 1]);
-      g.sort((a, b) => bc.get(a)! - bc.get(b)!);
-    }
-  }
-
-  // === 5. 체인 컴포넌트 점수 (정규화 rank 평균) ===
-  const nodeNormRank = new Map<number, number>();
-  for (const level of sortedLevels) {
-    const g = levelGroups.get(level)!;
-    const n = g.length;
-    for (let i = 0; i < n; i++) nodeNormRank.set(g[i], n > 1 ? i / (n - 1) : 0);
-  }
-
-  const chainCompScore = new Map<number, number>();
-  for (const [root, nodes] of chainCompMap) {
-    chainCompScore.set(
-      root,
-      nodes.reduce((s, idx) => s + (nodeNormRank.get(idx) ?? 0), 0) /
-        nodes.length,
-    );
-  }
-
-  // === 6. 파티션별 leftmost fit 열 배정 ===
-  // 파티션 내 레벨 비충돌이면 같은 열 허용, 파티션 간 열 공유 없음.
-  const chainCompToLocalCol = new Map<number, number>();
-
-  // 파티션 순서: 해당 파티션 체인 컴포넌트 점수 평균
-  const partScore = new Map<number, number>();
-  for (const [partRoot, partNodes] of partitionMap) {
-    const roots = [...new Set(partNodes.map((idx) => chainUF.find(idx)))];
-    partScore.set(
-      partRoot,
-      roots.reduce((s, r) => s + (chainCompScore.get(r) ?? 0), 0) /
-        roots.length,
-    );
-  }
-  const sortedPartRoots = [...partitionMap.keys()].sort(
-    (a, b) => (partScore.get(a) ?? 0) - (partScore.get(b) ?? 0),
-  );
-
-  const partColOffset = new Map<number, number>();
-  let globalColOffset = 0;
-
-  for (const partRoot of sortedPartRoots) {
-    const partNodes = partitionMap.get(partRoot)!;
-    const sortedComps = [
-      ...new Set(partNodes.map((idx) => chainUF.find(idx))),
-    ].sort((a, b) => (chainCompScore.get(a) ?? 0) - (chainCompScore.get(b) ?? 0));
-
-    const colOccupied: Set<number>[] = [];
-
-    // Leftmost fit
-    for (const root of sortedComps) {
-      const nodes = chainCompMap.get(root)!;
-      const compLevels = new Set(nodes.map((idx) => levelMap.get(idx) ?? 0));
-
-      let assigned = -1;
-      for (let ci = 0; ci < colOccupied.length; ci++) {
-        if (![...compLevels].some((lv) => colOccupied[ci].has(lv))) {
-          assigned = ci;
-          break;
-        }
-      }
-      if (assigned === -1) {
-        assigned = colOccupied.length;
-        colOccupied.push(new Set());
-      }
-      for (const lv of compLevels) colOccupied[assigned].add(lv);
-      chainCompToLocalCol.set(root, assigned);
-    }
-
-    // Nxt-alignment pass: best-effort move each component to a nxt node's column.
-    // Process highest-level components first so nxt columns are already settled.
-    const realignOrder = [...sortedComps].sort((a, b) => {
-      const maxA = Math.max(...chainCompMap.get(a)!.map((idx) => levelMap.get(idx) ?? 0));
-      const maxB = Math.max(...chainCompMap.get(b)!.map((idx) => levelMap.get(idx) ?? 0));
-      return maxB - maxA;
-    });
-
-    for (const root of realignOrder) {
-      const nodes = chainCompMap.get(root)!;
-
-      // Collect unique local columns of all nxt nodes in this partition
-      const nxtColSet = new Set<number>();
-      for (const idx of nodes) {
-        const info = idx2chain.get(idx);
-        if (!info?.nxt) continue;
-        for (const nIdx of info.nxt) {
-          if (partUF.find(nIdx) !== partRoot) continue;
-          const nLocalCol = chainCompToLocalCol.get(chainUF.find(nIdx));
-          if (nLocalCol !== undefined) nxtColSet.add(nLocalCol);
-        }
-      }
-      if (nxtColSet.size === 0) continue;
-
-      const curCol = chainCompToLocalCol.get(root)!;
-      const compLevels = new Set(nodes.map((idx) => levelMap.get(idx) ?? 0));
-
-      // Median of nxt columns (left median if even count)
-      const nxtCols = [...nxtColSet].sort((a, b) => a - b);
-      const median = nxtCols[Math.floor((nxtCols.length - 1) / 2)];
-
-      // Temporarily remove component from its current column for conflict check
-      for (const lv of compLevels) colOccupied[curCol].delete(lv);
-
-      // Feasible nxt columns: no level conflict at that column
-      const feasible = nxtCols.filter((col) =>
-        col >= colOccupied.length ||
-        ![...compLevels].some((lv) => colOccupied[col].has(lv)),
-      );
-
-      if (feasible.length === 0) {
-        for (const lv of compLevels) colOccupied[curCol].add(lv);
-        continue;
-      }
-
-      // Pick feasible col closest to median (left/smaller on tie)
-      const bestCol = feasible.reduce((best, col) => {
-        const db = Math.abs(best - median);
-        const dc = Math.abs(col - median);
-        return dc < db || (dc === db && col < best) ? col : best;
-      });
-
-      if (bestCol === curCol) {
-        for (const lv of compLevels) colOccupied[curCol].add(lv);
-        continue;
-      }
-
-      while (colOccupied.length <= bestCol) colOccupied.push(new Set());
-      for (const lv of compLevels) colOccupied[bestCol].add(lv);
-      chainCompToLocalCol.set(root, bestCol);
-    }
-
-    // Compact: remap local column indices to 0, 1, 2, ... (no gaps)
-    const usedCols = [
-      ...new Set(sortedComps.map((r) => chainCompToLocalCol.get(r)!)),
-    ].sort((a, b) => a - b);
-    const colRemap = new Map(usedCols.map((col, i) => [col, i]));
-    for (const root of sortedComps) {
-      chainCompToLocalCol.set(root, colRemap.get(chainCompToLocalCol.get(root)!)!);
-    }
-
-    partColOffset.set(partRoot, globalColOffset);
-    globalColOffset += usedCols.length;
-  }
-
-  const numCols = globalColOffset;
-  const idxToGlobalCol = new Map<number, number>();
-  for (const s of subjects) {
-    idxToGlobalCol.set(
-      s.idx,
-      partColOffset.get(partUF.find(s.idx))! +
-        chainCompToLocalCol.get(chainUF.find(s.idx))!,
-    );
-  }
-
-  // === 7. 열 너비 = 해당 열 내 최대 노드 너비 ===
-  const colWidth = new Map<number, number>();
-  for (let i = 0; i < numCols; i++) colWidth.set(i, 0);
-  for (const s of subjects) {
-    const ci = idxToGlobalCol.get(s.idx)!;
-    colWidth.set(ci, Math.max(colWidth.get(ci)!, getSize(s.idx).w));
-  }
-
-  // === 8. 열 x 위치 계산 (GAP_COL 간격, x=0 중심) ===
-  const totalWidth =
-    [...colWidth.values()].reduce((a, b) => a + b, 0) +
-    GAP_COL * (numCols - 1);
-  const colX = new Map<number, number>();
-  let xPos = -totalWidth / 2;
-  for (let i = 0; i < numCols; i++) {
-    const w = colWidth.get(i)!;
-    colX.set(i, xPos + w / 2);
-    xPos += w + GAP_COL;
-  }
-
-  // === 9. 행 y 위치 계산 ===
-  const levelY = new Map<number, number>();
-  let currentY = 0;
+  // ── Step 3: Y 좌표 계산 ───────────────────────────────────────────────────
+  // 각 레벨의 중심 y. 레벨이 높을수록 아래 (y 증가 방향).
+  const level2y = new Map<number, number>();
   for (let i = 0; i < sortedLevels.length; i++) {
-    const level = sortedLevels[i];
-    const group = levelGroups.get(level)!;
-    const rowH = Math.max(...group.map((idx) => getSize(idx).h));
+    const lv = sortedLevels[i];
+    const maxH = Math.max(...level2idxs.get(lv)!.map(getH));
     if (i === 0) {
-      currentY = rowH / 2;
+      level2y.set(lv, 0);
     } else {
-      const prevGroup = levelGroups.get(sortedLevels[i - 1])!;
-      const prevRowH = Math.max(...prevGroup.map((idx) => getSize(idx).h));
-      currentY += prevRowH / 2 + GAP_ROW + rowH / 2;
+      const prevLv = sortedLevels[i - 1];
+      const prevMaxH = Math.max(...level2idxs.get(prevLv)!.map(getH));
+      level2y.set(lv, level2y.get(prevLv)! + prevMaxH / 2 + ROW_GAP + maxH / 2);
     }
-    levelY.set(level, currentY);
   }
 
-  // === 10. 위치 할당 ===
+  // ── Step 4: X 초기값 = 현재 위치 ─────────────────────────────────────────
+  const idx2x = new Map<number, number>();
+  for (const s of subjects) idx2x.set(s.idx, s.x);
+
+  // ── Step 5: Barycenter 반복 (rule 2, 3) ───────────────────────────────────
+  const ITER = 10;
+  for (let iter = 0; iter < ITER; iter++) {
+    // Bottom-up: 노드 x = nxt 이웃의 x 중앙값 (rule 3)
+    for (let i = sortedLevels.length - 2; i >= 0; i--) {
+      const lv = sortedLevels[i];
+      for (const idx of level2idxs.get(lv)!) {
+        const nxt = idx2chain.get(idx)?.nxt;
+        if (!nxt || nxt.size === 0) continue;
+        const xs = [...nxt]
+          .filter((n) => idx2x.has(n))
+          .map((n) => idx2x.get(n)!)
+          .sort((a, b) => a - b);
+        if (xs.length > 0) idx2x.set(idx, median(xs));
+      }
+      resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
+    }
+
+    // Top-down: 노드 x = pre 이웃의 x 중앙값
+    for (let i = 1; i < sortedLevels.length; i++) {
+      const lv = sortedLevels[i];
+      for (const idx of level2idxs.get(lv)!) {
+        const pre = idx2chain.get(idx)?.pre;
+        if (!pre || pre.size === 0) continue;
+        const xs = [...pre]
+          .filter((p) => idx2x.has(p))
+          .map((p) => idx2x.get(p)!)
+          .sort((a, b) => a - b);
+        if (xs.length > 0) idx2x.set(idx, median(xs));
+      }
+      resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
+    }
+  }
+
+  // ── Step 6: Rule 5 — 교집합 없는 nxtSet 범위가 겹치지 않도록 ──────────────
+  applyDisjointNxtSets(sortedLevels, level2idxs, idx2chain, idx2x, getW, COL_GAP);
+
+  // 최종 겹침 해소
+  for (const lv of sortedLevels) {
+    resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
+  }
+
+  // ── Step 7: 결과 조립 ─────────────────────────────────────────────────────
+  const result = new Map<number, { x: number; y: number }>();
   for (const s of subjects) {
     result.set(s.idx, {
-      x: colX.get(idxToGlobalCol.get(s.idx)!)!,
-      y: levelY.get(levelMap.get(s.idx) ?? 0)!,
+      x: idx2x.get(s.idx) ?? s.x,
+      y: level2y.get(idx2level.get(s.idx) ?? 0) ?? s.y,
     });
   }
 
-  // === 11. 전체 바운딩 박스 중앙을 원점으로 이동 ===
-  let minX = Infinity,
-    maxX = -Infinity,
-    minY = Infinity,
-    maxY = -Infinity;
-  for (const s of subjects) {
-    const pos = result.get(s.idx)!;
-    const size = getSize(s.idx);
-    minX = Math.min(minX, pos.x - size.w / 2);
-    maxX = Math.max(maxX, pos.x + size.w / 2);
-    minY = Math.min(minY, pos.y - size.h / 2);
-    maxY = Math.max(maxY, pos.y + size.h / 2);
+  // ── Step 8: Normalize — 전체 바운딩 박스 중심 = (0, 0) ───────────────────
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const [idx, pos] of result) {
+    minX = Math.min(minX, pos.x - getW(idx) / 2);
+    maxX = Math.max(maxX, pos.x + getW(idx) / 2);
+    minY = Math.min(minY, pos.y - getH(idx) / 2);
+    maxY = Math.max(maxY, pos.y + getH(idx) / 2);
   }
-  const shiftX = (minX + maxX) / 2;
-  const shiftY = (minY + maxY) / 2;
-  for (const s of subjects) {
-    const pos = result.get(s.idx)!;
-    result.set(s.idx, { x: pos.x - shiftX, y: pos.y - shiftY });
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  for (const [idx, pos] of result) {
+    result.set(idx, { x: pos.x - cx, y: pos.y - cy });
   }
 
   return result;
-};
+}
+
+/** 정렬된 배열의 중앙값 (홀수: 중간, 짝수: 아래쪽 중간) */
+function median(sorted: number[]): number {
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
+/**
+ * 같은 레벨 노드들 사이의 겹침을 해소.
+ * Forward pass(오른쪽으로 밀기) → Backward pass(왼쪽으로 당기기) 후
+ * 그룹 전체를 원래 중심으로 shift하여 한쪽으로 치우치지 않도록 함.
+ */
+function resolveOverlaps(
+  idxs: number[],
+  idx2x: Map<number, number>,
+  getW: (idx: number) => number,
+  gap: number
+) {
+  if (idxs.length <= 1) return;
+  const sorted = [...idxs].sort((a, b) => (idx2x.get(a) ?? 0) - (idx2x.get(b) ?? 0));
+
+  const origX = sorted.map((idx) => idx2x.get(idx) ?? 0);
+  const origCenter = origX.reduce((s, x) => s + x, 0) / origX.length;
+
+  // Forward: 겹치면 오른쪽으로 밀기
+  for (let i = 1; i < sorted.length; i++) {
+    const p = sorted[i - 1], c = sorted[i];
+    const minX = (idx2x.get(p) ?? 0) + (getW(p) + getW(c)) / 2 + gap;
+    if ((idx2x.get(c) ?? 0) < minX) idx2x.set(c, minX);
+  }
+
+  // Backward: 가능한 만큼 왼쪽으로 당기기
+  for (let i = sorted.length - 2; i >= 0; i--) {
+    const c = sorted[i], n = sorted[i + 1];
+    const maxX = (idx2x.get(n) ?? 0) - (getW(n) + getW(c)) / 2 - gap;
+    if ((idx2x.get(c) ?? 0) > maxX) idx2x.set(c, maxX);
+  }
+
+  // 그룹 중심을 원래 중심으로 복원
+  const newCenter =
+    sorted.reduce((s, idx) => s + (idx2x.get(idx) ?? 0), 0) / sorted.length;
+  const shift = origCenter - newCenter;
+  if (shift !== 0) {
+    for (const idx of sorted) idx2x.set(idx, (idx2x.get(idx) ?? 0) + shift);
+  }
+}
+
+/**
+ * Rule 5: 같은 레벨에서 nxtSet의 교집합이 없는 두 노드 A, B에 대해
+ * A.nxtSet의 x 범위와 B.nxtSet의 x 범위가 겹치지 않도록 조정.
+ */
+function applyDisjointNxtSets(
+  levels: number[],
+  level2idxs: Map<number, number[]>,
+  idx2chain: ChainMap,
+  idx2x: Map<number, number>,
+  getW: (idx: number) => number,
+  gap: number
+) {
+  for (const lv of levels) {
+    const idxs = level2idxs.get(lv) ?? [];
+    if (idxs.length < 2) continue;
+
+    const withNxt = idxs.filter((idx) => {
+      const s = idx2chain.get(idx)?.nxtSet;
+      return s && s.size > 0;
+    });
+
+    for (let i = 0; i < withNxt.length; i++) {
+      for (let j = i + 1; j < withNxt.length; j++) {
+        const a = withNxt[i], b = withNxt[j];
+        const aNxtSet = idx2chain.get(a)!.nxtSet!;
+        const bNxtSet = idx2chain.get(b)!.nxtSet!;
+
+        // 교집합 확인
+        let shared = false;
+        for (const n of aNxtSet) {
+          if (bNxtSet.has(n)) { shared = true; break; }
+        }
+        if (shared) continue;
+
+        const aRange = xRange(aNxtSet, idx2x, getW);
+        const bRange = xRange(bNxtSet, idx2x, getW);
+        if (!aRange || !bRange) continue;
+
+        // 범위가 겹치면 분리
+        if (aRange.max + gap > bRange.min && bRange.max + gap > aRange.min) {
+          const overlap =
+            Math.min(aRange.max, bRange.max) - Math.max(aRange.min, bRange.min) + gap;
+          const half = overlap / 2;
+          if (aRange.min <= bRange.min) {
+            for (const n of aNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x - half); }
+            for (const n of bNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x + half); }
+          } else {
+            for (const n of bNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x - half); }
+            for (const n of aNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x + half); }
+          }
+        }
+      }
+    }
+  }
+}
+
+/** nxtSet에 속한 노드들의 x 범위 (edge 기준) */
+function xRange(
+  set: ReadonlySet<number>,
+  idx2x: Map<number, number>,
+  getW: (idx: number) => number
+): { min: number; max: number } | null {
+  let min = Infinity, max = -Infinity;
+  for (const n of set) {
+    const x = idx2x.get(n);
+    if (x === undefined) continue;
+    const w = getW(n);
+    min = Math.min(min, x - w / 2);
+    max = Math.max(max, x + w / 2);
+  }
+  return min <= max ? { min, max } : null;
+}

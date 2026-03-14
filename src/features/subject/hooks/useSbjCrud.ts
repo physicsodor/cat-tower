@@ -14,7 +14,8 @@ export const useSbjCrud = (
   getSelected: () => ReadonlySet<number>,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
   setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>,
-  cameraRef: RefObject<Camera>
+  cameraRef: RefObject<Camera>,
+  openEdit: (idx: number) => void
 ) => {
   const addSbj = useCallback(() => {
     const cam = cameraRef.current;
@@ -23,7 +24,8 @@ export const useSbjCrud = (
     const { newIdx, updater } = addSubject(idx2family, x, y);
     setList(updater);
     setSelectedSet(new Set([newIdx]));
-  }, [idx2family, setList, setSelectedSet, cameraRef]);
+    openEdit(newIdx);
+  }, [idx2family, setList, setSelectedSet, cameraRef, openEdit]);
 
   const addCrs = useCallback(() => {
     const { updater } = addCourse(idx2family, getSelected());

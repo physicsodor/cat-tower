@@ -77,7 +77,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     getSelected,
     setList,
     setSelectedSet,
-    cameraRef
+    cameraRef,
+    openEdit
   );
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(list, idx2chain, idx2family, setList, preSource);
