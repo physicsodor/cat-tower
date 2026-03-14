@@ -6,10 +6,11 @@ type Props = {
   setRef: (e: HTMLDivElement) => void;
   idx: number;
   lrtb: LRTB;
+  label: string;
   back?: boolean;
 };
 
-const SbjCnvsCrs = ({ setRef, idx: _idx, lrtb, back = false }: Props) => {
+const SbjCnvsCrs = ({ setRef, idx: _idx, lrtb, label, back = false }: Props) => {
   return (
     <div
       ref={setRef}
@@ -22,9 +23,10 @@ const SbjCnvsCrs = ({ setRef, idx: _idx, lrtb, back = false }: Props) => {
           "--b": `${lrtb.b}px`,
         } as CSSProperties
       }
-    ></div>
+    >
+      {!back && <span className="sbj-cnvs-crs-lbl">{label}</span>}
+    </div>
   );
 };
 
 export default SbjCnvsCrs;
-

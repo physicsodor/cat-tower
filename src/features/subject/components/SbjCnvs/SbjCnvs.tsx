@@ -85,7 +85,7 @@ const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
 
 const SbjCnvs = () => {
   const { cnvsDrag, idx2sbj, setCnvsPos, autoLayout, getZoom } = useSbjData();
-  const { selectMany } = useSbjSelect();
+  const { selectMany, selectedSet } = useSbjSelect();
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const lrtbMapRef = useRef(new Map<number, LRTB>());
 
@@ -118,8 +118,10 @@ const SbjCnvs = () => {
       selT: number,
       selB: number,
       mode: "window" | "cross",
+      ctrlKey: boolean,
+      shiftKey: boolean,
     ) => {
-      const selected = new Set<number>();
+      const hit = new Set<number>();
       for (const [idx, lrtb] of lrtbMapRef.current) {
         if (idx < 0) continue;
         const s = idx2sbj.get(idx);
@@ -131,15 +133,23 @@ const SbjCnvs = () => {
             lrtb.t >= selT &&
             lrtb.b <= selB
           )
-            selected.add(idx);
+            hit.add(idx);
         } else {
           if (lrtb.l < selR && lrtb.r > selL && lrtb.t < selB && lrtb.b > selT)
-            selected.add(idx);
+            hit.add(idx);
         }
       }
-      selectMany(selected);
+      if (ctrlKey) {
+        selectMany(new Set([...selectedSet, ...hit]));
+      } else if (shiftKey) {
+        const next = new Set(selectedSet);
+        for (const idx of hit) next.delete(idx);
+        selectMany(next);
+      } else {
+        selectMany(hit);
+      }
     },
-    [idx2sbj, selectMany],
+    [idx2sbj, selectMany, selectedSet],
   );
 
   const onFitRequest = useCallback((): Camera | null => {

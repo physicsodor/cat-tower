@@ -30,3 +30,9 @@ $Gap: (
   L: 0.5rem,
   XL: 1rem,
 );
+
+// ── 컨트롤 패널 ──────────────────────────────────────────────────────────────
+$ctrl-handle: 2rem;           // 32px
+$ctrl-handle-touch: 2.75rem;  // 44px — touch 디바이스
+$ctrl-panel-max-h: 80vh;
+$ctrl-panel-hdr-h: 3rem;      // 48px — 스크롤 영역 상단 여백

@@ -1,36 +1,35 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../context/SbjDataContext";
+import { treeRegistry } from "./treeRegistry";
 
 type Props = { idx: number };
-type PE = React.PointerEvent<HTMLDivElement>;
 
 const SbjTreeNext = ({ idx }: Props) => {
-  const { treeDrag, setTreeBro } = useSbjData();
+  const { setTreeBro } = useSbjData();
   const [isOn, setIsOn] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  const onUp = (e: PE) => {
-    e.preventDefault();
-    if (isOn) setTreeBro(treeDrag.get(), idx, "RIGHT");
-    treeDrag.set(new Set());
-    setIsOn(false);
-  };
-
-  const onLeave = () => setIsOn(false);
-
-  const onEnter = (e: PE) => {
-    e.preventDefault();
-    if (treeDrag.get().size <= 0) return;
-    setIsOn(true);
-  };
+  useEffect(() => {
+    const key = -(idx + 1); // SbjTreeItem/Title와 key 충돌 방지 (음수)
+    if (ref.current)
+      treeRegistry.set(key, {
+        el: ref.current,
+        setDir: (d) => setIsOn(d !== null),
+        onDrop: (dragged) => setTreeBro(dragged, idx, "RIGHT"),
+      });
+    return () => {
+      treeRegistry.delete(key);
+    };
+  });
 
   return (
     <div
+      ref={ref}
       className={makeClassName("sbj-tree-next", "-ovr", isOn && "-nxt")}
-      onPointerEnter={onEnter}
-      onPointerLeave={onLeave}
-      onPointerUp={onUp}
-    />
+    >
+      <div className="sbj-tree-contents" />
+    </div>
   );
 };
 export default SbjTreeNext;

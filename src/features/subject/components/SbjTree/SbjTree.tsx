@@ -4,7 +4,6 @@ import {
   CTRL_MARGIN as MARGIN,
   CTRL_HANDLE as HANDLE,
   CTRL_DRAG_THRESHOLD,
-  CTRL_TRANSITION,
 } from "@/features/subject/constants";
 
 const clampPos = (x: number, y: number) => ({
@@ -55,13 +54,8 @@ const SbjTree = () => {
 
   return (
     <div
-      className="sbj-ctrl"
-      style={{
-        left: pos.x,
-        top: pos.y,
-        transform: "none",
-        transition: dragging ? "none" : `left ${CTRL_TRANSITION}, top ${CTRL_TRANSITION}`,
-      }}
+      className={`sbj-ctrl${dragging ? " -drag" : ""}`}
+      style={{ left: pos.x, top: pos.y, transform: "none" }}
     >
       <div
         className="sbj-ctrl-handle"
@@ -70,7 +64,7 @@ const SbjTree = () => {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <svg viewBox="0 0 24 24" width="32" height="32">
+        <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="11" />
           {open ? (
             <line x1="7" y1="12" x2="17" y2="12" />

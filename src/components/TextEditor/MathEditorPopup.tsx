@@ -12,22 +12,26 @@ const MathEditorPopup = ({
   state,
   onCancel,
   onConfirm,
+  inlineOnly,
 }: {
   state: MathEditState;
   onCancel: () => void;
   onConfirm: (latex: string, kind: MathKind) => void;
+  inlineOnly?: boolean;
 }) => {
   const [draft, setDraft] = useState(state.mode === "edit" ? state.latex : "");
-  const [kind, setKind] = useState<MathKind>(state.kind);
+  const [kind, setKind] = useState<MathKind>(inlineOnly ? "math" : state.kind);
   const display = kind === "dmath";
 
   return createPortal(
     <div className="math-edit-overlay" onPointerDown={onCancel}>
       <div className="math-edit-modal" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="math-edit-kind-toggle">
-          <button className={`math-kind-btn${kind === "math" ? " -active" : ""}`} onClick={() => setKind("math")}>inline</button>
-          <button className={`math-kind-btn${kind === "dmath" ? " -active" : ""}`} onClick={() => setKind("dmath")}>display</button>
-        </div>
+        {!inlineOnly && (
+          <div className="math-edit-kind-toggle">
+            <button className={`math-kind-btn${kind === "math" ? " -active" : ""}`} onClick={() => setKind("math")}>inline</button>
+            <button className={`math-kind-btn${kind === "dmath" ? " -active" : ""}`} onClick={() => setKind("dmath")}>display</button>
+          </div>
+        )}
         <div className="math-edit-preview">
           {draft
             ? <span dangerouslySetInnerHTML={{ __html: renderLatex(draft, display) }} />

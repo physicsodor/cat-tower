@@ -7,7 +7,6 @@ export interface Subject extends Family, Chain {
   title: string;
   short?: string;
   content: string;
-  description: string;
   x: number;
   y: number;
   sbjType: "SUBJECT";
@@ -15,5 +14,6 @@ export interface Subject extends Family, Chain {
 
 export interface Course extends Family {
   title: string;
+  short?: string;
   sbjType: "COURSE";
 }

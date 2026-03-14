@@ -32,6 +32,8 @@ type SbjDataContextValue = {
   openEdit: (idx: number) => void;
   closeEdit: () => void;
   updateSbj: (idx: number, fields: { title: string; short?: string; content: string; description: string }) => void;
+  updateCrs: (idx: number, fields: { title: string; short?: string }) => void;
+  removePreLink: (idxA: number, idxB: number) => void;
 };
 
 export const SbjDataContext = createContext<SbjDataContextValue | null>(null);

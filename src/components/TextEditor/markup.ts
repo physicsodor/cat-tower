@@ -95,19 +95,17 @@ function stripNodes(nodes: MNode[]): string {
 
 export const stripMarkup = (s: string): string => stripNodes(parseNodes(s));
 
-// ── Shared byte utilities ─────────────────────────────────────────────────────
+// ── Shared byte utilities (UTF-16) ────────────────────────────────────────────
 
-const _enc = new TextEncoder();
+/** UTF-16 byte count: each code unit = 2 bytes (surrogate pairs = 4 bytes). */
+export const countBytes = (s: string): number => s.length * 2;
 
-export const countBytes = (s: string): number => _enc.encode(s).length;
-
-/** Hard-limit string to max UTF-8 bytes (no suffix). */
+/** Hard-limit string to max UTF-16 bytes (no suffix). */
 export const limitBytes = (v: string, max: number): string => {
-  if (_enc.encode(v).length <= max) return v;
   let bytes = 0;
   let result = "";
   for (const char of v) {
-    const b = _enc.encode(char).length;
+    const b = char.length * 2;
     if (bytes + b > max) break;
     bytes += b;
     result += char;
@@ -115,13 +113,13 @@ export const limitBytes = (v: string, max: number): string => {
   return result;
 };
 
-/** Truncate to max UTF-8 bytes, appending suffix if truncated. */
+/** Truncate to max UTF-16 bytes, appending suffix if truncated. */
 export const truncateBytes = (v: string, max: number, suffix = ""): string => {
-  if (_enc.encode(v).length <= max) return v;
+  if (v.length * 2 <= max) return v;
   let bytes = 0;
   let result = "";
   for (const char of v) {
-    const b = _enc.encode(char).length;
+    const b = char.length * 2;
     if (bytes + b > max) break;
     bytes += b;
     result += char;

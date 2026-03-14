@@ -13,13 +13,12 @@ import { getNewIdx } from "../IdxItem/idxItemOp";
 import { removePre } from "../Chain/chainOp";
 
 type SbjInfo =
-  | { sbjType: "COURSE"; title: string }
+  | { sbjType: "COURSE"; title: string; short?: string }
   | {
       sbjType: "SUBJECT";
       title: string;
       short?: string;
       content: string;
-      description: string;
       x: number;
       y: number;
     };
@@ -29,10 +28,18 @@ const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
   const idx2sbj = new Map<number, SbjInfo>();
   for (const item of list) {
     const { title, sbjType } = item;
-    if (sbjType === "COURSE") idx2sbj.set(item.idx, { title, sbjType });
+    if (sbjType === "COURSE")
+      idx2sbj.set(item.idx, { title, sbjType, short: item.short });
     else {
-      const { content, description, x, y, short } = item;
-      idx2sbj.set(item.idx, { title, sbjType, content, description, x, y, short });
+      const { content, x, y, short } = item;
+      idx2sbj.set(item.idx, {
+        title,
+        sbjType,
+        content,
+        x,
+        y,
+        short,
+      });
     }
   }
   return idx2sbj;
@@ -82,8 +89,27 @@ const deleteSubject = (
   targetSet: ReadonlySet<number>,
 ): { updater: (list: ReadonlyArray<Curriculum>) => Curriculum[] } => {
   const { updater: cleanPre } = removePre<Subject, Course>(targetSet);
-  const updater = (list: ReadonlyArray<Curriculum>) =>
-    cleanPre(list.filter((x) => !targetSet.has(x.idx))) as Curriculum[];
+  const updater = (list: ReadonlyArray<Curriculum>) => {
+    let result = cleanPre(
+      list.filter((x) => !targetSet.has(x.idx)),
+    ) as Curriculum[];
+    let changed = true;
+    while (changed) {
+      const hasKid = new Set<number>();
+      for (const item of result) hasKid.add(item.mom);
+      const emptyCourses = new Set(
+        result
+          .filter((x) => x.sbjType === "COURSE" && !hasKid.has(x.idx))
+          .map((x) => x.idx),
+      );
+      if (emptyCourses.size === 0) {
+        changed = false;
+        break;
+      }
+      result = result.filter((x) => !emptyCourses.has(x.idx));
+    }
+    return result;
+  };
   return { updater };
 };
 
@@ -113,7 +139,6 @@ const getNewItem = (
         pre: new Set(),
         title: `Subject ${idx}`,
         content: "",
-        description: "",
         x,
         y,
         sbjType,

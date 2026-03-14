@@ -9,13 +9,15 @@ type Props = {
 };
 
 const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
-  const { idx2family } = useSbjData();
+  const { idx2family, idx2sbj } = useSbjData();
   return (
     <div>
       {[...idx2family].map(([idx, f]) => {
         if (!f.kids) return null;
         const lrtb = lrtbMap.get(idx);
         if (!lrtb) return null;
+        const s = idx2sbj.get(idx);
+        const label = s ? (s.short || s.title) : "";
         return (
           <SbjCnvsCrs
             key={`sbj-cnvs-crs-${idx}`}
@@ -23,7 +25,7 @@ const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
               if (x) items.set(idx, x);
               else items.delete(idx);
             }}
-            {...{ idx, lrtb, back }}
+            {...{ idx, lrtb, label, back }}
           />
         );
       })}

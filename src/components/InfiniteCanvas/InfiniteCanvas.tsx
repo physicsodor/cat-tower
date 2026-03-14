@@ -33,6 +33,8 @@ type Props = {
     selT: number,
     selB: number,
     mode: "window" | "cross",
+    ctrlKey: boolean,
+    shiftKey: boolean,
   ) => void;
   /**
    * Called when the fit button is pressed.
@@ -61,7 +63,7 @@ const InfiniteCanvas = ({
   children,
   className,
   minZoom = 0.5,
-  maxZoom = 1.0,
+  maxZoom = 2.0,
   marqueeSuppressSelector,
   onItemDragEnd,
   onMarqueeSelect,
@@ -99,6 +101,7 @@ const InfiniteCanvas = ({
   // Marquee
   const [marquee, setMarquee] = useState<Marquee | null>(null);
   const marqueeRef = useRef<Marquee | null>(null);
+  const marqueeModsRef = useRef({ ctrlKey: false, shiftKey: false });
 
   // Touch pinch
   const isPinching = useRef(false);
@@ -130,6 +133,7 @@ const InfiniteCanvas = ({
         curY: e.clientY,
       };
       marqueeRef.current = m;
+      marqueeModsRef.current = { ctrlKey: e.ctrlKey, shiftKey: e.shiftKey };
       setMarquee(m);
     },
     [marqueeSuppressSelector],
@@ -189,7 +193,8 @@ const InfiniteCanvas = ({
       const selT = Math.min(m.startY, m.curY);
       const selB = Math.max(m.startY, m.curY);
       const mode = m.curX >= m.startX ? "window" : "cross";
-      onMarqueeSelect?.(selL, selR, selT, selB, mode);
+      const { ctrlKey, shiftKey } = marqueeModsRef.current;
+      onMarqueeSelect?.(selL, selR, selT, selB, mode, ctrlKey, shiftKey);
       marqueeRef.current = null;
       setMarquee(null);
     }
@@ -256,7 +261,11 @@ const InfiniteCanvas = ({
         <div className="ic-controls">
           <div className="ic-controls-btns">
             {onAutoLayout && (
-              <button className="ic-btn" onClick={onAutoLayout} title="Auto layout">
+              <button
+                className="ic-btn"
+                onClick={onAutoLayout}
+                title="Auto layout"
+              >
                 <svg
                   width="20"
                   height="20"

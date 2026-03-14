@@ -1,3 +1,4 @@
+import { renderMarkup } from "@/components/TextEditor";
 import { useSbjData } from "../../context/SbjDataContext";
 import { useSbjSelect } from "../../context/SbjSelectContext";
 import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
@@ -21,7 +22,7 @@ const SbjCnvsTitle = ({ idx, title }: Props) => {
 
   return (
     <div className="sbj-cnvs-item-ttl" onPointerDown={onDown}>
-      {title}
+      {renderMarkup(title)}
     </div>
   );
 };

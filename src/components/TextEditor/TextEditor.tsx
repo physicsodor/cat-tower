@@ -27,7 +27,7 @@ const TOOLS: { cmd: string; label: React.ReactNode; title: string }[] = [
  * Dependencies: react, react-dom, katex
  * Self-contained: import TextEditor + TextEditor.scss (auto-imported here)
  */
-const TextEditor = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+const TextEditor = ({ value, onChange, singleLine }: { value: string; onChange: (v: string) => void; singleLine?: boolean }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
 
@@ -122,17 +122,24 @@ const TextEditor = ({ value, onChange }: { value: string; onChange: (v: string) 
       </div>
       <div
         ref={divRef}
-        className="markup-editor-body"
+        className={`markup-editor-body${singleLine ? " -single-line" : ""}`}
         contentEditable
         suppressContentEditableWarning
         onInput={syncMarkup}
         onClick={handleClick}
+        onKeyDown={singleLine ? (e) => { if (e.key === "Enter") e.preventDefault(); } : undefined}
+        onPaste={singleLine ? (e) => {
+          e.preventDefault();
+          const text = e.clipboardData.getData("text/plain").replace(/[\r\n]+/g, " ");
+          document.execCommand("insertText", false, text);
+        } : undefined}
       />
       {mathEdit && (
         <MathEditorPopup
           state={mathEdit}
           onCancel={() => setMathEdit(null)}
           onConfirm={handleMathConfirm}
+          inlineOnly={singleLine}
         />
       )}
     </div>

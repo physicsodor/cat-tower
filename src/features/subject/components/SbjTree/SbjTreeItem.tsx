@@ -5,11 +5,14 @@ import type { BroDir } from "@/features/subject/types/Family/familyOp";
 import { useSbjData } from "../../context/SbjDataContext";
 import { useSbjSelect } from "../../context/SbjSelectContext";
 import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
+import BttnEdt from "@/components/Bttn/BttnEdt";
+import BttnDel from "@/components/Bttn/BttnDel";
+import { renderMarkup } from "@/components/TextEditor";
 
 type Props = { idx: number; title: string };
 
 const SbjTreeItem = ({ idx, title }: Props) => {
-  const { treeDrag, setTreeBro } = useSbjData();
+  const { treeDrag, setTreeBro, openEdit, delSbjOne } = useSbjData();
   const { selectedSet, selectItem } = useSbjSelect();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
@@ -22,8 +25,10 @@ const SbjTreeItem = ({ idx, title }: Props) => {
         setDir,
         onDrop: (dragged, d) => setTreeBro(dragged, idx, d),
       });
-    return () => { treeRegistry.delete(idx); };
-  });
+    return () => {
+      treeRegistry.delete(idx);
+    };
+  }, [idx, ref, setTreeBro]);
 
   const stopDrag = () => {
     if (globalMoveRef.current) {
@@ -60,7 +65,8 @@ const SbjTreeItem = ({ idx, title }: Props) => {
   const onUp = (e: React.PointerEvent) => {
     e.preventDefault();
     const target = findDropTarget(e.clientX, e.clientY, idx);
-    if (target) treeRegistry.get(target.idx)?.onDrop(treeDrag.get(), target.dir);
+    if (target)
+      treeRegistry.get(target.idx)?.onDrop(treeDrag.get(), target.dir);
     treeDrag.set(new Set());
     setDir(null);
     stopDrag();
@@ -80,17 +86,29 @@ const SbjTreeItem = ({ idx, title }: Props) => {
         "-ovr",
         selectedSet.has(idx) && "-slc",
         dir === "LEFT" && "-pre",
-        dir === "RIGHT" && "-nxt"
+        dir === "RIGHT" && "-nxt",
       )}
     >
       <div
-        style={{ touchAction: "none" }}
+        style={{ touchAction: "none", flex: 1 }}
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerCancel={onCancel}
       >
-        {title}
+        {renderMarkup(title)}
       </div>
+      <BttnEdt
+        onDown={(e) => {
+          e.stopPropagation();
+          openEdit(idx);
+        }}
+      />
+      <BttnDel
+        onDown={(e) => {
+          e.stopPropagation();
+          delSbjOne(idx);
+        }}
+      />
     </div>
   );
 };

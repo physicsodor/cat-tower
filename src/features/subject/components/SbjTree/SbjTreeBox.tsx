@@ -8,7 +8,7 @@ import { useSbjData } from "../../context/SbjDataContext";
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx?: number; title?: string };
 
-const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
+const SbjTreeBox = ({ idx = -1, title = "Subject Tree" }: Props) => {
   const { idx2sbj, idx2family, treeDrag } = useSbjData();
 
   const [isOpen, setIsOpen] = useState(true);
@@ -38,9 +38,17 @@ const SbjTreeBox = ({ idx = -1, title = "Subject Tree:" }: Props) => {
           const s = idx2sbj.get(k);
           if (!s) return null;
           return s.sbjType === "COURSE" ? (
-            <SbjTreeBox key={`sbj-tree-${k}`} idx={k} title={s.title} />
+            <SbjTreeBox
+              key={`sbj-tree-${k}`}
+              idx={k}
+              title={s.short || s.title}
+            />
           ) : (
-            <SbjTreeItem key={`sbj-tree-item-${k}`} idx={k} title={s.short || s.title} />
+            <SbjTreeItem
+              key={`sbj-tree-item-${k}`}
+              idx={k}
+              title={s.short || s.title}
+            />
           );
         })}
       </div>

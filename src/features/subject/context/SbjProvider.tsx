@@ -78,6 +78,22 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     },
     []
   );
+  const updateCrs = useCallback(
+    (idx: number, fields: { title: string; short?: string }) => {
+      setList((prev) => prev.map((item) =>
+        item.idx === idx && item.sbjType === "COURSE" ? { ...item, ...fields } : item
+      ));
+    },
+    []
+  );
+  const removePreLink = useCallback((idxA: number, idxB: number) => {
+    setList((prev) => prev.map((item) => {
+      if (item.idx !== idxA || item.sbjType !== "SUBJECT") return item;
+      const pre = new Set(item.pre);
+      pre.delete(idxB);
+      return { ...item, pre };
+    }));
+  }, []);
 
   // Operations
   const { addSbj, addCrs, delSbj, delSbjOne, delCrs } = useSbjCrud(
@@ -86,7 +102,6 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     setList,
     setSelectedSet,
     cameraRef,
-    openEdit
   );
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(list, idx2chain, idx2family, setList, preSource);
@@ -145,6 +160,8 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       openEdit,
       closeEdit,
       updateSbj,
+      updateCrs,
+      removePreLink,
     }),
     [
       idx2sbj, idx2family, idx2chain,
@@ -153,7 +170,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos, autoLayout,
       treeDrag, cnvsDrag, preSource,
-      syncCamera, getZoom, editingIdx, openEdit, closeEdit, updateSbj,
+      syncCamera, getZoom, editingIdx, openEdit, closeEdit, updateSbj, updateCrs, removePreLink,
     ]
   );
 
