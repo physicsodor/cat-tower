@@ -14,6 +14,10 @@ type SbjDataContextValue = {
   delSbj: () => void;
   delSbjOne: (idx: number) => void;
   delCrs: (idx: number) => void;
+  copy: () => void;
+  paste: () => void;
+  cut: () => void;
+  hasClip: boolean;
   setTreeMom: (trg: ReadonlySet<number>, mom: number) => void;
   setTreeBro: (trg: ReadonlySet<number>, idx: number, dir: BroDir) => void;
   setCnvsPre: (idx: number) => void;

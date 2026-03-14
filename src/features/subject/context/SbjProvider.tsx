@@ -14,6 +14,7 @@ import { useSbjCrud } from "../hooks/useSbjCrud";
 import { useSbjTree } from "../hooks/useSbjTree";
 import { useSbjCnvs } from "../hooks/useSbjCnvs";
 import { useSbjSync } from "../hooks/useSbjSync";
+import { useSbjClipboard } from "../hooks/useSbjClipboard";
 import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
@@ -30,6 +31,13 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     selectedSetRef.current = selectedSet;
   }, [selectedSet]);
   const getSelected = useCallback(() => selectedSetRef.current, []);
+
+  // Ref bridge: clipboard callbacks read list without reactive deps
+  const listRef = useRef<ReadonlyArray<Curriculum>>(list);
+  useEffect(() => {
+    listRef.current = list;
+  }, [list]);
+  const getList = useCallback(() => listRef.current, []);
 
   // Camera ref — updated by SbjCnvs via syncCamera
   const cameraRef = useRef<Camera>({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 });
@@ -83,6 +91,15 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(list, idx2chain, idx2family, setList, preSource);
   const sync = useSbjSync(list, setList);
+  const { copy, paste, cut, hasClip } = useSbjClipboard(
+    getList,
+    idx2family,
+    getSelected,
+    setList,
+    setSelectedSet,
+    delSbj,
+    sync.saveNow,
+  );
 
   const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
 
@@ -110,6 +127,10 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       delSbj,
       delSbjOne,
       delCrs,
+      copy,
+      paste,
+      cut,
+      hasClip,
       setTreeMom,
       setTreeBro,
       setCnvsPre,
@@ -128,6 +149,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     [
       idx2sbj, idx2family, idx2chain,
       addSbj, addCrs, delSbj, delSbjOne, delCrs,
+      copy, paste, cut, hasClip,
       setTreeMom, setTreeBro,
       setCnvsPre, setCnvsPos, autoLayout,
       treeDrag, cnvsDrag, preSource,

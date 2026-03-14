@@ -1,9 +1,13 @@
 import { useRef, useState } from "react";
 import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjSelect } from "../../context/SbjSelectContext";
 import SbjTreeBox from "./SbjTreeBox";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
 import BttnGrp from "@/components/Bttn/BttnGrp";
+import BttnCopy from "@/components/Bttn/BttnCopy";
+import BttnPaste from "@/components/Bttn/BttnPaste";
+import BttnCut from "@/components/Bttn/BttnCut";
 
 const MARGIN = 16; // 1rem
 const HANDLE = 32;
@@ -14,7 +18,9 @@ const clampPos = (x: number, y: number) => ({
 });
 
 const SbjTree = () => {
-  const { addCrs, addSbj, delSbj } = useSbjData();
+  const { addCrs, addSbj, delSbj, copy, paste, cut, hasClip } = useSbjData();
+  const { selectedSet } = useSbjSelect();
+  const hasSel = selectedSet.size > 0;
 
   const [pos, setPos] = useState({ x: 16, y: 16 });
   const [open, setOpen] = useState(true);
@@ -90,6 +96,9 @@ const SbjTree = () => {
           <BttnPM isPlus onDown={addSbj} />
           <BttnDel onDown={delSbj} />
           <BttnGrp onDown={addCrs} />
+          {hasSel && <BttnCopy onDown={copy} />}
+          {hasSel && <BttnCut onDown={cut} />}
+          {hasClip && <BttnPaste onDown={paste} />}
         </div>
         <div className="sbj-tree-scroll">
           <SbjTreeBox />
