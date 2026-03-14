@@ -71,7 +71,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const openEdit = useCallback((idx: number) => setEditingIdx(idx), []);
   const closeEdit = useCallback(() => setEditingIdx(null), []);
   const updateSbj = useCallback(
-    (idx: number, fields: { title: string; short?: string; content: string; description: string }) => {
+    (idx: number, fields: { title: string; short?: string; content: string }) => {
       setList((prev) => prev.map((item) =>
         item.idx === idx && item.sbjType === "SUBJECT" ? { ...item, ...fields } : item
       ));
