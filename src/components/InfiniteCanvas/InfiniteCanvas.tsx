@@ -201,9 +201,11 @@ const InfiniteCanvas = ({
   useEffect(() => {
     window.addEventListener("pointermove", onGlobalMove);
     window.addEventListener("pointerup", onGlobalUp);
+    window.addEventListener("pointercancel", onGlobalUp);
     return () => {
       window.removeEventListener("pointermove", onGlobalMove);
       window.removeEventListener("pointerup", onGlobalUp);
+      window.removeEventListener("pointercancel", onGlobalUp);
     };
   }, [onGlobalMove, onGlobalUp]);
 

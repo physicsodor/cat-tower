@@ -68,6 +68,7 @@ const SbjCnvsItem = ({
     preSource.set(-1);
     window.removeEventListener("pointermove", onGlobalMove);
     window.removeEventListener("pointerup", onGlobalUp);
+    window.removeEventListener("pointercancel", onGlobalUp);
   }, [onGlobalMove, preSource]);
 
   const onDown = useCallback(
@@ -77,6 +78,7 @@ const SbjCnvsItem = ({
       preSource.set(idx);
       window.addEventListener("pointermove", onGlobalMove);
       window.addEventListener("pointerup", onGlobalUp);
+      window.addEventListener("pointercancel", onGlobalUp);
     },
     [onGlobalMove, onGlobalUp, preSource, idx]
   );

@@ -34,6 +34,7 @@
   // @include m.C-setting(0);
   // background-color: var(--C-LL);
   user-select: none;
+  touch-action: none;
 
   &-item {
     @include m.fixed-item(--z-sbj-cnvs-item);
