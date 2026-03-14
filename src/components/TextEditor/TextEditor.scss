@@ -3,8 +3,6 @@
 // CSS variables use project design tokens with sensible fallbacks,
 // so this file works standalone or within a design-system project.
 
-@use "@/styles/mixins" as m;
-
 // ── Math editor popup buttons ─────────────────────────────────────────────────
 
 .te-btns {
@@ -20,13 +18,20 @@
   border: 1.5px solid var(--C-D, #aaa);
   cursor: pointer;
   font: inherit;
-  &:hover { background: var(--C-LL, #f0f0f0); }
-  &:active { background: var(--C-D, #aaa); color: var(--C-LL, #f5f5f5); }
+  &:hover {
+    background: var(--C-LL, #f0f0f0);
+  }
+  &:active {
+    background: var(--C-D, #aaa);
+    color: var(--C-LL, #f5f5f5);
+  }
   &.-confirm {
     background: var(--C-B, steelblue);
     color: var(--C-LL, #f5f5f5);
     border-color: var(--C-DD, #555);
-    &:hover { background: var(--C-D, #aaa); }
+    &:hover {
+      background: var(--C-D, #aaa);
+    }
   }
 }
 
@@ -60,8 +65,13 @@
   cursor: pointer;
   font: inherit;
   font-size: 0.9em;
-  &:hover { background: var(--C-L, #e0e0e0); border-color: var(--C-D, #aaa); }
-  &:active { background: var(--C-D, #aaa); }
+  &:hover {
+    background: var(--C-L, #e0e0e0);
+    border-color: var(--C-D, #aaa);
+  }
+  &:active {
+    background: var(--C-D, #aaa);
+  }
 }
 
 .markup-editor-body {
@@ -100,8 +110,15 @@
   border: 1px dashed transparent;
   padding: 0 2px;
   vertical-align: middle;
-  &:hover { border-color: var(--C-D, #aaa); background: var(--C-LL, #f5f5f5); }
-  &.-display { width: 100%; text-align: center; padding: var(--G-S, 4px) 0; }
+  &:hover {
+    border-color: var(--C-D, #aaa);
+    background: var(--C-LL, #f5f5f5);
+  }
+  &.-display {
+    width: 100%;
+    text-align: center;
+    padding: var(--G-S, 4px) 0;
+  }
 }
 
 .math-placeholder {
@@ -116,7 +133,7 @@
   inset: 0;
   z-index: var(--math-edit-z, 600);
   backdrop-filter: blur(2px);
-  background: m.black-a(0.2);
+  background: oklch(0% 0 0 / 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,7 +181,9 @@
   resize: vertical;
   line-height: 1.5;
   background: white;
-  &:focus { border-color: var(--C-B, steelblue); }
+  &:focus {
+    border-color: var(--C-B, steelblue);
+  }
 }
 
 // ── Math kind toggle buttons ──────────────────────────────────────────────────
@@ -177,7 +196,9 @@
   cursor: pointer;
   font: inherit;
   font-size: 0.85em;
-  &:hover { background: var(--C-LL, #f5f5f5); }
+  &:hover {
+    background: var(--C-LL, #f5f5f5);
+  }
   &.-active {
     background: var(--C-B, steelblue);
     color: var(--C-LL, #f5f5f5);

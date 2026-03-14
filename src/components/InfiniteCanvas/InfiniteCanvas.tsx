@@ -9,6 +9,9 @@ import {
 import { InfiniteCanvasContext, type Camera } from "./InfiniteCanvasContext";
 import { useWheelZoom } from "./useWheelZoom";
 import { useTouchPinch } from "./useTouchPinch";
+import BttnAutoLayout from "@/components/Bttn/BttnAutoLayout";
+import BttnFit from "@/components/Bttn/BttnFit";
+import BttnZoom1 from "@/components/Bttn/BttnZoom1";
 import "./InfiniteCanvas.scss";
 
 type PE = React.PointerEvent | PointerEvent;
@@ -261,52 +264,10 @@ const InfiniteCanvas = ({
         <div className="ic-controls">
           <div className="ic-controls-btns">
             {onAutoLayout && (
-              <button
-                className="ic-btn"
-                onClick={onAutoLayout}
-                title="Auto layout"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="8" cy="2.5" r="1.5" />
-                  <circle cx="3.5" cy="8.5" r="1.5" />
-                  <circle cx="12.5" cy="8.5" r="1.5" />
-                  <circle cx="8" cy="14" r="1.5" />
-                  <path d="M8 4v2M6.4 9.5 5 9M9.6 9.5 11 9M8 12.5v-2" />
-                </svg>
-              </button>
+              <BttnAutoLayout onDown={onAutoLayout} className="-big" />
             )}
-            {onFitRequest && (
-              <button className="ic-btn" onClick={onFit} title="Fit all">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                >
-                  <rect x="3.5" y="3.5" width="9" height="9" rx="0.5" />
-                  <path d="M1 4V1h3M15 4V1h-3M1 12v3h3M15 12v3h-3" />
-                </svg>
-              </button>
-            )}
-            <button
-              className="ic-btn"
-              onClick={onZoomReset}
-              title="Reset to 100%"
-            >
-              1:1
-            </button>
+            {onFitRequest && <BttnFit onDown={onFit} className="-big" />}
+            <BttnZoom1 onDown={onZoomReset} className="-big" />
           </div>
           <div className="ic-zoom-label">{Math.round(camera.zoom * 100)}%</div>
         </div>

@@ -5,12 +5,13 @@ type PEH = (e: PE) => void;
 
 type Props = {
   size?: string;
+  className?: string;
   onDown?: PEH;
 };
 
-const BttnPaste = ({ size = "1.4rem", onDown = () => {} }: Props) => {
+const BttnPaste = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
   return (
-    <div className="bttn pst" onPointerDown={onDown}>
+    <div className={`bttn pst${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
       <svg
         width={size}
         height={size}

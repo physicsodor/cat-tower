@@ -31,7 +31,10 @@ type SbjDataContextValue = {
   editingIdx: number | null;
   openEdit: (idx: number) => void;
   closeEdit: () => void;
-  updateSbj: (idx: number, fields: { title: string; short?: string; content: string; description: string }) => void;
+  updateSbj: (
+    idx: number,
+    fields: { title: string; short?: string; content: string },
+  ) => void;
   updateCrs: (idx: number, fields: { title: string; short?: string }) => void;
   removePreLink: (idxA: number, idxB: number) => void;
 };

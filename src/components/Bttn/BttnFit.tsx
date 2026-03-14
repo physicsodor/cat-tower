@@ -9,9 +9,9 @@ type Props = {
   onDown?: PEH;
 };
 
-const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
+const BttnFit = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
   return (
-    <div className={`bttn cpy${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
+    <div className={`bttn fit${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
       <svg
         width={size}
         height={size}
@@ -28,14 +28,12 @@ const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          {/* back rect */}
-          <rect x={10} y={18} width={20} height={22} rx={3} />
-          {/* front rect */}
-          <rect x={18} y={10} width={20} height={22} rx={3} />
+          <rect x="10.5" y="10.5" width="27" height="27" rx="1.5" />
+          <path d="M3 12V3h9M45 12V3h-9M3 36v9h9M45 36v9h-9" />
         </g>
       </svg>
     </div>
   );
 };
 
-export default BttnCopy;
+export default BttnFit;

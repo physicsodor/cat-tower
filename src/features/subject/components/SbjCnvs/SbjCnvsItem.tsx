@@ -9,7 +9,6 @@ import { CONTENT_PREVIEW_BYTES } from "@/features/subject/constants";
 type PE = React.PointerEvent | PointerEvent;
 
 const getDesc = (info: { content: string }): string => {
-  // if (info.description) return info.description;
   if (info.content) {
     const plain = stripMarkup(info.content).trim();
     return plain
@@ -25,7 +24,6 @@ type Props = {
     title: string;
     short?: string;
     content: string;
-    description: string;
     x: number;
     y: number;
   };

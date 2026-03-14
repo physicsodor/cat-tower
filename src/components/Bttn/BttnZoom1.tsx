@@ -9,9 +9,9 @@ type Props = {
   onDown?: PEH;
 };
 
-const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
+const BttnZoom1 = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
   return (
-    <div className={`bttn cpy${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
+    <div className={`bttn zoom1${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
       <svg
         width={size}
         height={size}
@@ -27,15 +27,18 @@ const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
           ry={r}
           strokeWidth={th}
         />
-        <g strokeWidth={th}>
-          {/* back rect */}
-          <rect x={10} y={18} width={20} height={22} rx={3} />
-          {/* front rect */}
-          <rect x={18} y={10} width={20} height={22} rx={3} />
-        </g>
+        <text
+          x={sz / 2}
+          y={sz / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={sz * 0.3}
+        >
+          1:1
+        </text>
       </svg>
     </div>
   );
 };
 
-export default BttnCopy;
+export default BttnZoom1;

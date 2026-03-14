@@ -6,8 +6,6 @@
 //   --bttn-fill        button background fill       (default: rgba(C-L, 0.7))
 //   --bttn-stroke      icon stroke color            (default: C-DD)
 
-@use "@/styles/mixins" as m;
-
 .bttn {
   display: flex;
   align-items: center;
@@ -15,8 +13,8 @@
   margin: auto 0;
   svg {
     rect {
-      fill: m.C-alpha(--C-L, 0.7);
-      stroke: m.black-a(0.2);
+      fill: oklch(from var(--C-L) l c h / 0.7);
+      stroke: oklch(0% 0 0 / 0.2);
     }
     g {
       stroke: var(--C-DD);
@@ -24,19 +22,37 @@
       stroke-linejoin: round;
       fill: none;
     }
+    text {
+      fill: var(--C-DD);
+      stroke: none;
+      font-weight: bold;
+      user-select: none;
+    }
   }
   svg:hover > rect {
-    fill: m.C-alpha(--C-LL, 0.7);
+    fill: oklch(from var(--C-LL) l c h / 0.7);
   }
   svg:active {
     rect {
-      fill: m.C-alpha(--C-DD, 0.7);
+      fill: oklch(from var(--C-DD) l c h / 0.7);
     }
     g {
       stroke: var(--C-LL);
     }
+    text {
+      fill: var(--C-LL);
+    }
+  }
+  &.-big > svg {
+    width: 2.4rem;
+    height: 2.4rem;
   }
   &.del {
-    @include m.C-setting(1);
+    --C-DDD: oklch(45% 20% 75deg);
+    --C-DD: oklch(55% 20% 75deg);
+    --C-D: oklch(65% 20% 75deg);
+    --C-B: oklch(75% 20% 75deg);
+    --C-L: oklch(80% 20% 75deg);
+    --C-LL: oklch(90% 20% 75deg);
   }
 }

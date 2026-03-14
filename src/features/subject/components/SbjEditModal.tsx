@@ -8,7 +8,6 @@ type Fields = {
   title: string;
   short?: string;
   content: string;
-  description: string;
 };
 type CrsFields = { title: string; short?: string };
 
@@ -24,7 +23,6 @@ type FormProps = {
 const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [draftShort, setDraftShort] = useState("");
-  const [draftDescription, setDraftDescription] = useState("");
   // Use refs — avoids re-render on every keystroke
   const titleRef = useRef(info.title);
   const contentRef = useRef(info.content);
@@ -41,7 +39,6 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
     titleRef.current = info.title;
     setDraftShort(info.short ?? "");
     contentRef.current = info.content;
-    setDraftDescription(info.description);
     setIsEditing(true);
   };
 
@@ -52,7 +49,6 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
       title: titleRef.current.trim() || info.title,
       short: draftShort || undefined,
       content: contentRef.current,
-      description: draftDescription,
     });
     setIsEditing(false);
   };

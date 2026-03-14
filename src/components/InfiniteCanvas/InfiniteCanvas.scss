@@ -5,10 +5,6 @@
 // Customizable variables:
 //   --ic-z-controls     z-index of the controls panel   (default: 100)
 //   --ic-z-marquee      z-index of the marquee overlay  (default: 5)
-//   --ic-btn-bg         button background                (default: #eeeeee)
-//   --ic-btn-hover-bg   button hover background          (default: #dddddd)
-//   --ic-btn-active-bg  button active background         (default: #bbbbbb)
-//   --ic-btn-border     button border color              (default: #bbbbbb)
 //   --ic-zoom-label-bg  zoom label background            (default: same as btn)
 //   --ic-zoom-label-color  zoom label text color         (default: #444444)
 
@@ -29,22 +25,6 @@
   gap: 4px;
 }
 
-.ic-btn {
-  padding: 6px 10px;
-  background: var(--ic-btn-bg, #eeeeee);
-  border: 1.5px solid var(--ic-btn-border, #bbbbbb);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font: inherit;
-  &:hover { background: var(--ic-btn-hover-bg, #dddddd); }
-  &:active {
-    background: var(--ic-btn-active-bg, #bbbbbb);
-    color: var(--ic-btn-active-color, inherit);
-  }
-}
 
 .ic-zoom-label {
   padding: 6px 10px;

@@ -5,18 +5,20 @@ type PEH = (e: PE) => void;
 
 type Props = {
   size?: string;
+  className?: string;
   isPlus?: boolean;
   onDown?: PEH;
 };
 
 const BttnPM = ({
   size = "1.4rem",
+  className,
   isPlus = false,
   onDown = () => {},
 }: Props) => {
   const h = 0.5;
   return (
-    <div className="bttn pm" onPointerDown={onDown}>
+    <div className={`bttn pm${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
       <svg
         width={size}
         height={size}

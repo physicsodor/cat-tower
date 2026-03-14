@@ -9,9 +9,9 @@ type Props = {
   onDown?: PEH;
 };
 
-const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
+const BttnAutoLayout = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
   return (
-    <div className={`bttn cpy${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
+    <div className={`bttn auto-layout${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
       <svg
         width={size}
         height={size}
@@ -28,14 +28,15 @@ const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          {/* back rect */}
-          <rect x={10} y={18} width={20} height={22} rx={3} />
-          {/* front rect */}
-          <rect x={18} y={10} width={20} height={22} rx={3} />
+          <circle cx="24" cy="7.5" r="4.5" />
+          <circle cx="10.5" cy="25.5" r="4.5" />
+          <circle cx="37.5" cy="25.5" r="4.5" />
+          <circle cx="24" cy="42" r="4.5" />
+          <path d="M24 12v6M19.2 28.5 15 27M28.8 28.5 33 27M24 37.5v-6" />
         </g>
       </svg>
     </div>
   );
 };
 
-export default BttnCopy;
+export default BttnAutoLayout;

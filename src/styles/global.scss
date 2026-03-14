@@ -753,21 +753,3 @@
   pointer-events: auto;
 }
 
-.sbj-ctrl-btn {
-  padding: 0.375rem 0.625rem;
-  background: var(--ic-btn-bg, #eeeeee);
-  border: 1.5px solid var(--ic-btn-border, #bbbbbb);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font: inherit;
-  &:hover {
-    background: var(--ic-btn-hover-bg, #dddddd);
-  }
-  &:active {
-    background: var(--ic-btn-active-bg, #bbbbbb);
-    color: var(--ic-btn-active-color, inherit);
-  }
-}
