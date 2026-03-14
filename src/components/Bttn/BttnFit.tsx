@@ -4,21 +4,19 @@ type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
 type Props = {
-  size?: string;
   className?: string;
   onDown?: PEH;
 };
 
-const BttnFit = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
+const BttnFit = ({ className, onDown = () => {} }: Props) => {
   return (
-    <div className={`bttn fit${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${sz} ${sz}`}
-        style={{ borderRadius: r }}
-      >
+    <div
+      className={`bttn fit${className ? ` ${className}` : ""}`}
+      onPointerDown={onDown}
+    >
+      <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
         <rect
+          className="bck"
           x={th}
           y={th}
           width={sz - 2 * th}
@@ -28,8 +26,8 @@ const BttnFit = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          <rect x="10.5" y="10.5" width="27" height="27" rx="1.5" />
-          <path d="M3 12V3h9M45 12V3h-9M3 36v9h9M45 36v9h-9" />
+          <rect x="14" y="14" width="20" height="20" rx="1.5" />
+          <path d="M9 18v-9h9M30 9h9v9M39 30v9h-9M18 39h-9v-9" />
         </g>
       </svg>
     </div>

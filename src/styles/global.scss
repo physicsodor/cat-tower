@@ -31,6 +31,7 @@
   --math-edit-z: 600;
 
   --z-proj-picker: 600;
+  --z-share: 700;
 }
 
 // ─── Subject Canvas ───────────────────────────────────────────────────────────
@@ -286,6 +287,12 @@
       border-bottom: var(--G-S) solid black;
     }
   }
+}
+
+.sbj-ctrl-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sbj-ctrl-handle {
@@ -729,6 +736,70 @@
       background: var(--C-D);
     }
   }
+}
+
+// ─── Share Modal ──────────────────────────────────────────────────────────────
+
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-share);
+  background: m.black-a(0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-modal {
+  background: var(--C-LL);
+  border: 1.5px solid var(--C-D);
+  padding: var(--G-XL);
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-L);
+  width: min(640px, 92vw);
+}
+
+.share-url-row {
+  display: flex;
+  align-items: center;
+  gap: var(--G-M);
+  background: white;
+  border: 1px solid var(--C-D);
+  padding: var(--G-M);
+}
+
+.share-url {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--C-DD);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
+}
+
+.share-copied {
+  font-size: 0.85rem;
+  color: var(--C-B);
+}
+
+.share-login-row {
+  display: flex;
+  align-items: center;
+  gap: var(--G-L);
+}
+
+.share-or {
+  color: var(--C-D);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.share-btns {
+  display: flex;
+  justify-content: flex-end;
 }
 
 // Editor styles → src/components/TextEditor/TextEditor.scss

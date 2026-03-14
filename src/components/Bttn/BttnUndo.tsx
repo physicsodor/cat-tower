@@ -5,13 +5,14 @@ type PEH = (e: PE) => void;
 
 type Props = {
   className?: string;
+  disabled?: boolean;
   onDown?: PEH;
 };
 
-const BttnZoom1 = ({ className, onDown = () => {} }: Props) => {
+const BttnUndo = ({ className, disabled, onDown = () => {} }: Props) => {
   return (
     <div
-      className={`bttn zoom1${className ? ` ${className}` : ""}`}
+      className={`bttn undo${disabled ? " -disabled" : ""}${className ? ` ${className}` : ""}`}
       onPointerDown={onDown}
     >
       <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
@@ -25,18 +26,13 @@ const BttnZoom1 = ({ className, onDown = () => {} }: Props) => {
           ry={r}
           strokeWidth={th}
         />
-        <text
-          x={sz / 2}
-          y={sz / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={sz * 0.3}
-        >
-          1:1
-        </text>
+        <g strokeWidth={th}>
+          <path d="M 14.8 33.9 A 13 13 0 1 1 33.2 33.9" />
+          <polyline points="15.3 27.9 14.8 33.9 9.9 30.5" />
+        </g>
       </svg>
     </div>
   );
 };
 
-export default BttnZoom1;
+export default BttnUndo;

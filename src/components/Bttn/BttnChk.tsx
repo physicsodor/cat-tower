@@ -4,20 +4,15 @@ type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
 type Props = {
-  size?: string;
   onDown?: PEH;
 };
 
-const BttnChk = ({ size = "1.4rem", onDown = () => {} }: Props) => {
+const BttnChk = ({ onDown = () => {} }: Props) => {
   return (
     <div className="bttn chk" onPointerDown={onDown}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${sz} ${sz}`}
-        style={{ borderRadius: r }}
-      >
+      <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
         <rect
+          className="bck"
           x={th}
           y={th}
           width={sz - 2 * th}
@@ -27,7 +22,9 @@ const BttnChk = ({ size = "1.4rem", onDown = () => {} }: Props) => {
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          <path d={`M ${pos(-0.5)} ${pos(0.1)} L ${pos(-0.1)} ${pos(0.45)} L ${pos(0.5)} ${pos(-0.4)}`} />
+          <path
+            d={`M ${pos(-0.5)} ${pos(0.1)} L ${pos(-0.1)} ${pos(0.45)} L ${pos(0.5)} ${pos(-0.4)}`}
+          />
         </g>
       </svg>
     </div>

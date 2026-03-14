@@ -12,9 +12,16 @@
   justify-content: center;
   margin: auto 0;
   svg {
+    width: 1.4rem;
+    height: 1.4rem;
     rect {
-      fill: oklch(from var(--C-L) l c h / 0.7);
-      stroke: oklch(0% 0 0 / 0.2);
+      stroke: var(--C-DD);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: oklch(from var(--C-LL) l c h);
+      &.bck {
+        stroke: oklch(0% 0 0 / 0.2);
+      }
     }
     g {
       stroke: var(--C-DD);
@@ -29,13 +36,18 @@
       user-select: none;
     }
   }
-  svg:hover > rect {
-    fill: oklch(from var(--C-LL) l c h / 0.7);
+  svg:hover {
+    rect,
+    rect.bck {
+      fill: oklch(from var(--C-L) l c h);
+    }
   }
   svg:active {
-    rect {
-      fill: oklch(from var(--C-DD) l c h / 0.7);
+    rect,
+    rect.bck {
+      fill: oklch(from var(--C-DD) l c h);
     }
+    rect,
     g {
       stroke: var(--C-LL);
     }
@@ -43,16 +55,24 @@
       fill: var(--C-LL);
     }
   }
+  &.-lbig > svg {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
   &.-big > svg {
     width: 2.4rem;
     height: 2.4rem;
   }
+  &.-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
   &.del {
-    --C-DDD: oklch(45% 20% 75deg);
-    --C-DD: oklch(55% 20% 75deg);
-    --C-D: oklch(65% 20% 75deg);
-    --C-B: oklch(75% 20% 75deg);
-    --C-L: oklch(80% 20% 75deg);
-    --C-LL: oklch(90% 20% 75deg);
+    --C-DDD: oklch(45% 20% 30deg);
+    --C-DD: oklch(55% 20% 30deg);
+    --C-D: oklch(65% 20% 30deg);
+    --C-B: oklch(75% 20% 30deg);
+    --C-L: oklch(80% 20% 30deg);
+    --C-LL: oklch(90% 20% 30deg);
   }
 }

@@ -4,28 +4,21 @@ type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
 type Props = {
-  size?: string;
   className?: string;
   isPlus?: boolean;
   onDown?: PEH;
 };
 
-const BttnPM = ({
-  size = "1.4rem",
-  className,
-  isPlus = false,
-  onDown = () => {},
-}: Props) => {
+const BttnPM = ({ className, isPlus = false, onDown = () => {} }: Props) => {
   const h = 0.5;
   return (
-    <div className={`bttn pm${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${sz} ${sz}`}
-        style={{ borderRadius: r }}
-      >
+    <div
+      className={`bttn pm${className ? ` ${className}` : ""}`}
+      onPointerDown={onDown}
+    >
+      <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
         <rect
+          className="bck"
           x={th}
           y={th}
           width={sz - 2 * th}
@@ -35,7 +28,9 @@ const BttnPM = ({
           strokeWidth={th}
         />
         <g strokeWidth={th}>
-          {isPlus ? <path d={`M ${pos(0)} ${pos(h)} L ${pos(0)} ${pos(-h)}`} /> : null}
+          {isPlus ? (
+            <path d={`M ${pos(0)} ${pos(h)} L ${pos(0)} ${pos(-h)}`} />
+          ) : null}
           <path d={`M ${pos(h)} ${pos(0)} L ${pos(-h)} ${pos(0)}`} />
         </g>
       </svg>
@@ -44,4 +39,3 @@ const BttnPM = ({
 };
 
 export default BttnPM;
-

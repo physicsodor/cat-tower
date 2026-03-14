@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Curriculum } from "../types/Curriculum/Curriculum";
 import { buildSbjMap } from "../types/Curriculum/curriculumOp";
 import { buildFamilyMap } from "../types/Family/familyOp";
 import { buildChainMap } from "../types/Chain/chainOp";
@@ -15,6 +14,7 @@ import { useSbjTree } from "../hooks/useSbjTree";
 import { useSbjCnvs } from "../hooks/useSbjCnvs";
 import { useSbjSync } from "../hooks/useSbjSync";
 import { useSbjClipboard } from "../hooks/useSbjClipboard";
+import { useHistory } from "../hooks/useHistory";
 import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
@@ -22,7 +22,7 @@ import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "@/components/InfiniteCanvas";
 
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
-  const [list, setList] = useState<ReadonlyArray<Curriculum>>([]);
+  const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } = useHistory();
   const [selectedSet, setSelectedSet] = useState(new Set<number>());
 
   // Ref bridge: CRUD callbacks read selection without reactive deps
@@ -33,11 +33,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const getSelected = useCallback(() => selectedSetRef.current, []);
 
   // Ref bridge: clipboard callbacks read list without reactive deps
-  const listRef = useRef<ReadonlyArray<Curriculum>>(list);
-  useEffect(() => {
-    listRef.current = list;
-  }, [list]);
-  const getList = useCallback(() => listRef.current, []);
+  const getList = useCallback(() => listRef.current, [listRef]);
 
   // Camera ref — updated by SbjCnvs via syncCamera
   const cameraRef = useRef<Camera>({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 });
@@ -76,7 +72,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
         item.idx === idx && item.sbjType === "SUBJECT" ? { ...item, ...fields } : item
       ));
     },
-    []
+    [setList]
   );
   const updateCrs = useCallback(
     (idx: number, fields: { title: string; short?: string }) => {
@@ -84,7 +80,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
         item.idx === idx && item.sbjType === "COURSE" ? { ...item, ...fields } : item
       ));
     },
-    []
+    [setList]
   );
   const removePreLink = useCallback((idxA: number, idxB: number) => {
     setList((prev) => prev.map((item) => {
@@ -93,7 +89,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       pre.delete(idxB);
       return { ...item, pre };
     }));
-  }, []);
+  }, [setList]);
 
   // Operations
   const { addSbj, addCrs, delSbj, delSbjOne, delCrs } = useSbjCrud(
@@ -105,7 +101,11 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   );
   const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(list, idx2chain, idx2family, setList, preSource);
-  const sync = useSbjSync(list, setList);
+  const sync = useSbjSync(list, loadList);
+  const ctrlS = useCallback(
+    () => sync.isLoggedIn ? sync.saveNow() : sync.openShare(),
+    [sync]
+  );
   const { copy, paste, cut, hasClip } = useSbjClipboard(
     getList,
     idx2family,
@@ -113,7 +113,9 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     setList,
     setSelectedSet,
     delSbj,
-    sync.saveNow,
+    ctrlS,
+    undo,
+    redo,
   );
 
   const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
@@ -162,6 +164,10 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       updateSbj,
       updateCrs,
       removePreLink,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
     }),
     [
       idx2sbj, idx2family, idx2chain,
@@ -171,6 +177,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       setCnvsPre, setCnvsPos, autoLayout,
       treeDrag, cnvsDrag, preSource,
       syncCamera, getZoom, editingIdx, openEdit, closeEdit, updateSbj, updateCrs, removePreLink,
+      undo, redo, canUndo, canRedo,
     ]
   );
 

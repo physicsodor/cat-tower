@@ -7,6 +7,7 @@ import {
   LAYOUT_DEFAULT_W as DEFAULT_W,
   LAYOUT_DEFAULT_H as DEFAULT_H,
   LAYOUT_ITER as ITER,
+  LAYOUT_PARTITION_GAP as PARTITION_GAP,
 } from "@/features/subject/constants";
 
 export function computeAutoLayout(
@@ -27,85 +28,21 @@ export function computeAutoLayout(
     if (!idx2level.has(s.idx)) idx2level.set(s.idx, 0);
   }
 
-  // ── Step 2: 레벨별 그룹화 ─────────────────────────────────────────────────
-  const level2idxs = new Map<number, number[]>();
-  for (const s of subjects) {
-    const lv = idx2level.get(s.idx) ?? 0;
-    if (!level2idxs.has(lv)) level2idxs.set(lv, []);
-    level2idxs.get(lv)!.push(s.idx);
-  }
-  const sortedLevels = [...level2idxs.keys()].sort((a, b) => a - b);
+  // ── Step 2: Weakly connected components 탐색 ──────────────────────────────
+  const components = findComponents(subjects, idx2chain);
 
-  // ── Step 3: Y 좌표 계산 ───────────────────────────────────────────────────
-  // 각 레벨의 중심 y. 레벨이 높을수록 아래 (y 증가 방향).
-  const level2y = new Map<number, number>();
-  for (let i = 0; i < sortedLevels.length; i++) {
-    const lv = sortedLevels[i];
-    const maxH = Math.max(...level2idxs.get(lv)!.map(getH));
-    if (i === 0) {
-      level2y.set(lv, 0);
-    } else {
-      const prevLv = sortedLevels[i - 1];
-      const prevMaxH = Math.max(...level2idxs.get(prevLv)!.map(getH));
-      level2y.set(lv, level2y.get(prevLv)! + prevMaxH / 2 + ROW_GAP + maxH / 2);
-    }
+  // ── Step 3: 각 component를 독립적으로 integer column 배치 ─────────────────
+  const pixelLayouts: Map<number, { x: number; y: number }>[] = [];
+  for (const compIdxs of components) {
+    const colLayout = layoutComponent(compIdxs, idx2chain, idx2level, getW, getH);
+    const pixelLayout = colToX(colLayout, getW);
+    pixelLayouts.push(pixelLayout);
   }
 
-  // ── Step 4: X 초기값 = 현재 위치 ─────────────────────────────────────────
-  const idx2x = new Map<number, number>();
-  for (const s of subjects) idx2x.set(s.idx, s.x);
+  // ── Step 4: Component들을 x축으로 나란히 배치 (min idx 기준 정렬) ─────────
+  const result = arrangeComponents(pixelLayouts, getW);
 
-  // ── Step 5: Barycenter 반복 (rule 2, 3) ───────────────────────────────────
-  for (let iter = 0; iter < ITER; iter++) {
-    // Bottom-up: 노드 x = nxt 이웃의 x 중앙값 (rule 3)
-    for (let i = sortedLevels.length - 2; i >= 0; i--) {
-      const lv = sortedLevels[i];
-      for (const idx of level2idxs.get(lv)!) {
-        const nxt = idx2chain.get(idx)?.nxt;
-        if (!nxt || nxt.size === 0) continue;
-        const xs = [...nxt]
-          .filter((n) => idx2x.has(n))
-          .map((n) => idx2x.get(n)!)
-          .sort((a, b) => a - b);
-        if (xs.length > 0) idx2x.set(idx, median(xs));
-      }
-      resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
-    }
-
-    // Top-down: 노드 x = pre 이웃의 x 중앙값
-    for (let i = 1; i < sortedLevels.length; i++) {
-      const lv = sortedLevels[i];
-      for (const idx of level2idxs.get(lv)!) {
-        const pre = idx2chain.get(idx)?.pre;
-        if (!pre || pre.size === 0) continue;
-        const xs = [...pre]
-          .filter((p) => idx2x.has(p))
-          .map((p) => idx2x.get(p)!)
-          .sort((a, b) => a - b);
-        if (xs.length > 0) idx2x.set(idx, median(xs));
-      }
-      resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
-    }
-  }
-
-  // ── Step 6: Rule 5 — 교집합 없는 nxtSet 범위가 겹치지 않도록 ──────────────
-  applyDisjointNxtSets(sortedLevels, level2idxs, idx2chain, idx2x, getW, COL_GAP);
-
-  // 최종 겹침 해소
-  for (const lv of sortedLevels) {
-    resolveOverlaps(level2idxs.get(lv)!, idx2x, getW, COL_GAP);
-  }
-
-  // ── Step 7: 결과 조립 ─────────────────────────────────────────────────────
-  const result = new Map<number, { x: number; y: number }>();
-  for (const s of subjects) {
-    result.set(s.idx, {
-      x: idx2x.get(s.idx) ?? s.x,
-      y: level2y.get(idx2level.get(s.idx) ?? 0) ?? s.y,
-    });
-  }
-
-  // ── Step 8: Normalize — 전체 바운딩 박스 중심 = (0, 0) ───────────────────
+  // ── Step 5: Normalize — 전체 바운딩 박스 중심 = (0, 0) ───────────────────
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const [idx, pos] of result) {
     minX = Math.min(minX, pos.x - getW(idx) / 2);
@@ -122,120 +59,258 @@ export function computeAutoLayout(
   return result;
 }
 
-/** 정렬된 배열의 중앙값 (홀수: 중간, 짝수: 아래쪽 중간) */
-function median(sorted: number[]): number {
-  return sorted[Math.floor((sorted.length - 1) / 2)];
-}
+/** BFS로 weakly connected components 탐색. subjects에 속한 노드만 포함. */
+function findComponents(subjects: Subject[], idx2chain: ChainMap): number[][] {
+  const subjectSet = new Set(subjects.map((s) => s.idx));
+  const visited = new Set<number>();
+  const components: number[][] = [];
 
-/**
- * 같은 레벨 노드들 사이의 겹침을 해소.
- * Forward pass(오른쪽으로 밀기) → Backward pass(왼쪽으로 당기기) 후
- * 그룹 전체를 원래 중심으로 shift하여 한쪽으로 치우치지 않도록 함.
- */
-function resolveOverlaps(
-  idxs: number[],
-  idx2x: Map<number, number>,
-  getW: (idx: number) => number,
-  gap: number
-) {
-  if (idxs.length <= 1) return;
-  const sorted = [...idxs].sort((a, b) => (idx2x.get(a) ?? 0) - (idx2x.get(b) ?? 0));
-
-  const origX = sorted.map((idx) => idx2x.get(idx) ?? 0);
-  const origCenter = origX.reduce((s, x) => s + x, 0) / origX.length;
-
-  // Forward: 겹치면 오른쪽으로 밀기
-  for (let i = 1; i < sorted.length; i++) {
-    const p = sorted[i - 1], c = sorted[i];
-    const minX = (idx2x.get(p) ?? 0) + (getW(p) + getW(c)) / 2 + gap;
-    if ((idx2x.get(c) ?? 0) < minX) idx2x.set(c, minX);
-  }
-
-  // Backward: 가능한 만큼 왼쪽으로 당기기
-  for (let i = sorted.length - 2; i >= 0; i--) {
-    const c = sorted[i], n = sorted[i + 1];
-    const maxX = (idx2x.get(n) ?? 0) - (getW(n) + getW(c)) / 2 - gap;
-    if ((idx2x.get(c) ?? 0) > maxX) idx2x.set(c, maxX);
-  }
-
-  // 그룹 중심을 원래 중심으로 복원
-  const newCenter =
-    sorted.reduce((s, idx) => s + (idx2x.get(idx) ?? 0), 0) / sorted.length;
-  const shift = origCenter - newCenter;
-  if (shift !== 0) {
-    for (const idx of sorted) idx2x.set(idx, (idx2x.get(idx) ?? 0) + shift);
-  }
-}
-
-/**
- * Rule 5: 같은 레벨에서 nxtSet의 교집합이 없는 두 노드 A, B에 대해
- * A.nxtSet의 x 범위와 B.nxtSet의 x 범위가 겹치지 않도록 조정.
- */
-function applyDisjointNxtSets(
-  levels: number[],
-  level2idxs: Map<number, number[]>,
-  idx2chain: ChainMap,
-  idx2x: Map<number, number>,
-  getW: (idx: number) => number,
-  gap: number
-) {
-  for (const lv of levels) {
-    const idxs = level2idxs.get(lv) ?? [];
-    if (idxs.length < 2) continue;
-
-    const withNxt = idxs.filter((idx) => {
-      const s = idx2chain.get(idx)?.nxtSet;
-      return s && s.size > 0;
-    });
-
-    for (let i = 0; i < withNxt.length; i++) {
-      for (let j = i + 1; j < withNxt.length; j++) {
-        const a = withNxt[i], b = withNxt[j];
-        const aNxtSet = idx2chain.get(a)!.nxtSet!;
-        const bNxtSet = idx2chain.get(b)!.nxtSet!;
-
-        // 교집합 확인
-        let shared = false;
-        for (const n of aNxtSet) {
-          if (bNxtSet.has(n)) { shared = true; break; }
-        }
-        if (shared) continue;
-
-        const aRange = xRange(aNxtSet, idx2x, getW);
-        const bRange = xRange(bNxtSet, idx2x, getW);
-        if (!aRange || !bRange) continue;
-
-        // 범위가 겹치면 분리
-        if (aRange.max + gap > bRange.min && bRange.max + gap > aRange.min) {
-          const overlap =
-            Math.min(aRange.max, bRange.max) - Math.max(aRange.min, bRange.min) + gap;
-          const half = overlap / 2;
-          if (aRange.min <= bRange.min) {
-            for (const n of aNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x - half); }
-            for (const n of bNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x + half); }
-          } else {
-            for (const n of bNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x - half); }
-            for (const n of aNxtSet) { const x = idx2x.get(n); if (x !== undefined) idx2x.set(n, x + half); }
-          }
+  for (const s of subjects) {
+    if (visited.has(s.idx)) continue;
+    const component: number[] = [];
+    const q = [s.idx];
+    visited.add(s.idx);
+    while (q.length > 0) {
+      const v = q.shift()!;
+      component.push(v);
+      const chain = idx2chain.get(v);
+      for (const nb of [...(chain?.pre ?? []), ...(chain?.nxt ?? [])]) {
+        if (subjectSet.has(nb) && !visited.has(nb)) {
+          visited.add(nb);
+          q.push(nb);
         }
       }
     }
+    components.push(component);
+  }
+
+  return components;
+}
+
+/**
+ * Component 하나를 integer column + y로 배치.
+ * 반환값: Map<idx, { col: integer, y: pixel }>
+ */
+function layoutComponent(
+  idxs: number[],
+  idx2chain: ChainMap,
+  idx2level: Map<number, number>,
+  _getW: (idx: number) => number,
+  getH: (idx: number) => number
+): Map<number, { col: number; y: number }> {
+  // 레벨별 그룹화
+  const level2idxs = new Map<number, number[]>();
+  for (const idx of idxs) {
+    const lv = idx2level.get(idx) ?? 0;
+    if (!level2idxs.has(lv)) level2idxs.set(lv, []);
+    level2idxs.get(lv)!.push(idx);
+  }
+  const sortedLevels = [...level2idxs.keys()].sort((a, b) => a - b);
+
+  // Y 좌표 계산
+  const level2y = new Map<number, number>();
+  for (let i = 0; i < sortedLevels.length; i++) {
+    const lv = sortedLevels[i];
+    const maxH = Math.max(...level2idxs.get(lv)!.map(getH));
+    if (i === 0) {
+      level2y.set(lv, 0);
+    } else {
+      const prevLv = sortedLevels[i - 1];
+      const prevMaxH = Math.max(...level2idxs.get(prevLv)!.map(getH));
+      level2y.set(lv, level2y.get(prevLv)! + prevMaxH / 2 + ROW_GAP + maxH / 2);
+    }
+  }
+
+  // ── 초기 col 할당: 최하위 레벨부터 위로 ──────────────────────────────────
+  // nxt가 있는 노드: nxt col들의 하위 중앙값을 target으로 사용
+  // nxt가 없는 노드: withNxt 노드들의 오른쪽에 배치
+  const idx2col = new Map<number, number>();
+
+  // 최하위 레벨: idx 오름차순으로 0, 1, 2...
+  const deepestLv = sortedLevels[sortedLevels.length - 1];
+  [...level2idxs.get(deepestLv)!]
+    .sort((a, b) => a - b)
+    .forEach((idx, i) => idx2col.set(idx, i));
+
+  // 위 레벨들: nxt 기반 target → 나머지는 오른쪽 끝
+  for (let i = sortedLevels.length - 2; i >= 0; i--) {
+    const lv = sortedLevels[i];
+    const idxsAtLv = level2idxs.get(lv)!;
+    const withTarget: Array<{ idx: number; targetCol: number }> = [];
+    const noTarget: number[] = [];
+
+    for (const idx of idxsAtLv) {
+      const nxtCols = [...(idx2chain.get(idx)?.nxt ?? [])]
+        .filter((n) => idx2col.has(n))
+        .map((n) => idx2col.get(n)!)
+        .sort((a, b) => a - b);
+      if (nxtCols.length > 0) {
+        withTarget.push({ idx, targetCol: median(nxtCols) });
+      } else {
+        noTarget.push(idx);
+      }
+    }
+
+    withTarget.sort((a, b) =>
+      a.targetCol !== b.targetCol ? a.targetCol - b.targetCol : a.idx - b.idx
+    );
+    noTarget.sort((a, b) => a - b);
+
+    const maxWithTargetCol =
+      withTarget.length > 0 ? Math.max(...withTarget.map((w) => w.targetCol)) : -1;
+    for (const { idx, targetCol } of withTarget) idx2col.set(idx, targetCol);
+    noTarget.forEach((idx, i) => idx2col.set(idx, maxWithTargetCol + 1 + i));
+
+    resolveColOverlaps(idxsAtLv, idx2col);
+  }
+
+  // ── Integer-column barycenter 반복 ────────────────────────────────────────
+  for (let iter = 0; iter < ITER; iter++) {
+    // Bottom-up: nxt가 있는 노드만 — col = lower median of nxt cols
+    for (let i = sortedLevels.length - 2; i >= 0; i--) {
+      const lv = sortedLevels[i];
+      for (const idx of level2idxs.get(lv)!) {
+        const nxtCols = [...(idx2chain.get(idx)?.nxt ?? [])]
+          .filter((n) => idx2col.has(n))
+          .map((n) => idx2col.get(n)!)
+          .sort((a, b) => a - b);
+        if (nxtCols.length > 0) idx2col.set(idx, median(nxtCols));
+      }
+      resolveColOverlaps(level2idxs.get(lv)!, idx2col);
+    }
+
+    // Top-down: nxt가 없는 노드만 (leaf) — col = lower median of pre cols
+    for (let i = 1; i < sortedLevels.length; i++) {
+      const lv = sortedLevels[i];
+      for (const idx of level2idxs.get(lv)!) {
+        const nxtInComp = [...(idx2chain.get(idx)?.nxt ?? [])].filter((n) =>
+          idx2col.has(n)
+        );
+        if (nxtInComp.length > 0) continue; // nxt 있으면 bottom-up 결과 유지
+        const preCols = [...(idx2chain.get(idx)?.pre ?? [])]
+          .filter((p) => idx2col.has(p))
+          .map((p) => idx2col.get(p)!)
+          .sort((a, b) => a - b);
+        if (preCols.length > 0) idx2col.set(idx, median(preCols));
+      }
+      resolveColOverlaps(level2idxs.get(lv)!, idx2col);
+    }
+  }
+
+  // Normalize: min col → 0
+  const minCol = Math.min(...[...idx2col.values()]);
+  for (const [idx, col] of idx2col) idx2col.set(idx, col - minCol);
+
+  // 결과 조립
+  const result = new Map<number, { col: number; y: number }>();
+  for (const idx of idxs) {
+    result.set(idx, {
+      col: idx2col.get(idx)!,
+      y: level2y.get(idx2level.get(idx) ?? 0)!,
+    });
+  }
+  return result;
+}
+
+/** Integer column 겹침 해소: forward push → backward compact → center restore */
+function resolveColOverlaps(idxs: number[], idx2col: Map<number, number>): void {
+  if (idxs.length <= 1) return;
+  const sorted = [...idxs].sort((a, b) => (idx2col.get(a) ?? 0) - (idx2col.get(b) ?? 0));
+  const origCenter = sorted.reduce((s, idx) => s + (idx2col.get(idx) ?? 0), 0) / sorted.length;
+
+  // Forward: col[i] >= col[i-1] + 1
+  for (let i = 1; i < sorted.length; i++) {
+    const p = sorted[i - 1], c = sorted[i];
+    const minCol = idx2col.get(p)! + 1;
+    if (idx2col.get(c)! < minCol) idx2col.set(c, minCol);
+  }
+
+  // Backward: compact left
+  for (let i = sorted.length - 2; i >= 0; i--) {
+    const c = sorted[i], n = sorted[i + 1];
+    const maxCol = idx2col.get(n)! - 1;
+    if (idx2col.get(c)! > maxCol) idx2col.set(c, maxCol);
+  }
+
+  // Center restore
+  const newCenter = sorted.reduce((s, idx) => s + (idx2col.get(idx) ?? 0), 0) / sorted.length;
+  const shift = Math.round(origCenter - newCenter);
+  if (shift !== 0) {
+    for (const idx of sorted) idx2col.set(idx, idx2col.get(idx)! + shift);
   }
 }
 
-/** nxtSet에 속한 노드들의 x 범위 (edge 기준) */
-function xRange(
-  set: ReadonlySet<number>,
-  idx2x: Map<number, number>,
+/** column index → pixel x 변환. variable-width 노드 지원. */
+function colToX(
+  layout: Map<number, { col: number; y: number }>,
   getW: (idx: number) => number
-): { min: number; max: number } | null {
-  let min = Infinity, max = -Infinity;
-  for (const n of set) {
-    const x = idx2x.get(n);
-    if (x === undefined) continue;
-    const w = getW(n);
-    min = Math.min(min, x - w / 2);
-    max = Math.max(max, x + w / 2);
+): Map<number, { x: number; y: number }> {
+  if (layout.size === 0) return new Map();
+
+  const maxCol = Math.max(...[...layout.values()].map((v) => v.col));
+
+  // 각 column의 최대 width 계산
+  const colMaxW = new Array<number>(maxCol + 1).fill(0);
+  for (const [idx, { col }] of layout) {
+    colMaxW[col] = Math.max(colMaxW[col], getW(idx));
   }
-  return min <= max ? { min, max } : null;
+  // 폭이 0인 column은 DEFAULT_W로 채움 (빈 column 방어)
+  for (let c = 0; c <= maxCol; c++) {
+    if (colMaxW[c] === 0) colMaxW[c] = DEFAULT_W;
+  }
+
+  // 각 column의 center x 계산 (edge-to-edge COL_GAP 유지)
+  const colCenterX = new Array<number>(maxCol + 1);
+  colCenterX[0] = colMaxW[0] / 2;
+  for (let c = 1; c <= maxCol; c++) {
+    colCenterX[c] = colCenterX[c - 1] + colMaxW[c - 1] / 2 + COL_GAP + colMaxW[c] / 2;
+  }
+
+  const result = new Map<number, { x: number; y: number }>();
+  for (const [idx, { col, y }] of layout) {
+    result.set(idx, { x: colCenterX[col], y });
+  }
+  return result;
+}
+
+/**
+ * Component pixel layout들을 x축으로 나란히 배치.
+ * min idx 기준으로 정렬하여 deterministic 순서 보장.
+ */
+function arrangeComponents(
+  pixelLayouts: Map<number, { x: number; y: number }>[],
+  getW: (idx: number) => number
+): Map<number, { x: number; y: number }> {
+  const result = new Map<number, { x: number; y: number }>();
+  if (pixelLayouts.length === 0) return result;
+
+  // min idx로 component 정렬
+  const sorted = [...pixelLayouts].sort((a, b) => {
+    const minA = Math.min(...a.keys());
+    const minB = Math.min(...b.keys());
+    return minA - minB;
+  });
+
+  let cursor = 0; // 이전 component의 right edge
+  for (let i = 0; i < sorted.length; i++) {
+    const layout = sorted[i];
+    let minX = Infinity, maxX = -Infinity;
+    for (const [idx, pos] of layout) {
+      minX = Math.min(minX, pos.x - getW(idx) / 2);
+      maxX = Math.max(maxX, pos.x + getW(idx) / 2);
+    }
+    const leftEdge = i === 0 ? 0 : cursor + PARTITION_GAP;
+    const shift = leftEdge - minX;
+    for (const [idx, pos] of layout) {
+      result.set(idx, { x: pos.x + shift, y: pos.y });
+    }
+    cursor = maxX + shift;
+  }
+
+  return result;
+}
+
+/** 정렬된 배열의 하위 중앙값 (짝수: 아래쪽 중간) */
+function median(sorted: number[]): number {
+  return sorted[Math.floor((sorted.length - 1) / 2)];
 }

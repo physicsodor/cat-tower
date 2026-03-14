@@ -4,23 +4,18 @@ type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
 type Props = {
-  size?: string;
   onDown?: PEH;
 };
 
-const BttnVert = ({ size = "1.4rem", onDown = () => {} }: Props) => {
+const BttnVert = ({ onDown = () => {} }: Props) => {
   const h1 = 0.6;
   const h2 = 0.3;
   const b = 0.5;
   return (
     <div className="bttn vert" onPointerDown={onDown}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${sz} ${sz}`}
-        style={{ borderRadius: r }}
-      >
+      <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
         <rect
+          className="bck"
           x={th}
           y={th}
           width={sz - 2 * th}
@@ -42,4 +37,3 @@ const BttnVert = ({ size = "1.4rem", onDown = () => {} }: Props) => {
 };
 
 export default BttnVert;
-

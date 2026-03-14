@@ -6,7 +6,7 @@ import { getNewIdx } from "../types/IdxItem/idxItemOp";
 import { removePre } from "../types/Chain/chainOp";
 import { PASTE_OFFSET } from "@/features/subject/constants";
 
-const isEditingText = () => {
+export const isEditingText = () => {
   const el = document.activeElement;
   if (!el) return false;
   const tag = el.tagName;
@@ -22,6 +22,8 @@ export const useSbjClipboard = (
   setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>,
   delSbj: () => void,
   saveNow: () => void,
+  undo: () => void,
+  redo: () => void,
 ) => {
   const clipRef = useRef<ReadonlyArray<Curriculum>>([]);
   const [hasClip, setHasClip] = useState(false);
@@ -121,10 +123,12 @@ export const useSbjClipboard = (
       else if (e.key === "c") { e.preventDefault(); copy(); }
       else if (e.key === "v") { e.preventDefault(); paste(); }
       else if (e.key === "x") { e.preventDefault(); cut(); }
+      else if (e.key === "z") { e.preventDefault(); undo(); }
+      else if (e.key === "y" || e.key === "Z") { e.preventDefault(); redo(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [delSbj, saveNow, copy, paste, cut]);
+  }, [delSbj, saveNow, copy, paste, cut, undo, redo]);
 
   return { copy, paste, cut, hasClip };
 };

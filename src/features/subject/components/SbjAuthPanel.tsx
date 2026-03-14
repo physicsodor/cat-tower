@@ -1,9 +1,10 @@
 import { useAuth } from "@/features/auth/useAuth";
 import { useSbjSyncCtx } from "../context/SbjSyncContext";
+import SbjShareModal from "./SbjShareModal";
 
 const SbjAuthPanel = () => {
-  const { user, signIn, signOut } = useAuth();
-  const { saveNow, dirty, savePending, currentProjectTitle, openPicker } = useSbjSyncCtx();
+  const { user, signOut } = useAuth();
+  const { saveNow, dirty, savePending, currentProjectTitle, openPicker, openShare, closeShare, shareUrl, signIn } = useSbjSyncCtx();
 
   return (
     <div className="sbj-auth-panel">
@@ -30,14 +31,29 @@ const SbjAuthPanel = () => {
           >
             {savePending ? "저장 중..." : "저장"}
           </button>
+          <button className="sbj-auth-btn" onClick={openShare}>
+            공유
+          </button>
           <button className="sbj-auth-btn" onClick={signOut}>
             로그아웃
           </button>
         </>
       ) : (
-        <button className="sbj-auth-btn" onClick={signIn}>
-          Google 로그인
-        </button>
+        <>
+          <button className="sbj-auth-btn" onClick={openShare}>
+            공유
+          </button>
+          <button className="sbj-auth-btn" onClick={signIn}>
+            Google 로그인
+          </button>
+        </>
+      )}
+      {shareUrl && (
+        <SbjShareModal
+          url={shareUrl}
+          onClose={closeShare}
+          onLogin={user ? undefined : signIn}
+        />
       )}
     </div>
   );

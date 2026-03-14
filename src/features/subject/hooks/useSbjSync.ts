@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
 import { supabase } from "@/features/auth/supabase";
-import { decodeList, encodeList } from "../types/Curriculum/curriculumCodec";
+import { decodeList, decodeListCompact, encodeList, encodeListCompact } from "../types/Curriculum/curriculumCodec";
 import type { Project } from "../types/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
+
+const PRE_LOGIN_KEY = "sbj_pre_login_state";
+
+function consumeShareParam(): Curriculum[] | null {
+  const params = new URLSearchParams(window.location.search);
+  const shared = params.get("share");
+  if (!shared) return null;
+  const decoded = decodeListCompact(shared);
+  params.delete("share");
+  const newSearch = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${newSearch ? "?" + newSearch : ""}`
+  );
+  return decoded;
+}
 
 /** Subject들의 bounding box 중심이 (0,0)이 되도록 x,y를 평행이동 */
 function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curriculum> {
@@ -19,7 +36,7 @@ function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curricu
 
 export const useSbjSync = (
   list: ReadonlyArray<Curriculum>,
-  setList: (v: ReadonlyArray<Curriculum>) => void
+  loadList: (v: ReadonlyArray<Curriculum>) => void
 ) => {
   const [loading, setLoading] = useState(true);
   const [savePending, setSavePending] = useState(false);
@@ -28,6 +45,7 @@ export const useSbjSync = (
   const [currentProjectId, _setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectTitle, _setCurrentProjectTitle] = useState<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // Refs for use inside callbacks / event handlers
   const userIdRef = useRef<string | null>(null);
@@ -36,6 +54,12 @@ export const useSbjSync = (
   const dirtyRef = useRef(false);
   const currentProjectIdRef = useRef<string | null>(null);
   const fetchingRef = useRef(false);
+
+  // Shared data from URL ?share= param — consumed once on first render
+  const sharedDataRef = useRef<Curriculum[] | null | undefined>(undefined);
+  if (sharedDataRef.current === undefined) {
+    sharedDataRef.current = consumeShareParam();
+  }
 
   // Keep refs in sync with state
   useEffect(() => { listRef.current = list; }, [list]);
@@ -103,25 +127,42 @@ export const useSbjSync = (
 
       setProjects(fetchedProjects);
 
-      // Auto-load last opened project (or most recent)
-      const lastId = localStorage.getItem(LAST_PROJECT_KEY);
-      const target =
-        fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
+      // If shared URL data was present, show it instead of last project
+      const preLogin = sessionStorage.getItem(PRE_LOGIN_KEY);
+      if (preLogin) sessionStorage.removeItem(PRE_LOGIN_KEY);
 
-      if (target) {
-        const decoded = decodeList(target.data);
-        setList(decoded);
-        lastSavedRef.current = encodeList(decoded);
-        setCurrentProjectId(target.id);
-        setCurrentProjectTitle(target.title);
-        localStorage.setItem(LAST_PROJECT_KEY, target.id);
+      if (sharedDataRef.current) {
+        loadList(sharedDataRef.current);
+        lastSavedRef.current = encodeList(sharedDataRef.current);
+        sharedDataRef.current = null;
         setDirty(false);
+      } else if (preLogin) {
+        // Restore state from before the login redirect
+        const decoded = decodeList(preLogin);
+        loadList(decoded);
+        lastSavedRef.current = "[]";
+        setDirty(true);
+      } else {
+        // Auto-load last opened project (or most recent)
+        const lastId = localStorage.getItem(LAST_PROJECT_KEY);
+        const target =
+          fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
+
+        if (target) {
+          const decoded = decodeList(target.data);
+          loadList(decoded);
+          lastSavedRef.current = encodeList(decoded);
+          setCurrentProjectId(target.id);
+          setCurrentProjectTitle(target.title);
+          localStorage.setItem(LAST_PROJECT_KEY, target.id);
+          setDirty(false);
+        }
       }
 
       setLoading(false);
       fetchingRef.current = false;
     },
-    [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
+    [loadList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
   );
 
   // ─── Auth watcher ─────────────────────────────────────────────────────────
@@ -134,6 +175,17 @@ export const useSbjSync = (
         userIdRef.current = user.id;
         void fetchAndHydrate(user.id);
       } else {
+        const preLogin = sessionStorage.getItem(PRE_LOGIN_KEY);
+        if (preLogin) sessionStorage.removeItem(PRE_LOGIN_KEY);
+        if (preLogin) {
+          loadList(decodeList(preLogin));
+          lastSavedRef.current = preLogin;
+        } else if (sharedDataRef.current) {
+          loadList(sharedDataRef.current);
+          lastSavedRef.current = encodeList(sharedDataRef.current);
+          sharedDataRef.current = null;
+        }
+        setDirty(false);
         setLoading(false);
       }
     });
@@ -226,7 +278,7 @@ export const useSbjSync = (
         if (!ok) return;
       }
       const decoded = decodeList(project.data);
-      setList(decoded);
+      loadList(decoded);
       lastSavedRef.current = encodeList(decoded);
       setCurrentProjectId(project.id);
       setCurrentProjectTitle(project.title);
@@ -234,7 +286,7 @@ export const useSbjSync = (
       setDirty(false);
       setIsPickerOpen(false);
     },
-    [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
+    [loadList, setCurrentProjectId, setCurrentProjectTitle, setDirty]
   );
 
   // ─── New project ─────────────────────────────────────────────────────────
@@ -246,14 +298,14 @@ export const useSbjSync = (
       );
       if (!ok) return;
     }
-    setList([]);
+    loadList([]);
     lastSavedRef.current = "[]";
     setCurrentProjectId(null);
     setCurrentProjectTitle("새 프로젝트");
     localStorage.removeItem(LAST_PROJECT_KEY);
     setDirty(false);
     setIsPickerOpen(false);
-  }, [setList, setCurrentProjectId, setCurrentProjectTitle, setDirty]);
+  }, [loadList, setCurrentProjectId, setCurrentProjectTitle, setDirty]);
 
   // ─── Delete project ───────────────────────────────────────────────────────
 
@@ -331,11 +383,39 @@ export const useSbjSync = (
     };
   }, []);
 
+  // ─── Sign in (saves current state before redirect) ───────────────────────────
+
+  const signIn = useCallback(() => {
+    sessionStorage.setItem(PRE_LOGIN_KEY, encodeList(listRef.current));
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
+    });
+  }, []);
+
+  // ─── Share URL / modal ────────────────────────────────────────────────────────
+
+  const getShareUrl = useCallback(() => {
+    const encoded = encodeListCompact(listRef.current);
+    const url = new URL(window.location.href);
+    url.searchParams.set("share", encoded);
+    return url.toString();
+  }, []);
+
+  const openShare = useCallback(() => setShareUrl(getShareUrl()), [getShareUrl]);
+  const closeShare = useCallback(() => setShareUrl(null), []);
+
   return {
     loading,
     savePending,
     dirty,
+    isLoggedIn: userIdRef.current !== null,
+    signIn,
     saveNow,
+    shareUrl,
+    openShare,
+    closeShare,
+    getShareUrl,
     projects,
     currentProjectId,
     currentProjectTitle,

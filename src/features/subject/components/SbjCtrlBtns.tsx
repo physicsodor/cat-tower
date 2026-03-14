@@ -6,7 +6,6 @@ import BttnGrp from "@/components/Bttn/BttnGrp";
 import BttnCopy from "@/components/Bttn/BttnCopy";
 import BttnCut from "@/components/Bttn/BttnCut";
 import BttnPaste from "@/components/Bttn/BttnPaste";
-
 const SbjCtrlBtns = () => {
   const { addSbj, delSbj, addCrs, copy, cut, paste, hasClip } = useSbjData();
   const { selectedSet } = useSbjSelect();
@@ -15,7 +14,7 @@ const SbjCtrlBtns = () => {
   return (
     <div className="sbj-ctrl-btns-panel">
       <BttnPM isPlus onDown={addSbj} className="-big" />
-      <BttnDel onDown={delSbj} className="-big" />
+      {hasSel && <BttnDel onDown={delSbj} className="-big" />}
       {hasSel && <BttnGrp onDown={addCrs} className="-big" />}
       {hasSel && <BttnCopy onDown={copy} className="-big" />}
       {hasSel && <BttnCut onDown={cut} className="-big" />}

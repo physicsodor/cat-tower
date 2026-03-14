@@ -4,21 +4,19 @@ type PE = React.PointerEvent | PointerEvent;
 type PEH = (e: PE) => void;
 
 type Props = {
-  size?: string;
   className?: string;
   onDown?: PEH;
 };
 
-const BttnCopy = ({ size = "1.4rem", className, onDown = () => {} }: Props) => {
+const BttnCopy = ({ className, onDown = () => {} }: Props) => {
   return (
-    <div className={`bttn cpy${className ? ` ${className}` : ""}`} onPointerDown={onDown}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${sz} ${sz}`}
-        style={{ borderRadius: r }}
-      >
+    <div
+      className={`bttn cpy${className ? ` ${className}` : ""}`}
+      onPointerDown={onDown}
+    >
+      <svg viewBox={`0 0 ${sz} ${sz}`} style={{ borderRadius: r }}>
         <rect
+          className="bck"
           x={th}
           y={th}
           width={sz - 2 * th}

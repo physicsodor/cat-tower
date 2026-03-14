@@ -37,6 +37,10 @@ type SbjDataContextValue = {
   ) => void;
   updateCrs: (idx: number, fields: { title: string; short?: string }) => void;
   removePreLink: (idxA: number, idxB: number) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 };
 
 export const SbjDataContext = createContext<SbjDataContextValue | null>(null);
