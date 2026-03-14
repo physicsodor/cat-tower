@@ -6,6 +6,11 @@ import type { Project } from "../types/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 
 const PRE_LOGIN_KEY = "sbj_pre_login_state";
+const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function genShareId(): string {
+  return Array.from({ length: 7 }, () => SHARE_ID_CHARS[Math.floor(Math.random() * SHARE_ID_CHARS.length)]).join("");
+}
 
 function consumeShareParam(): Curriculum[] | null {
   const params = new URLSearchParams(window.location.search);
@@ -20,6 +25,16 @@ function consumeShareParam(): Curriculum[] | null {
     `${window.location.pathname}${newSearch ? "?" + newSearch : ""}`
   );
   return decoded;
+}
+
+function consumeShareId(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("s");
+  if (!id) return null;
+  params.delete("s");
+  const newSearch = params.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${newSearch ? "?" + newSearch : ""}`);
+  return id;
 }
 
 /** Subject들의 bounding box 중심이 (0,0)이 되도록 x,y를 평행이동 */
@@ -46,6 +61,7 @@ export const useSbjSync = (
   const [currentProjectTitle, _setCurrentProjectTitle] = useState<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
   // Refs for use inside callbacks / event handlers
   const userIdRef = useRef<string | null>(null);
@@ -60,6 +76,21 @@ export const useSbjSync = (
   if (sharedDataRef.current === undefined) {
     sharedDataRef.current = consumeShareParam();
   }
+
+  // Short share link ID from URL ?s= param — consumed once on first render
+  const shareLinkIdRef = useRef<string | null | undefined>(undefined);
+  if (shareLinkIdRef.current === undefined) {
+    shareLinkIdRef.current = consumeShareId();
+  }
+
+  // Pre-login state — consumed once on first render (before any async ops)
+  const preLoginRef = useRef<string | null | undefined>(undefined);
+  if (preLoginRef.current === undefined) {
+    const stored = sessionStorage.getItem(PRE_LOGIN_KEY);
+    if (stored) sessionStorage.removeItem(PRE_LOGIN_KEY);
+    preLoginRef.current = stored ?? null;
+  }
+  const preLoginUsedRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => { listRef.current = list; }, [list]);
@@ -128,21 +159,32 @@ export const useSbjSync = (
       setProjects(fetchedProjects);
 
       // If shared URL data was present, show it instead of last project
-      const preLogin = sessionStorage.getItem(PRE_LOGIN_KEY);
-      if (preLogin) sessionStorage.removeItem(PRE_LOGIN_KEY);
+      const shareId = shareLinkIdRef.current;
+      shareLinkIdRef.current = null;
+      const preLogin = preLoginRef.current;
+      preLoginRef.current = null;
 
-      if (sharedDataRef.current) {
+      if (shareId) {
+        const { data: linkRow } = await supabase.from("share_links").select("data").eq("id", shareId).single();
+        if (linkRow?.data) {
+          const decoded = decodeListCompact(linkRow.data as string);
+          loadList(decoded);
+          lastSavedRef.current = encodeList(decoded);
+          setDirty(false);
+        }
+      } else if (sharedDataRef.current) {
         loadList(sharedDataRef.current);
         lastSavedRef.current = encodeList(sharedDataRef.current);
         sharedDataRef.current = null;
         setDirty(false);
       } else if (preLogin) {
         // Restore state from before the login redirect
+        preLoginUsedRef.current = true;
         const decoded = decodeList(preLogin);
         loadList(decoded);
         lastSavedRef.current = "[]";
         setDirty(true);
-      } else {
+      } else if (!preLoginUsedRef.current) {
         // Auto-load last opened project (or most recent)
         const lastId = localStorage.getItem(LAST_PROJECT_KEY);
         const target =
@@ -169,21 +211,31 @@ export const useSbjSync = (
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!active) return;
       if (user) {
         userIdRef.current = user.id;
         void fetchAndHydrate(user.id);
       } else {
-        const preLogin = sessionStorage.getItem(PRE_LOGIN_KEY);
-        if (preLogin) sessionStorage.removeItem(PRE_LOGIN_KEY);
-        if (preLogin) {
-          loadList(decodeList(preLogin));
-          lastSavedRef.current = preLogin;
+        const shareId = shareLinkIdRef.current;
+        shareLinkIdRef.current = null;
+        const preLogin = preLoginRef.current;
+        preLoginRef.current = null;
+        if (shareId) {
+          const { data: linkRow } = await supabase.from("share_links").select("data").eq("id", shareId).single();
+          if (!active) return;
+          if (linkRow?.data) {
+            const decoded = decodeListCompact(linkRow.data as string);
+            loadList(decoded);
+            lastSavedRef.current = encodeList(decoded);
+          }
         } else if (sharedDataRef.current) {
           loadList(sharedDataRef.current);
           lastSavedRef.current = encodeList(sharedDataRef.current);
           sharedDataRef.current = null;
+        } else if (preLogin) {
+          loadList(decodeList(preLogin));
+          lastSavedRef.current = preLogin;
         }
         setDirty(false);
         setLoading(false);
@@ -200,6 +252,7 @@ export const useSbjSync = (
         }
       } else {
         // Logged out
+        preLoginUsedRef.current = false;
         setProjects([]);
         setCurrentProjectId(null);
         setCurrentProjectTitle(null);
@@ -395,14 +448,20 @@ export const useSbjSync = (
 
   // ─── Share URL / modal ────────────────────────────────────────────────────────
 
-  const getShareUrl = useCallback(() => {
-    const encoded = encodeListCompact(listRef.current);
-    const url = new URL(window.location.href);
-    url.searchParams.set("share", encoded);
-    return url.toString();
+  const openShare = useCallback(async () => {
+    setShareLoading(true);
+    try {
+      const encoded = encodeListCompact(listRef.current);
+      const id = genShareId();
+      await supabase.from("share_links").insert({ id, data: encoded });
+      const url = new URL(window.location.href);
+      url.searchParams.set("s", id);
+      setShareUrl(url.toString());
+    } finally {
+      setShareLoading(false);
+    }
   }, []);
 
-  const openShare = useCallback(() => setShareUrl(getShareUrl()), [getShareUrl]);
   const closeShare = useCallback(() => setShareUrl(null), []);
 
   return {
@@ -413,9 +472,9 @@ export const useSbjSync = (
     signIn,
     saveNow,
     shareUrl,
+    shareLoading,
     openShare,
     closeShare,
-    getShareUrl,
     projects,
     currentProjectId,
     currentProjectTitle,

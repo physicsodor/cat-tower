@@ -4,7 +4,7 @@ import SbjShareModal from "./SbjShareModal";
 
 const SbjAuthPanel = () => {
   const { user, signOut } = useAuth();
-  const { saveNow, dirty, savePending, currentProjectTitle, openPicker, openShare, closeShare, shareUrl, signIn } = useSbjSyncCtx();
+  const { saveNow, dirty, savePending, currentProjectTitle, openPicker, openShare, closeShare, shareUrl, shareLoading, signIn } = useSbjSyncCtx();
 
   return (
     <div className="sbj-auth-panel">
@@ -31,8 +31,8 @@ const SbjAuthPanel = () => {
           >
             {savePending ? "저장 중..." : "저장"}
           </button>
-          <button className="sbj-auth-btn" onClick={openShare}>
-            공유
+          <button className="sbj-auth-btn" onClick={openShare} disabled={shareLoading}>
+            {shareLoading ? "공유 중..." : "공유"}
           </button>
           <button className="sbj-auth-btn" onClick={signOut}>
             로그아웃
@@ -40,8 +40,8 @@ const SbjAuthPanel = () => {
         </>
       ) : (
         <>
-          <button className="sbj-auth-btn" onClick={openShare}>
-            공유
+          <button className="sbj-auth-btn" onClick={openShare} disabled={shareLoading}>
+            {shareLoading ? "공유 중..." : "공유"}
           </button>
           <button className="sbj-auth-btn" onClick={signIn}>
             Google 로그인
