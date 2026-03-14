@@ -1,12 +1,13 @@
 import { buildChainLevelMap, type ChainMap } from "@/features/subject/types/Chain/chainOp";
 import type { Curriculum, Subject } from "@/features/subject/types/Curriculum/Curriculum";
 import type { FamilyMap } from "@/features/subject/types/Family/familyOp";
-
-const REM = 16;
-const ROW_GAP = 2 * REM;   // 인접 행 간 최소 간격 (edge-to-edge)
-const COL_GAP = 1.5 * REM; // 인접 열 간 최소 간격 (edge-to-edge)
-const DEFAULT_W = 160;
-const DEFAULT_H = 48;
+import {
+  LAYOUT_ROW_GAP as ROW_GAP,
+  LAYOUT_COL_GAP as COL_GAP,
+  LAYOUT_DEFAULT_W as DEFAULT_W,
+  LAYOUT_DEFAULT_H as DEFAULT_H,
+  LAYOUT_ITER as ITER,
+} from "@/features/subject/constants";
 
 export function computeAutoLayout(
   list: ReadonlyArray<Curriculum>,
@@ -55,7 +56,6 @@ export function computeAutoLayout(
   for (const s of subjects) idx2x.set(s.idx, s.x);
 
   // ── Step 5: Barycenter 반복 (rule 2, 3) ───────────────────────────────────
-  const ITER = 10;
   for (let iter = 0; iter < ITER; iter++) {
     // Bottom-up: 노드 x = nxt 이웃의 x 중앙값 (rule 3)
     for (let i = sortedLevels.length - 2; i >= 0; i--) {

@@ -4,6 +4,7 @@ import type { Curriculum, Subject, Course } from "../types/Curriculum/Curriculum
 import type { FamilyMap } from "../types/Family/familyOp";
 import { getNewIdx } from "../types/IdxItem/idxItemOp";
 import { removePre } from "../types/Chain/chainOp";
+import { PASTE_OFFSET } from "@/features/subject/constants";
 
 const isEditingText = () => {
   const el = document.activeElement;
@@ -63,7 +64,6 @@ export const useSbjClipboard = (
 
     const newIdxSet = new Set<number>();
     const newItems: Curriculum[] = [];
-    const OFFSET = 40;
 
     for (const [newMom, group] of momGroups) {
       const existingLast = idx2family.get(newMom)?.last ?? null;
@@ -87,8 +87,8 @@ export const useSbjClipboard = (
             mom: newMom,
             bro: bros[i],
             pre: newPre,
-            x: item.x + OFFSET,
-            y: item.y + OFFSET,
+            x: item.x + PASTE_OFFSET,
+            y: item.y + PASTE_OFFSET,
           });
         }
       });

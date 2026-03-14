@@ -1,12 +1,9 @@
 import { useMemo } from "react";
 import { decodeList } from "../../types/Curriculum/curriculumCodec";
 import type { Curriculum } from "../../types/Curriculum/Curriculum";
+import { THUMB_W as W, THUMB_H as H, THUMB_PAD as PAD } from "@/features/subject/constants";
 
 type Props = { data: string };
-
-const W = 200;
-const H = 130;
-const PAD = 14;
 
 export const ProjectThumbnail = ({ data }: Props) => {
   const subjects = useMemo(() => {

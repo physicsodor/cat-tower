@@ -6,6 +6,7 @@ import {
   limitBytes,
 } from "@/components/TextEditor";
 import TextEditor from "@/components/TextEditor";
+import { SHORT_MAX_BYTES, DESC_MAX_BYTES } from "@/features/subject/constants";
 
 type Fields = { title: string; short?: string; content: string; description: string };
 
@@ -76,9 +77,9 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
               <label>약칭</label>
               <input
                 value={draftShort}
-                onChange={(e) => setDraftShort(limitBytes(e.target.value, 10))}
+                onChange={(e) => setDraftShort(limitBytes(e.target.value, SHORT_MAX_BYTES))}
               />
-              <span className="sbj-edit-bytes">{shortBytes}/10</span>
+              <span className="sbj-edit-bytes">{shortBytes}/{SHORT_MAX_BYTES}</span>
             </div>
             <div className="sbj-edit-row -top">
               <label>내용</label>
@@ -88,9 +89,9 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
               <label>요약</label>
               <input
                 value={draftDescription}
-                onChange={(e) => setDraftDescription(limitBytes(e.target.value, 20))}
+                onChange={(e) => setDraftDescription(limitBytes(e.target.value, DESC_MAX_BYTES))}
               />
-              <span className="sbj-edit-bytes">{descBytes}/20</span>
+              <span className="sbj-edit-bytes">{descBytes}/{DESC_MAX_BYTES}</span>
             </div>
             <div className="sbj-edit-btns">
               <button className="sbj-edit-btn" onClick={onCancel}>취소</button>

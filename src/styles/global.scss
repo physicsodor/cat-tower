@@ -653,3 +653,32 @@ $proj-z: 600;
   opacity: 0.5;
   z-index: var(--z-ghost);
 }
+
+.sbj-ctrl-btns-panel {
+  position: fixed;
+  z-index: var(--z-sbj-ctrl);
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.sbj-ctrl-btn {
+  padding: 6px 10px;
+  background: var(--ic-btn-bg, #eeeeee);
+  border: 1.5px solid var(--ic-btn-border, #bbbbbb);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font: inherit;
+  &:hover { background: var(--ic-btn-hover-bg, #dddddd); }
+  &:active {
+    background: var(--ic-btn-active-bg, #bbbbbb);
+    color: var(--ic-btn-active-color, inherit);
+  }
+}

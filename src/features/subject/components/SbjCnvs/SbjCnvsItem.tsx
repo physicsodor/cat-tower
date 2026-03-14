@@ -4,6 +4,7 @@ import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../context/SbjDataContext";
 import { stripMarkup, truncateBytes } from "../../utils/markup";
+import { CONTENT_PREVIEW_BYTES } from "@/features/subject/constants";
 
 type PE = React.PointerEvent | PointerEvent;
 
@@ -11,7 +12,7 @@ const getDesc = (info: { description: string; content: string }): string => {
   if (info.description) return info.description;
   if (info.content) {
     const plain = stripMarkup(info.content).trim();
-    return plain ? truncateBytes(plain, 20, "...") : "내용 없음";
+    return plain ? truncateBytes(plain, CONTENT_PREVIEW_BYTES, "...") : "내용 없음";
   }
   return "내용 없음";
 };

@@ -3,6 +3,7 @@ import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum"
 import { supabase } from "@/features/auth/supabase";
 import { decodeList, encodeList } from "../types/Curriculum/curriculumCodec";
 import type { Project } from "../types/Project";
+import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 
 /** Subject들의 bounding box 중심이 (0,0)이 되도록 x,y를 평행이동 */
 function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curriculum> {
@@ -15,8 +16,6 @@ function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curricu
   if (cx === 0 && cy === 0) return list;
   return list.map((c) => c.sbjType === "SUBJECT" ? { ...c, x: c.x - cx, y: c.y - cy } : c);
 }
-
-const LAST_PROJECT_KEY = "lastProjectId";
 
 export const useSbjSync = (
   list: ReadonlyArray<Curriculum>,

@@ -1,4 +1,4 @@
-const BASE_STROKE = 4;
+import { CURVE_BASE_STROKE as BASE_STROKE } from "@/features/subject/constants";
 
 type Props = {
   sourcePos: { x: number; y: number };
