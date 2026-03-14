@@ -249,6 +249,7 @@
       padding-left: var(--G-M);
       padding-right: var(--G-L);
       border: none;
+      touch-action: none;
       &:hover {
         background-color: m.black-a(0.1);
       }

@@ -20,6 +20,7 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
     if (ghost) document.body.removeChild(ghost);
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("pointerup", onPointerUp);
+    document.removeEventListener("pointercancel", onPointerUp);
   }, [onPointerMove]);
 
   const onPointerDown = useCallback(
@@ -45,6 +46,7 @@ export const useDragGhost = <T extends HTMLElement = HTMLElement>() => {
 
       document.addEventListener("pointermove", onPointerMove);
       document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerUp);
     },
     [onPointerMove, onPointerUp]
   );

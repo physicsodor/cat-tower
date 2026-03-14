@@ -22,6 +22,12 @@ const SbjTreeItem = ({ idx, title }: Props) => {
     setDir(null);
   };
 
+  /** 드래그 취소 (pointercancel 등) */
+  const onCancel = () => {
+    treeDrag.set(new Set());
+    setDir(null);
+  };
+
   /** 드래그 입력에서 벗어남 */
   const onLeave = () => setDir(null);
 
@@ -61,6 +67,7 @@ const SbjTreeItem = ({ idx, title }: Props) => {
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
+        onPointerCancel={onCancel}
         onPointerLeave={onLeave}
       >
         {title}

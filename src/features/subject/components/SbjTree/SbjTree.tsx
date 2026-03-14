@@ -71,6 +71,7 @@ const SbjTree = () => {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
         <svg viewBox="0 0 24 24" width="32" height="32">
           <circle cx="12" cy="12" r="11" />
