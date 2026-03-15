@@ -9,7 +9,7 @@ import {
 import type { Camera } from "./InfiniteCanvasContext";
 
 export const useTouchPinch = (
-  canvasRef: RefObject<HTMLDivElement>,
+  canvasRef: RefObject<HTMLDivElement | null>,
   minZoom: number,
   maxZoom: number,
   cameraRef: MutableRefObject<Camera>,

@@ -7,7 +7,7 @@ import {
 import type { Camera } from "./InfiniteCanvasContext";
 
 export const useWheelZoom = (
-  canvasRef: RefObject<HTMLDivElement>,
+  canvasRef: RefObject<HTMLDivElement | null>,
   minZoom: number,
   maxZoom: number,
   setCamera: Dispatch<SetStateAction<Camera>>,
@@ -19,7 +19,10 @@ export const useWheelZoom = (
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
       setCamera((prev) => {
-        const newZoom = Math.max(minZoom, Math.min(maxZoom, prev.zoom * factor));
+        const newZoom = Math.max(
+          minZoom,
+          Math.min(maxZoom, prev.zoom * factor),
+        );
         const ratio = newZoom / prev.zoom;
         return {
           zoom: newZoom,
