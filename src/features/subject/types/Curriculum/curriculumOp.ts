@@ -22,9 +22,9 @@ type SbjInfo =
       x: number;
       y: number;
     };
-// type SbjMap = ReadonlyMap<number, SbjInfo>;
+type SbjMap = ReadonlyMap<number, SbjInfo>;
 
-const buildSbjMap = (list: ReadonlyArray<Curriculum>): Map<number, SbjInfo> => {
+const buildSbjMap = (list: ReadonlyArray<Curriculum>): SbjMap => {
   const idx2sbj = new Map<number, SbjInfo>();
   for (const item of list) {
     const { title, sbjType } = item;
@@ -148,6 +148,7 @@ const getNewItem = (
 export {
   buildSbjMap,
   type SbjInfo,
+  type SbjMap,
   addSubject,
   addCourse,
   deleteSubject,

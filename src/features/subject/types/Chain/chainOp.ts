@@ -119,31 +119,11 @@ const removePre = <T extends Chain, S extends IdxItem>(
   return { updater };
 };
 
-const buildChainLevelMap = (idx2chain: ChainMap): Map<number, number> => {
-  const idx2chainLevel = new Map<number, number>();
-
-  // idx2chain의 대상이 되는 요소를 체인이라 하겠다.
-  // 체인 A, B에 대해 A.pre.has(B.idx)라면 B→A라 하겠다.
-  // B→A이면 B.nxt.has(A.idx)이다.
-  // 체인은 acyclic하다.
-  // 모든 체인은 level이 할당되어야 한다.
-  // B→A이면 B.level < A.level이어야 한다.
-  // (normalize) S = {x | A→...→x or x→...→A}이면 S의 원소들의 가장 작은 level은 0이어야 한다.
-  // B→A일 때 B.level === A.level-1인 경우(tight edge)가 최대한 많아지도록 level을 할당해야 한다.
-  // suffix tight를 선호한다.
-  //   - DAG가 consistent(임의의 두 노드 사이의 모든 경로 길이가 같음)이면 모든 엣지를 tight하게 할 수 있다.
-  //     이 경우 undirected BFS로 고유한 fully-tight 할당을 구한다.
-  //   - inconsistent이면 ASAP → ALAP(suffix) 순으로 fallback한다.
-  //     ALAP: 싱크의 레벨은 ASAP 값으로 고정, 비싱크는 min(후계자 레벨) - 1.
-  // 확인: A→B→C, D→E→F→G, D→C, H→G → A=0,B=1,C=2,D=1,E=2,F=3,G=4,H=3 ✓
-
-  if (idx2chain.size === 0) return idx2chainLevel;
-
+const getPartition = (idx2chain: ChainMap): number[][] => {
+  const components: number[][] = [];
   const globalVisited = new Set<number>();
   for (const startIdx of idx2chain.keys()) {
     if (globalVisited.has(startIdx)) continue;
-
-    // ── 약연결 컴포넌트 탐색 ──
     const component: number[] = [];
     const compQ = [startIdx];
     globalVisited.add(startIdx);
@@ -158,6 +138,21 @@ const buildChainLevelMap = (idx2chain: ChainMap): Map<number, number> => {
         }
       }
     }
+    components.push(component);
+  }
+  return components;
+};
+
+const buildChainLevelMap = (
+  idx2chain: ChainMap,
+  partition: number[][],
+): Map<number, number> => {
+  const idx2chainLevel = new Map<number, number>();
+
+  if (idx2chain.size === 0) return idx2chainLevel;
+
+  for (const component of partition) {
+    const startIdx = component[0];
 
     // ── fully-tight BFS 시도 (undirected: 순방향 +1, 역방향 -1) ──
     const tempLevel = new Map<number, number>([[startIdx, 0]]);
@@ -272,4 +267,4 @@ const buildChainLevelMap = (idx2chain: ChainMap): Map<number, number> => {
 };
 
 export type { ChainMap };
-export { buildChainMap, setPre, removePre, buildChainLevelMap };
+export { buildChainMap, setPre, removePre, getPartition, buildChainLevelMap };
