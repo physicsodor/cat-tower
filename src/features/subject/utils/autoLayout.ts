@@ -162,18 +162,19 @@ const computeAutoLayout = (
   };
 
   const assignX = (c: Cluster): void => {
-    // ── Leaf cluster: place roots with COLUMN_GAP ──
+    // ── Leaf cluster: place roots compactly (tight packing) ──
     if (c.childClusters.length === 0) {
-      // rootIdxs already sorted by initial x
+      // rootIdxs already sorted by initial x; first root stays, rest are packed tightly
       for (let i = 1; i < c.rootIdxs.length; i++) {
         const prev = c.rootIdxs[i - 1];
         const curr = c.rootIdxs[i];
-        const minX =
+        xPos.set(
+          curr,
           (xPos.get(prev) ?? 0) +
-          getSize(prev).w / 2 +
-          LAYOUT_COL_GAP +
-          getSize(curr).w / 2;
-        if ((xPos.get(curr) ?? 0) < minX) xPos.set(curr, minX);
+            getSize(prev).w / 2 +
+            LAYOUT_COL_GAP +
+            getSize(curr).w / 2,
+        );
       }
       recomputeEnv(c);
       return;
@@ -183,12 +184,11 @@ const computeAutoLayout = (
 
     for (const ch of c.childClusters) assignX(ch);
 
-    // Pack child clusters with COLUMN_GAP (move as rigid units)
+    // Compact-pack child clusters (tight: exactly COLUMN_GAP between adjacent clusters)
     for (let i = 1; i < c.childClusters.length; i++) {
       const prev = c.childClusters[i - 1];
       const curr = c.childClusters[i];
-      const minLeft = prev.right + LAYOUT_COL_GAP;
-      if (curr.left < minLeft) shiftCluster(curr, minLeft - curr.left);
+      shiftCluster(curr, prev.right + LAYOUT_COL_GAP - curr.left);
     }
 
     // Set each root's x = center of its direct nxt nodes' envelope
