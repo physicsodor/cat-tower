@@ -188,7 +188,8 @@ export const useSbjSync = (
         setDirty(true);
       } else if (!preLoginUsedRef.current) {
         // Auto-load last opened project (or most recent)
-        const lastId = localStorage.getItem(LAST_PROJECT_KEY);
+        // sessionStorage: per-tab, localStorage: fallback for new tabs
+        const lastId = sessionStorage.getItem(LAST_PROJECT_KEY) ?? localStorage.getItem(LAST_PROJECT_KEY);
         const target =
           fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
 
@@ -198,6 +199,7 @@ export const useSbjSync = (
           lastSavedRef.current = encodeList(decoded);
           setCurrentProjectId(target.id);
           setCurrentProjectTitle(target.title);
+          sessionStorage.setItem(LAST_PROJECT_KEY, target.id);
           localStorage.setItem(LAST_PROJECT_KEY, target.id);
           setDirty(false);
         }
@@ -322,6 +324,7 @@ export const useSbjSync = (
           setProjects((prev) => [proj, ...prev]);
           setCurrentProjectId(proj.id);
           setCurrentProjectTitle(proj.title);
+          sessionStorage.setItem(LAST_PROJECT_KEY, proj.id);
           localStorage.setItem(LAST_PROJECT_KEY, proj.id);
         }
       }
@@ -348,6 +351,7 @@ export const useSbjSync = (
       lastSavedRef.current = encodeList(decoded);
       setCurrentProjectId(project.id);
       setCurrentProjectTitle(project.title);
+      sessionStorage.setItem(LAST_PROJECT_KEY, project.id);
       localStorage.setItem(LAST_PROJECT_KEY, project.id);
       setDirty(false);
       setIsPickerOpen(false);
@@ -368,6 +372,7 @@ export const useSbjSync = (
     lastSavedRef.current = "[]";
     setCurrentProjectId(null);
     setCurrentProjectTitle("새 프로젝트");
+    sessionStorage.removeItem(LAST_PROJECT_KEY);
     localStorage.removeItem(LAST_PROJECT_KEY);
     setDirty(false);
     setIsPickerOpen(false);
@@ -384,6 +389,7 @@ export const useSbjSync = (
       if (currentProjectIdRef.current === id) {
         setCurrentProjectId(null);
         setCurrentProjectTitle(null);
+        sessionStorage.removeItem(LAST_PROJECT_KEY);
         localStorage.removeItem(LAST_PROJECT_KEY);
       }
     },

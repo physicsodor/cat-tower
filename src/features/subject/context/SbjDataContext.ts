@@ -1,12 +1,12 @@
 import { createContext, useContext } from "react";
-import type { SbjInfo } from "../types/Curriculum/curriculumOp";
+import type { SbjMap } from "../types/Curriculum/curriculumOp";
 import type { FamilyMap, BroDir } from "../types/Family/familyOp";
 import type { ChainMap } from "../types/Chain/chainOp";
 import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "@/components/InfiniteCanvas";
 
 type SbjDataContextValue = {
-  idx2sbj: Map<number, SbjInfo>;
+  idx2sbj: SbjMap;
   idx2family: FamilyMap;
   idx2chain: ChainMap;
   addSbj: () => void;
