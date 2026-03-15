@@ -4,7 +4,7 @@ export const LAYOUT_ROW_GAP = 2 * LAYOUT_REM; // 인접 행 간 최소 간격 (e
 export const LAYOUT_COL_GAP = 1.5 * LAYOUT_REM; // 인접 열 간 최소 간격 (edge-to-edge)
 export const LAYOUT_DEFAULT_W = 160;
 export const LAYOUT_DEFAULT_H = 48;
-export const LAYOUT_ITER = 10;
+// export const LAYOUT_ITER = 10;
 export const LAYOUT_PARTITION_GAP = 4 * LAYOUT_REM; // 파티션 간 간격 (edge-to-edge)
 
 // ── Subject 수정 글자 수 제한 ──────────────────────────────────────────────
