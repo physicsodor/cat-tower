@@ -3,12 +3,13 @@ import {
   useRef,
   type Dispatch,
   type MutableRefObject,
+  type RefObject,
   type SetStateAction,
 } from "react";
 import type { Camera } from "./InfiniteCanvasContext";
 
 export const useTouchPinch = (
-  canvasRef: MutableRefObject<HTMLDivElement | null>,
+  canvasRef: RefObject<HTMLDivElement>,
   minZoom: number,
   maxZoom: number,
   cameraRef: MutableRefObject<Camera>,

@@ -6,165 +6,323 @@ import {
 import type { SbjMap } from "../types/Curriculum/curriculumOp";
 import {
   LAYOUT_COL_GAP,
-  LAYOUT_DEFAULT_H,
-  LAYOUT_DEFAULT_W,
-  LAYOUT_PARTITION_GAP,
   LAYOUT_ROW_GAP,
+  LAYOUT_PARTITION_GAP,
+  LAYOUT_DEFAULT_W,
+  LAYOUT_DEFAULT_H,
 } from "../constants";
 
-export const computeAutoLayout = (
+interface Cluster {
+  level: number;
+  rootIdxs: number[];
+  childClusters: Cluster[];
+  left: number;
+  right: number;
+}
+
+const computeAutoLayout = (
   idx2chain: ChainMap,
   idx2sbj: SbjMap,
   sizes?: Map<number, { w: number; h: number }>,
 ): Map<number, { x: number; y: number }> => {
+  const result = new Map<number, { x: number; y: number }>();
+
+  const subjectIdxs: number[] = [];
+  for (const [idx, info] of idx2sbj)
+    if (info.sbjType === "SUBJECT" && idx2chain.has(idx))
+      subjectIdxs.push(idx);
+  if (subjectIdxs.length === 0) return result;
+
+  const getSize = (idx: number) =>
+    sizes?.get(idx) ?? { w: LAYOUT_DEFAULT_W, h: LAYOUT_DEFAULT_H };
+
   const partition = getPartition(idx2chain);
   const idx2level = buildChainLevelMap(idx2chain, partition);
-  const result = new Map<number, { x: number; y: number }>();
-  if (idx2chain.size === 0) return result;
 
-  const getW = (idx: number) => sizes?.get(idx)?.w ?? LAYOUT_DEFAULT_W;
-  const getH = (idx: number) => sizes?.get(idx)?.h ?? LAYOUT_DEFAULT_H;
-  const getOrigX = (idx: number) => {
-    const info = idx2sbj.get(idx);
-    return info?.sbjType === "SUBJECT" ? info.x : 0;
+  // x positions: initialized from current layout, adjusted in-place
+  const xPos = new Map<number, number>();
+  for (const idx of subjectIdxs) {
+    const s = idx2sbj.get(idx);
+    xPos.set(idx, s?.sbjType === "SUBJECT" ? s.x : 0);
+  }
+
+  // ── Partition helpers ────────────────────────────────────────────────────
+
+  // Group same-level nodes: A and B are in the same group if they share any
+  // transitive descendant within scope (union-find on nxtSet intersection).
+  const groupBySharedDesc = (
+    nodes: number[],
+    scope: Set<number>,
+  ): number[][] => {
+    const par = new Map<number, number>(nodes.map(n => [n, n]));
+    const find = (x: number): number => {
+      if (par.get(x) !== x) par.set(x, find(par.get(x)!));
+      return par.get(x)!;
+    };
+    const union = (a: number, b: number) => par.set(find(a), find(b));
+
+    for (let i = 0; i < nodes.length; i++) {
+      const aNxt = idx2chain.get(nodes[i])?.nxtSet;
+      if (!aNxt) continue;
+      for (let j = i + 1; j < nodes.length; j++) {
+        const bNxt = idx2chain.get(nodes[j])?.nxtSet;
+        if (!bNxt) continue;
+        for (const n of aNxt) {
+          if (scope.has(n) && bNxt.has(n)) {
+            union(nodes[i], nodes[j]);
+            break;
+          }
+        }
+      }
+    }
+
+    const groups = new Map<number, number[]>();
+    for (const n of nodes) {
+      const r = find(n);
+      if (!groups.has(r)) groups.set(r, []);
+      groups.get(r)!.push(n);
+    }
+    return [...groups.values()];
   };
 
-  // ── per-partition layout ───────────────────────────────────────────────────
-  const allPos: Map<number, { x: number; y: number }>[] = [];
+  // Recursively build the hierarchical cluster tree.
+  // nodeSet: all nodes belonging to this sub-tree (levels >= `level`).
+  const buildClusters = (nodeSet: Set<number>, level: number): Cluster[] => {
+    const roots = [...nodeSet]
+      .filter(n => idx2level.get(n) === level)
+      .sort((a, b) => (xPos.get(a) ?? 0) - (xPos.get(b) ?? 0));
+    if (roots.length === 0) return [];
 
+    const groups = groupBySharedDesc(roots, nodeSet);
+    groups.sort((ga, gb) => {
+      const ma = ga.reduce((s, n) => s + (xPos.get(n) ?? 0), 0) / ga.length;
+      const mb = gb.reduce((s, n) => s + (xPos.get(n) ?? 0), 0) / gb.length;
+      return ma - mb;
+    });
+
+    return groups.map(rootIdxs => {
+      const childSet = new Set<number>();
+      for (const r of rootIdxs)
+        for (const d of idx2chain.get(r)?.nxtSet ?? [])
+          if (nodeSet.has(d)) childSet.add(d);
+      return {
+        level,
+        rootIdxs,
+        childClusters: buildClusters(childSet, level + 1),
+        left: 0,
+        right: 0,
+      };
+    });
+  };
+
+  // Build one set of clusters per connected component, then merge.
+  const topClusters: Cluster[] = [];
   for (const comp of partition) {
-    if (comp.length === 0) continue;
-
-    // group by level
-    const levelMap = new Map<number, number[]>();
-    for (const idx of comp) {
-      const lv = idx2level.get(idx) ?? 0;
-      const arr = levelMap.get(lv);
-      if (arr) arr.push(idx);
-      else levelMap.set(lv, [idx]);
-    }
-    const levels = [...levelMap.keys()].sort((a, b) => a - b);
-
-    // ── y: rules 1-3 ─────────────────────────────────────────────────────────
-    // y[n+1] = y[n] + maxH(n)/2 + ROW_GAP + maxH(n+1)/2  (edge-to-edge = ROW_GAP)
-    const levelY = new Map<number, number>();
-    let cumY = 0;
-    for (let i = 0; i < levels.length; i++) {
-      if (i > 0) {
-        const prevMaxH = Math.max(...levelMap.get(levels[i - 1])!.map(getH));
-        const currMaxH = Math.max(...levelMap.get(levels[i])!.map(getH));
-        cumY += prevMaxH / 2 + LAYOUT_ROW_GAP + currMaxH / 2;
-      }
-      levelY.set(levels[i], cumY);
-    }
-
-    // ── x: rules 4, 7, 9-14 ──────────────────────────────────────────────────
-    // bottom-up: children placed before parents
-    const xPos = new Map<number, number>(
-      comp.map((idx) => [idx, getOrigX(idx)]),
+    const compSet = new Set(
+      comp.filter(idx => idx2sbj.get(idx)?.sbjType === "SUBJECT"),
     );
+    if (compSet.size === 0) continue;
+    topClusters.push(...buildClusters(compSet, 0));
+  }
+  topClusters.sort((ca, cb) => {
+    const ma =
+      ca.rootIdxs.reduce((s, n) => s + (xPos.get(n) ?? 0), 0) /
+      ca.rootIdxs.length;
+    const mb =
+      cb.rootIdxs.reduce((s, n) => s + (xPos.get(n) ?? 0), 0) /
+      cb.rootIdxs.length;
+    return ma - mb;
+  });
 
-    // house center = center of bbox of nxt nodes
-    const houseCenter = (idx: number): number | null => {
-      const nxt = [...(idx2chain.get(idx)?.nxt ?? [])].filter((n) =>
-        idx2chain.has(n),
-      );
-      if (nxt.length === 0) return null;
-      const left = Math.min(...nxt.map((n) => xPos.get(n)! - getW(n) / 2));
-      const right = Math.max(...nxt.map((n) => xPos.get(n)! + getW(n) / 2));
-      return (left + right) / 2;
-    };
+  // ── x assignment ─────────────────────────────────────────────────────────
 
-    for (let i = levels.length - 1; i >= 0; i--) {
-      const lv = levels[i];
-      const nodes = levelMap.get(lv)!;
+  const shiftCluster = (c: Cluster, delta: number): void => {
+    if (delta === 0) return;
+    for (const r of c.rootIdxs) xPos.set(r, (xPos.get(r) ?? 0) + delta);
+    for (const ch of c.childClusters) shiftCluster(ch, delta);
+    c.left += delta;
+    c.right += delta;
+  };
 
-      // ideal x: house center if has children, else current x (rule 7, 9)
-      const items = nodes.map((idx) => ({
-        idx,
-        ideal: houseCenter(idx) ?? 0,
-      }));
+  const recomputeEnv = (c: Cluster): void => {
+    const ls: number[] = [];
+    const rs: number[] = [];
+    for (const r of c.rootIdxs) {
+      const { w } = getSize(r);
+      const x = xPos.get(r) ?? 0;
+      ls.push(x - w / 2);
+      rs.push(x + w / 2);
+    }
+    for (const ch of c.childClusters) {
+      ls.push(ch.left);
+      rs.push(ch.right);
+    }
+    c.left = Math.min(...ls);
+    c.right = Math.max(...rs);
+  };
 
-      // sort by ideal x; preserve original x order for ties (rule 13)
-      items.sort(
-        (a, b) => a.ideal - b.ideal || getOrigX(a.idx) - getOrigX(b.idx),
-      );
-
-      // forward pass: enforce COL_GAP (rule 4)
-      const pos = items.map((s) => s.ideal);
-      for (let j = 1; j < items.length; j++) {
+  const assignX = (c: Cluster): void => {
+    // ── Leaf cluster: place roots with COLUMN_GAP ──
+    if (c.childClusters.length === 0) {
+      // rootIdxs already sorted by initial x
+      for (let i = 1; i < c.rootIdxs.length; i++) {
+        const prev = c.rootIdxs[i - 1];
+        const curr = c.rootIdxs[i];
         const minX =
-          pos[j - 1] +
-          getW(items[j - 1].idx) / 2 +
+          (xPos.get(prev) ?? 0) +
+          getSize(prev).w / 2 +
           LAYOUT_COL_GAP +
-          getW(items[j].idx) / 2;
-        if (pos[j] < minX) pos[j] = minX;
+          getSize(curr).w / 2;
+        if ((xPos.get(curr) ?? 0) < minX) xPos.set(curr, minX);
       }
+      recomputeEnv(c);
+      return;
+    }
 
-      // center actual bbox around ideal bbox center (compact, rule 14)
-      if (items.length > 0) {
-        const idealLeft = Math.min(...items.map((s) => s.ideal - getW(s.idx) / 2));
-        const idealRight = Math.max(
-          ...items.map((s) => s.ideal + getW(s.idx) / 2),
+    // ── Non-leaf: recurse, pack children, then set root positions ──
+
+    for (const ch of c.childClusters) assignX(ch);
+
+    // Pack child clusters with COLUMN_GAP (move as rigid units)
+    for (let i = 1; i < c.childClusters.length; i++) {
+      const prev = c.childClusters[i - 1];
+      const curr = c.childClusters[i];
+      const minLeft = prev.right + LAYOUT_COL_GAP;
+      if (curr.left < minLeft) shiftCluster(curr, minLeft - curr.left);
+    }
+
+    // Set each root's x = center of its direct nxt nodes' envelope
+    for (const rootIdx of c.rootIdxs) {
+      const nxt = [...(idx2chain.get(rootIdx)?.nxt ?? [])].filter(n =>
+        xPos.has(n),
+      );
+      if (nxt.length === 0) continue;
+      const nl = Math.min(...nxt.map(n => (xPos.get(n) ?? 0) - getSize(n).w / 2));
+      const nr = Math.max(...nxt.map(n => (xPos.get(n) ?? 0) + getSize(n).w / 2));
+      xPos.set(rootIdx, (nl + nr) / 2);
+    }
+
+    // Re-sort roots by updated x
+    c.rootIdxs.sort((a, b) => (xPos.get(a) ?? 0) - (xPos.get(b) ?? 0));
+
+    // For each root, record which child clusters it "owns"
+    // (child clusters whose roots overlap with this root's direct nxt)
+    const owned = new Map<number, Cluster[]>();
+    for (const rootIdx of c.rootIdxs) {
+      const nxtSet = new Set(idx2chain.get(rootIdx)?.nxt ?? []);
+      owned.set(
+        rootIdx,
+        c.childClusters.filter(ch => ch.rootIdxs.some(r => nxtSet.has(r))),
+      );
+    }
+
+    // Enforce COLUMN_GAP between root nodes.
+    // When a root needs to shift right, move its owned child clusters with it.
+    for (let i = 1; i < c.rootIdxs.length; i++) {
+      const prev = c.rootIdxs[i - 1];
+      const curr = c.rootIdxs[i];
+      const minX =
+        (xPos.get(prev) ?? 0) +
+        getSize(prev).w / 2 +
+        LAYOUT_COL_GAP +
+        getSize(curr).w / 2;
+      const currX = xPos.get(curr) ?? 0;
+      if (currX < minX) {
+        const delta = minX - currX;
+        for (const ch of owned.get(curr) ?? []) shiftCluster(ch, delta);
+        // Recompute curr's x from (possibly moved) nxt nodes
+        const nxt = [...(idx2chain.get(curr)?.nxt ?? [])].filter(n =>
+          xPos.has(n),
         );
-        const actualLeft = pos[0] - getW(items[0].idx) / 2;
-        const actualRight =
-          pos[pos.length - 1] + getW(items[pos.length - 1].idx) / 2;
-        const shift =
-          (idealLeft + idealRight) / 2 - (actualLeft + actualRight) / 2;
-        if (shift !== 0)
-          for (let j = 0; j < pos.length; j++) pos[j] += shift;
-      }
-
-      for (let j = 0; j < items.length; j++) {
-        xPos.set(items[j].idx, pos[j]);
+        if (nxt.length > 0) {
+          const nl = Math.min(
+            ...nxt.map(n => (xPos.get(n) ?? 0) - getSize(n).w / 2),
+          );
+          const nr = Math.max(
+            ...nxt.map(n => (xPos.get(n) ?? 0) + getSize(n).w / 2),
+          );
+          xPos.set(curr, (nl + nr) / 2);
+        } else {
+          xPos.set(curr, minX);
+        }
       }
     }
 
-    const pPos = new Map<number, { x: number; y: number }>();
-    for (const idx of comp) {
-      pPos.set(idx, {
-        x: xPos.get(idx)!,
-        y: levelY.get(idx2level.get(idx)!)!,
-      });
-    }
-    allPos.push(pPos);
+    recomputeEnv(c);
+  };
+
+  for (const c of topClusters) assignX(c);
+
+  // Space top-level clusters with PARTITION_GAP
+  for (let i = 1; i < topClusters.length; i++) {
+    const prev = topClusters[i - 1];
+    const curr = topClusters[i];
+    const minLeft = prev.right + LAYOUT_PARTITION_GAP;
+    if (curr.left < minLeft) shiftCluster(curr, minLeft - curr.left);
   }
 
-  // ── stack partitions left-to-right with PARTITION_GAP (rule 5) ─────────────
-  let rightEdge = 0;
-  for (const pPos of allPos) {
-    let minX = Infinity,
-      maxX = -Infinity;
-    for (const [idx, { x }] of pPos) {
-      minX = Math.min(minX, x - getW(idx) / 2);
-      maxX = Math.max(maxX, x + getW(idx) / 2);
-    }
-    const shift = rightEdge - minX;
-    for (const [idx, pos] of pPos) {
-      result.set(idx, { x: pos.x + shift, y: pos.y });
-    }
-    rightEdge = maxX + shift + LAYOUT_PARTITION_GAP;
+  // Center x at 0
+  {
+    const allL = Math.min(
+      ...subjectIdxs.map(idx => (xPos.get(idx) ?? 0) - getSize(idx).w / 2),
+    );
+    const allR = Math.max(
+      ...subjectIdxs.map(idx => (xPos.get(idx) ?? 0) + getSize(idx).w / 2),
+    );
+    const cx = (allL + allR) / 2;
+    for (const idx of subjectIdxs) xPos.set(idx, (xPos.get(idx) ?? 0) - cx);
   }
 
-  // ── normalize: center bounding box at origin (rule 8) ─────────────────────
-  if (result.size > 0) {
-    let minX = Infinity,
-      maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
-    for (const [idx, { x, y }] of result) {
-      minX = Math.min(minX, x - getW(idx) / 2);
-      maxX = Math.max(maxX, x + getW(idx) / 2);
-      minY = Math.min(minY, y - getH(idx) / 2);
-      maxY = Math.max(maxY, y + getH(idx) / 2);
-    }
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-    for (const [idx, { x, y }] of result) {
-      result.set(idx, { x: x - cx, y: y - cy });
-    }
+  // ── y assignment ─────────────────────────────────────────────────────────
+
+  const lv2nodes = new Map<number, number[]>();
+  for (const idx of subjectIdxs) {
+    const lv = idx2level.get(idx) ?? 0;
+    if (!lv2nodes.has(lv)) lv2nodes.set(lv, []);
+    lv2nodes.get(lv)!.push(idx);
+  }
+  const levels = [...lv2nodes.keys()].sort((a, b) => a - b);
+
+  // y increases per level; center-to-center gap = prevH/2 + ROW_GAP + currH/2
+  let curY = 0;
+  const lv2y = new Map<number, number>([[levels[0], 0]]);
+  for (let i = 1; i < levels.length; i++) {
+    const prevMaxH = Math.max(
+      ...(lv2nodes.get(levels[i - 1]) ?? []).map(idx => getSize(idx).h),
+    );
+    const currMaxH = Math.max(
+      ...(lv2nodes.get(levels[i]) ?? []).map(idx => getSize(idx).h),
+    );
+    curY += prevMaxH / 2 + LAYOUT_ROW_GAP + currMaxH / 2;
+    lv2y.set(levels[i], curY);
+  }
+
+  // Center y at 0
+  {
+    const allT = Math.min(
+      ...subjectIdxs.map(
+        idx => (lv2y.get(idx2level.get(idx) ?? 0) ?? 0) - getSize(idx).h / 2,
+      ),
+    );
+    const allB = Math.max(
+      ...subjectIdxs.map(
+        idx => (lv2y.get(idx2level.get(idx) ?? 0) ?? 0) + getSize(idx).h / 2,
+      ),
+    );
+    const cy = (allT + allB) / 2;
+    for (const [lv, y] of lv2y) lv2y.set(lv, y - cy);
+  }
+
+  // ── Assemble result ───────────────────────────────────────────────────────
+
+  for (const idx of subjectIdxs) {
+    result.set(idx, {
+      x: xPos.get(idx) ?? 0,
+      y: lv2y.get(idx2level.get(idx) ?? 0) ?? 0,
+    });
   }
 
   return result;
 };
+
+export { computeAutoLayout };

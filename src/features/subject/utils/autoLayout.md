@@ -23,7 +23,7 @@
 - A.level = B.level이고, A.nxt와 B.nxt의 교집합이 empty이고 A와 B가 같은 partition에 속할 때, A와 B를 이웃이라 부른다.
 - A.nxt에 속하는 노드들을 envelope하는 직사각형을 A.house라 쓴다.
 
-## 무조건 따라야 하는 규칙
+## 정렬 규칙
 
 1. 같은 level의 노드들은 같은 y를 갖는다.
 2. A.level < B.level이면 A.y < B.y이다.

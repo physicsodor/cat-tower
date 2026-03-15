@@ -1,18 +1,20 @@
 @use "variables" as v;
+@use "sass:map";
+@use "sass:string";
 
 // 변수 세팅
 @mixin C-setting($H-step) {
-  @if map-has-key(v.$H-steps, $H-step) == false {
+  @if map.has-key(v.$H-steps, $H-step) == false {
     @error "Unknown hue number: #{$H-step}";
   }
-  $H: map-get(v.$H-steps, $H-step);
+  $H: map.get(v.$H-steps, $H-step);
   $C: v.$C-fixed;
   @each $LL, $L in v.$L-steps {
     --C-#{$LL}: oklch(#{$L} #{$C} #{$H});
   }
 }
 @function C-alpha($C-name, $alpha) {
-  @return unquote("oklch(from var(#{$C-name}) l c h / #{$alpha})");
+  @return string.unquote("oklch(from var(#{$C-name}) l c h / #{$alpha})");
 }
 @mixin G-setting {
   @each $GG, $G in v.$Gap {
@@ -62,14 +64,14 @@
 // Generates a static oklch color from $L-steps and $H-steps.
 // Uses $C-vivid (absolute chroma 0.15) — suitable for icon/text accent colors.
 @function C($L-step, $H-step) {
-  $L: map-get(v.$L-steps, $L-step);
-  $H: map-get(v.$H-steps, $H-step);
+  $L: map.get(v.$L-steps, $L-step);
+  $H: map.get(v.$H-steps, $H-step);
   @if not $L { @error "Unknown L-step: #{$L-step}"; }
   @if not $H { @error "Unknown H-step: #{$H-step}"; }
-  @return unquote("oklch(#{$L} #{v.$C-vivid} #{$H})");
+  @return string.unquote("oklch(#{$L} #{v.$C-vivid} #{$H})");
 }
 
 // Black with alpha — for overlays, hover/active tints, subtle borders.
 @function black-a($alpha) {
-  @return unquote("oklch(0% 0 0 / #{$alpha})");
+  @return string.unquote("oklch(0% 0 0 / #{$alpha})");
 }

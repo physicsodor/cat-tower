@@ -299,12 +299,12 @@
   width: v.$ctrl-handle;
   height: v.$ctrl-handle;
   cursor: grab;
+  user-select: none;
+  touch-action: none;
   @media (hover: none) {
     width: v.$ctrl-handle-touch;
     height: v.$ctrl-handle-touch;
   }
-  user-select: none;
-  touch-action: none;
   &:active {
     cursor: grabbing;
   }

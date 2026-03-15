@@ -1,13 +1,13 @@
 import {
   useEffect,
   type Dispatch,
-  type MutableRefObject,
+  type RefObject,
   type SetStateAction,
 } from "react";
 import type { Camera } from "./InfiniteCanvasContext";
 
 export const useWheelZoom = (
-  canvasRef: MutableRefObject<HTMLDivElement | null>,
+  canvasRef: RefObject<HTMLDivElement>,
   minZoom: number,
   maxZoom: number,
   setCamera: Dispatch<SetStateAction<Camera>>,

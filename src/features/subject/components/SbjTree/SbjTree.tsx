@@ -16,7 +16,7 @@ const clampPos = (x: number, y: number) => ({
 
 const SbjTree = () => {
   const [pos, setPos] = useState({ x: 16, y: 16 });
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const { undo, redo, canUndo, canRedo } = useSbjData();
 
