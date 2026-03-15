@@ -448,16 +448,11 @@ export const useSbjSync = (
         fetch(url, { method: "PATCH", headers, body, keepalive: true }).catch(() => {});
       } catch { /* ignore */ }
     };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") emergencySave();
-    };
     window.addEventListener("beforeunload", onBeforeUnload);
     window.addEventListener("pagehide", emergencySave);
-    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("pagehide", emergencySave);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 

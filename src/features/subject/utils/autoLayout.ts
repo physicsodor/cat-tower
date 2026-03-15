@@ -185,14 +185,23 @@ export const computeAutoLayout = (
       }
     }
 
-    // Final top-down then bottom-up:
-    // top-down aligns single-chain descendants (e.g. Range follows Worksheet),
-    // then bottom-up ensures each parent sits at the center of its house.
-    for (let li = 1; li < compLevels.length; li++) {
-      sortAndPlace(compLevel2idxs.get(compLevels[li])!, false);
-    }
+    // Final bottom-up: center each parent above its children's bounding box.
     for (let li = compLevels.length - 2; li >= 0; li--) {
       sortAndPlace(compLevel2idxs.get(compLevels[li])!, true);
+    }
+
+    // Single-chain alignment: if a node has exactly one child AND that child
+    // has exactly one parent, place the child directly under the parent.
+    // Propagates top-down so chains like Worksheet→Range→Multi-Range all align.
+    for (let li = 0; li < compLevels.length - 1; li++) {
+      for (const idx of compLevel2idxs.get(compLevels[li])!) {
+        const nxt = idx2chain.get(idx)?.nxt;
+        if (!nxt || nxt.size !== 1) continue;
+        const [child] = nxt;
+        const childPre = idx2chain.get(child)?.pre;
+        if (!childPre || childPre.size !== 1) continue;
+        pos.set(child, pos.get(idx)!);
+      }
     }
 
     // Build layout with y
