@@ -439,23 +439,6 @@ export const useSbjSync = (
       try {
         localStorage.setItem(DRAFT_KEY, encodeList(listRef.current));
       } catch { /* ignore */ }
-      const uid = userIdRef.current;
-      const pid = currentProjectIdRef.current;
-      const token = sessionTokenRef.current;
-      if (!uid || !pid || !token) return;
-      try {
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects?id=eq.${pid}`;
-        const body = JSON.stringify({
-          data: encodeList(normalizeCenter(listRef.current)),
-          updated_at: new Date().toISOString(),
-        });
-        const headers: Record<string, string> = {
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-        };
-        fetch(url, { method: "PATCH", headers, body, keepalive: true }).catch(() => {});
-      } catch { /* ignore */ }
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     window.addEventListener("pagehide", emergencySave);
