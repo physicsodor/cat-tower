@@ -71,6 +71,7 @@ export const useSbjSync = (
   const dirtyRef = useRef(false);
   const currentProjectIdRef = useRef<string | null>(null);
   const fetchingRef = useRef(false);
+  const hydratedRef = useRef(false);
   const sessionTokenRef = useRef<string | null>(null);
 
   // Shared data from URL ?share= param — consumed once on first render
@@ -160,6 +161,13 @@ export const useSbjSync = (
 
       setProjects(fetchedProjects);
 
+      // If already hydrated and user has unsaved changes, don't overwrite with server data
+      if (hydratedRef.current && dirtyRef.current) {
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
+      }
+
       // If shared URL data was present, show it instead of last project
       const shareId = shareLinkIdRef.current;
       shareLinkIdRef.current = null;
@@ -205,6 +213,7 @@ export const useSbjSync = (
         }
       }
 
+      hydratedRef.current = true;
       setLoading(false);
       fetchingRef.current = false;
     },
