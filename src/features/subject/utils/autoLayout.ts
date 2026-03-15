@@ -121,47 +121,61 @@ function layoutComponent(
     }
   }
 
-  // ── 초기 col 할당: 최하위 레벨부터 위로 ──────────────────────────────────
-  // nxt가 있는 노드: nxt col들의 하위 중앙값을 target으로 사용
-  // nxt가 없는 노드: withNxt 노드들의 오른쪽에 배치
+  // ── 초기 col 할당: 상위→하위 재귀 서브트리 배치 ─────────────────────────────
   const idx2col = new Map<number, number>();
+  const compSet = new Set(idxs);
 
-  // 최하위 레벨: idx 오름차순으로 0, 1, 2...
-  const deepestLv = sortedLevels[sortedLevels.length - 1];
-  [...level2idxs.get(deepestLv)!]
-    .sort((a, b) => a - b)
-    .forEach((idx, i) => idx2col.set(idx, i));
+  // 루트 노드 탐색 (컴포넌트 내에 pre가 없는 노드)
+  const roots = idxs
+    .filter(idx => ![...(idx2chain.get(idx)?.pre ?? [])].some(p => compSet.has(p)))
+    .sort((a, b) => a - b);
 
-  // 위 레벨들: nxt 기반 target → 나머지는 오른쪽 끝
-  for (let i = sortedLevels.length - 2; i >= 0; i--) {
-    const lv = sortedLevels[i];
-    const idxsAtLv = level2idxs.get(lv)!;
-    const withTarget: Array<{ idx: number; targetCol: number }> = [];
-    const noTarget: number[] = [];
-
-    for (const idx of idxsAtLv) {
-      const nxtCols = [...(idx2chain.get(idx)?.nxt ?? [])]
-        .filter((n) => idx2col.has(n))
-        .map((n) => idx2col.get(n)!)
-        .sort((a, b) => a - b);
-      if (nxtCols.length > 0) {
-        withTarget.push({ idx, targetCol: median(nxtCols) });
-      } else {
-        noTarget.push(idx);
+  // BFS spanning tree 구성 (DAG 공유 자식 처리: 각 노드는 최초 방문 부모의 자식으로만 등록)
+  const spanChildren = new Map<number, number[]>(idxs.map(idx => [idx, []]));
+  const bfsVisited = new Set(roots);
+  const bfsQueue = [...roots];
+  while (bfsQueue.length > 0) {
+    const node = bfsQueue.shift()!;
+    for (const child of [...(idx2chain.get(node)?.nxt ?? [])]
+      .filter(n => compSet.has(n))
+      .sort((a, b) => a - b)) {
+      if (!bfsVisited.has(child)) {
+        bfsVisited.add(child);
+        spanChildren.get(node)!.push(child);
+        bfsQueue.push(child);
       }
     }
+  }
 
-    withTarget.sort((a, b) =>
-      a.targetCol !== b.targetCol ? a.targetCol - b.targetCol : a.idx - b.idx
-    );
-    noTarget.sort((a, b) => a - b);
+  // 서브트리 너비 계산 (leaf = 1, internal node = 자식 너비의 합)
+  const subtreeW = new Map<number, number>();
+  function calcWidth(idx: number): number {
+    const ch = spanChildren.get(idx)!;
+    const w = ch.length === 0 ? 1 : ch.reduce((s, c) => s + calcWidth(c), 0);
+    subtreeW.set(idx, w);
+    return w;
+  }
+  for (const r of roots) calcWidth(r);
 
-    const maxWithTargetCol =
-      withTarget.length > 0 ? Math.max(...withTarget.map((w) => w.targetCol)) : -1;
-    for (const { idx, targetCol } of withTarget) idx2col.set(idx, targetCol);
-    noTarget.forEach((idx, i) => idx2col.set(idx, maxWithTargetCol + 1 + i));
+  // 하향식 col 배정: 각 노드는 자신에게 할당된 범위의 중앙(floor)에 배치
+  function assignCols(idx: number, start: number): void {
+    const w = subtreeW.get(idx)!;
+    idx2col.set(idx, start + Math.floor((w - 1) / 2));
+    let childCursor = start;
+    for (const child of spanChildren.get(idx)!) {
+      assignCols(child, childCursor);
+      childCursor += subtreeW.get(child)!;
+    }
+  }
+  let colCursor = 0;
+  for (const r of roots) {
+    assignCols(r, colCursor);
+    colCursor += subtreeW.get(r)!;
+  }
 
-    resolveColOverlaps(idxsAtLv, idx2col);
+  // 각 레벨에서 overlap 해소 (초기 배치 안정화)
+  for (const lv of sortedLevels) {
+    resolveColOverlaps(level2idxs.get(lv)!, idx2col);
   }
 
   // ── Integer-column barycenter 반복 ────────────────────────────────────────

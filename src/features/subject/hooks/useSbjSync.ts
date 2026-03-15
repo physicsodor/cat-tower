@@ -6,6 +6,7 @@ import type { Project } from "../types/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 
 const PRE_LOGIN_KEY = "sbj_pre_login_state";
+const DRAFT_KEY = "sbj_draft";
 const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function genShareId(): string {
@@ -70,6 +71,7 @@ export const useSbjSync = (
   const dirtyRef = useRef(false);
   const currentProjectIdRef = useRef<string | null>(null);
   const fetchingRef = useRef(false);
+  const sessionTokenRef = useRef<string | null>(null);
 
   // Shared data from URL ?share= param — consumed once on first render
   const sharedDataRef = useRef<Curriculum[] | null | undefined>(undefined);
@@ -215,6 +217,9 @@ export const useSbjSync = (
       if (!active) return;
       if (user) {
         userIdRef.current = user.id;
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          sessionTokenRef.current = session?.access_token ?? null;
+        });
         void fetchAndHydrate(user.id);
       } else {
         const shareId = shareLinkIdRef.current;
@@ -236,6 +241,12 @@ export const useSbjSync = (
         } else if (preLogin) {
           loadList(decodeList(preLogin));
           lastSavedRef.current = preLogin;
+        } else {
+          const draft = localStorage.getItem(DRAFT_KEY);
+          if (draft) {
+            loadList(decodeList(draft));
+            lastSavedRef.current = draft;
+          }
         }
         setDirty(false);
         setLoading(false);
@@ -244,6 +255,7 @@ export const useSbjSync = (
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const uid = session?.user?.id ?? null;
       userIdRef.current = uid;
+      sessionTokenRef.current = session?.access_token ?? null;
       if (uid) {
         if (event === "SIGNED_IN") {
           // 실제 로그인 시에만 hydration — 토큰 갱신(TOKEN_REFRESHED) 등은 건너뜀
@@ -315,6 +327,7 @@ export const useSbjSync = (
       }
       lastSavedRef.current = encoded;
       setDirty(false);
+      localStorage.removeItem(DRAFT_KEY);
     } finally {
       setSavePending(false);
     }
@@ -399,19 +412,22 @@ export const useSbjSync = (
 
   const closePicker = useCallback(() => setIsPickerOpen(false), []);
 
-  // ─── Beforeunload / pagehide ──────────────────────────────────────────────
+  // ─── Beforeunload / pagehide / visibilitychange ───────────────────────────
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!dirtyRef.current) return;
       e.preventDefault();
-      e.returnValue = "";
     };
-    const onPageHide = () => {
+    const emergencySave = () => {
       if (!dirtyRef.current) return;
+      try {
+        localStorage.setItem(DRAFT_KEY, encodeList(listRef.current));
+      } catch { /* ignore */ }
       const uid = userIdRef.current;
       const pid = currentProjectIdRef.current;
-      if (!uid || !pid) return;
+      const token = sessionTokenRef.current;
+      if (!uid || !pid || !token) return;
       try {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects?id=eq.${pid}`;
         const body = JSON.stringify({
@@ -420,19 +436,22 @@ export const useSbjSync = (
         });
         const headers: Record<string, string> = {
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          authorization: `Bearer ${token}`,
           "content-type": "application/json",
         };
         fetch(url, { method: "PATCH", headers, body, keepalive: true }).catch(() => {});
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") emergencySave();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
-    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pagehide", emergencySave);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
-      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pagehide", emergencySave);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
