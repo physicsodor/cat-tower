@@ -205,19 +205,8 @@ const computeAutoLayout = (
     // Re-sort roots by updated x
     c.rootIdxs.sort((a, b) => (xPos.get(a) ?? 0) - (xPos.get(b) ?? 0));
 
-    // For each root, record which child clusters it "owns"
-    // (child clusters whose roots overlap with this root's direct nxt)
-    const owned = new Map<number, Cluster[]>();
-    for (const rootIdx of c.rootIdxs) {
-      const nxtSet = new Set(idx2chain.get(rootIdx)?.nxt ?? []);
-      owned.set(
-        rootIdx,
-        c.childClusters.filter(ch => ch.rootIdxs.some(r => nxtSet.has(r))),
-      );
-    }
-
-    // Enforce COLUMN_GAP between root nodes.
-    // When a root needs to shift right, move its owned child clusters with it.
+    // Enforce COLUMN_GAP between root nodes (relatives).
+    // Children are shared among relatives, so only the root node itself moves.
     for (let i = 1; i < c.rootIdxs.length; i++) {
       const prev = c.rootIdxs[i - 1];
       const curr = c.rootIdxs[i];
@@ -226,26 +215,7 @@ const computeAutoLayout = (
         getSize(prev).w / 2 +
         LAYOUT_COL_GAP +
         getSize(curr).w / 2;
-      const currX = xPos.get(curr) ?? 0;
-      if (currX < minX) {
-        const delta = minX - currX;
-        for (const ch of owned.get(curr) ?? []) shiftCluster(ch, delta);
-        // Recompute curr's x from (possibly moved) nxt nodes
-        const nxt = [...(idx2chain.get(curr)?.nxt ?? [])].filter(n =>
-          xPos.has(n),
-        );
-        if (nxt.length > 0) {
-          const nl = Math.min(
-            ...nxt.map(n => (xPos.get(n) ?? 0) - getSize(n).w / 2),
-          );
-          const nr = Math.max(
-            ...nxt.map(n => (xPos.get(n) ?? 0) + getSize(n).w / 2),
-          );
-          xPos.set(curr, (nl + nr) / 2);
-        } else {
-          xPos.set(curr, minX);
-        }
-      }
+      if ((xPos.get(curr) ?? 0) < minX) xPos.set(curr, minX);
     }
 
     recomputeEnv(c);

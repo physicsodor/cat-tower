@@ -2,7 +2,6 @@ import {
   useEffect,
   useRef,
   type Dispatch,
-  type MutableRefObject,
   type RefObject,
   type SetStateAction,
 } from "react";
@@ -12,9 +11,9 @@ export const useTouchPinch = (
   canvasRef: RefObject<HTMLDivElement | null>,
   minZoom: number,
   maxZoom: number,
-  cameraRef: MutableRefObject<Camera>,
+  cameraRef: RefObject<Camera>,
   setCamera: Dispatch<SetStateAction<Camera>>,
-  isPinching: MutableRefObject<boolean>,
+  isPinching: RefObject<boolean>,
 ): void => {
   const touchPoints = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{
