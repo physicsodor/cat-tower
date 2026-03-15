@@ -18,6 +18,8 @@ interface Cluster {
   childClusters: Cluster[];
   left: number;
   right: number;
+  // per-level bounds used for level-aware compact packing
+  levelBounds: Map<number, { left: number; right: number }>;
 }
 
 const computeAutoLayout = (
@@ -111,6 +113,7 @@ const computeAutoLayout = (
         childClusters: buildClusters(childSet, level + 1),
         left: 0,
         right: 0,
+        levelBounds: new Map(),
       };
     });
   };
@@ -142,9 +145,19 @@ const computeAutoLayout = (
     for (const ch of c.childClusters) shiftCluster(ch, delta);
     c.left += delta;
     c.right += delta;
+    for (const b of c.levelBounds.values()) {
+      b.left += delta;
+      b.right += delta;
+    }
   };
 
   const recomputeEnv = (c: Cluster): void => {
+    c.levelBounds.clear();
+    const mergeLv = (lv: number, l: number, r: number) => {
+      const b = c.levelBounds.get(lv);
+      if (!b) c.levelBounds.set(lv, { left: l, right: r });
+      else { b.left = Math.min(b.left, l); b.right = Math.max(b.right, r); }
+    };
     const ls: number[] = [];
     const rs: number[] = [];
     for (const r of c.rootIdxs) {
@@ -152,13 +165,27 @@ const computeAutoLayout = (
       const x = xPos.get(r) ?? 0;
       ls.push(x - w / 2);
       rs.push(x + w / 2);
+      mergeLv(c.level, x - w / 2, x + w / 2);
     }
     for (const ch of c.childClusters) {
       ls.push(ch.left);
       rs.push(ch.right);
+      for (const [lv, b] of ch.levelBounds) mergeLv(lv, b.left, b.right);
     }
     c.left = Math.min(...ls);
     c.right = Math.max(...rs);
+  };
+
+  // Returns the shift needed to place curr so that at every level shared with
+  // prev the gap is exactly LAYOUT_COL_GAP (tight level-aware packing).
+  const levelPackShift = (prev: Cluster, curr: Cluster): number => {
+    let shift = -Infinity;
+    for (const [lv, pb] of prev.levelBounds) {
+      const cb = curr.levelBounds.get(lv);
+      if (!cb) continue;
+      shift = Math.max(shift, pb.right + LAYOUT_COL_GAP - cb.left);
+    }
+    return shift === -Infinity ? 0 : shift;
   };
 
   const assignX = (c: Cluster): void => {
@@ -184,11 +211,10 @@ const computeAutoLayout = (
 
     for (const ch of c.childClusters) assignX(ch);
 
-    // Compact-pack child clusters (tight: exactly COLUMN_GAP between adjacent clusters)
+    // Compact-pack child clusters using per-level bounds (envelopes may overlap)
     for (let i = 1; i < c.childClusters.length; i++) {
-      const prev = c.childClusters[i - 1];
-      const curr = c.childClusters[i];
-      shiftCluster(curr, prev.right + LAYOUT_COL_GAP - curr.left);
+      const shift = levelPackShift(c.childClusters[i - 1], c.childClusters[i]);
+      shiftCluster(c.childClusters[i], shift);
     }
 
     // Set each root's x = center of its direct nxt nodes' envelope
