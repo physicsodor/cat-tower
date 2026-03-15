@@ -344,6 +344,7 @@
   &.-opn {
     max-height: v.$ctrl-panel-max-h;
     opacity: 1;
+    overflow-y: auto;
   }
 }
 

@@ -82,7 +82,7 @@ export const computeAutoLayout = (
       // ideal x: house center if has children, else current x (rule 7, 9)
       const items = nodes.map((idx) => ({
         idx,
-        ideal: houseCenter(idx) ?? xPos.get(idx)!,
+        ideal: houseCenter(idx) ?? 0,
       }));
 
       // sort by ideal x; preserve original x order for ties (rule 13)
