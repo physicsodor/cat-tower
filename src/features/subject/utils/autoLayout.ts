@@ -176,16 +176,18 @@ const computeAutoLayout = (
     c.right = Math.max(...rs);
   };
 
-  // Returns the shift needed to place curr so that at every level shared with
-  // prev the gap is exactly LAYOUT_COL_GAP (tight level-aware packing).
-  const levelPackShift = (prev: Cluster, curr: Cluster): number => {
-    let shift = -Infinity;
-    for (const [lv, pb] of prev.levelBounds) {
-      const cb = curr.levelBounds.get(lv);
-      if (!cb) continue;
-      shift = Math.max(shift, pb.right + LAYOUT_COL_GAP - cb.left);
+  const mergeLevelBounds = (
+    acc: Map<number, { left: number; right: number }>,
+    c: Cluster,
+  ) => {
+    for (const [lv, b] of c.levelBounds) {
+      const ex = acc.get(lv);
+      if (!ex) acc.set(lv, { left: b.left, right: b.right });
+      else {
+        ex.left = Math.min(ex.left, b.left);
+        ex.right = Math.max(ex.right, b.right);
+      }
     }
-    return shift === -Infinity ? 0 : shift;
   };
 
   const assignX = (c: Cluster): void => {
@@ -211,10 +213,22 @@ const computeAutoLayout = (
 
     for (const ch of c.childClusters) assignX(ch);
 
-    // Compact-pack child clusters using per-level bounds (envelopes may overlap)
-    for (let i = 1; i < c.childClusters.length; i++) {
-      const shift = levelPackShift(c.childClusters[i - 1], c.childClusters[i]);
-      shiftCluster(c.childClusters[i], shift);
+    // Compact-pack child clusters: compare each cluster against the accumulated
+    // level bounds of ALL previous siblings to avoid any same-level overlap.
+    if (c.childClusters.length > 0) {
+      const acc = new Map<number, { left: number; right: number }>();
+      mergeLevelBounds(acc, c.childClusters[0]);
+      for (let i = 1; i < c.childClusters.length; i++) {
+        const curr = c.childClusters[i];
+        let shift = -Infinity;
+        for (const [lv, pb] of acc) {
+          const cb = curr.levelBounds.get(lv);
+          if (!cb) continue;
+          shift = Math.max(shift, pb.right + LAYOUT_COL_GAP - cb.left);
+        }
+        if (shift !== -Infinity) shiftCluster(curr, shift);
+        mergeLevelBounds(acc, curr);
+      }
     }
 
     // Set each root's x = center of its direct nxt nodes' envelope
