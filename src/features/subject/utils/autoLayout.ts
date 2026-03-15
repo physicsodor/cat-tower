@@ -185,6 +185,11 @@ export const computeAutoLayout = (
       }
     }
 
+    // Final bottom-up pass: ensure each parent sits at the center of its house
+    for (let li = compLevels.length - 2; li >= 0; li--) {
+      sortAndPlace(compLevel2idxs.get(compLevels[li])!, true);
+    }
+
     // Build layout with y
     const layout = new Map<number, { x: number; y: number }>();
     for (const idx of comp) {
