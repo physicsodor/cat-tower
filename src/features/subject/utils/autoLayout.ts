@@ -185,7 +185,12 @@ export const computeAutoLayout = (
       }
     }
 
-    // Final bottom-up pass: ensure each parent sits at the center of its house
+    // Final top-down then bottom-up:
+    // top-down aligns single-chain descendants (e.g. Range follows Worksheet),
+    // then bottom-up ensures each parent sits at the center of its house.
+    for (let li = 1; li < compLevels.length; li++) {
+      sortAndPlace(compLevel2idxs.get(compLevels[li])!, false);
+    }
     for (let li = compLevels.length - 2; li >= 0; li--) {
       sortAndPlace(compLevel2idxs.get(compLevels[li])!, true);
     }
