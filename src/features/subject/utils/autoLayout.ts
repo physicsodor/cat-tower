@@ -161,6 +161,7 @@ const computeAutoLayout = (
         indeg.set(j, (indeg.get(j) ?? 1) - 1);
         if ((indeg.get(j) ?? 0) === 0) q.push(j);
       }
+
       q.sort((a, b) => a - b);
     }
 
@@ -170,6 +171,7 @@ const computeAutoLayout = (
 
     const propagateForward = (): boolean => {
       let changed = false;
+
       for (const cur of topo) {
         const curL = lvl.get(cur) ?? 0;
         for (const j of outAdj.get(cur) ?? []) {
@@ -180,13 +182,15 @@ const computeAutoLayout = (
           }
         }
       }
+
       return changed;
     };
 
     propagateForward();
 
-    // 2) Merge alignment + backward linear-chain compaction
-    const pullBackwardLinearChain = (startChild: number): boolean => {
+    // Pull backward only through maximal linear upstream chain:
+    // child has exactly one parent, parent has exactly one child.
+    const tightenLinearUpstream = (startChild: number): boolean => {
       let changed = false;
       let child = startChild;
 
@@ -199,17 +203,17 @@ const computeAutoLayout = (
         if (parentChildren.length !== 1) break;
 
         const target = (lvl.get(child) ?? 0) - 1;
-        if ((lvl.get(parent) ?? 0) < target) {
-          lvl.set(parent, target);
-          changed = true;
-        }
+        if ((lvl.get(parent) ?? 0) >= target) break;
 
+        lvl.set(parent, target);
+        changed = true;
         child = parent;
       }
 
       return changed;
     };
 
+    // 2) Merge alignment + 3) linear upstream tightening + 4) forward re-propagation
     let changed = true;
     while (changed) {
       changed = false;
@@ -226,7 +230,7 @@ const computeAutoLayout = (
             changed = true;
           }
 
-          if (pullBackwardLinearChain(p)) {
+          if (tightenLinearUpstream(p)) {
             changed = true;
           }
         }
@@ -239,7 +243,9 @@ const computeAutoLayout = (
 
     // Normalize so min(level) = 0
     let minL = Infinity;
-    for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
+    for (const idx of ids) {
+      minL = Math.min(minL, lvl.get(idx) ?? 0);
+    }
 
     for (const idx of ids) {
       lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
@@ -247,7 +253,6 @@ const computeAutoLayout = (
 
     return lvl;
   };
-
   const idx2level = new Map<number, number>();
   partitionIds.forEach((ids) => {
     const partLevels = computeLevelsForPartition(ids);

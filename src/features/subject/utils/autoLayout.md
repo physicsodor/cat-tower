@@ -97,7 +97,7 @@ A → B
 
 A.level < B.level
 
-Levels are computed in three stages.
+Levels are computed in multiple stages.
 
 ### 1. Base layering
 
@@ -119,50 +119,62 @@ with source nodes taking level 0.
 
 ### 2. Merge alignment
 
-Then repeatedly apply the following rule until no level changes.
+Then repeatedly apply the following rule.
 
 If a node M has two or more parents, then every parent of M
-must be placed immediately above M.
+is pulled upward toward M so that it is placed immediately above M.
 
 That is, for every P ∈ M.pre,
 
 P.level ≥ M.level − 1
 
-### 3. Backward chain compaction
+If P is already at or above that level, it is unchanged.
 
-If a node X is raised by merge alignment, then the raise is propagated
-backward through the maximal linear chain ending at X.
+### 3. Linear upstream tightening
+
+If a node is raised by merge alignment, the raise propagates backward
+through the maximal linear upstream chain ending at that node.
 
 Backward propagation continues from child C to parent P only when
 
 - C has exactly one parent, and
 - P has exactly one child.
 
-In that case,
+In that case, P is pulled upward toward C so that
 
 P.level ≥ C.level − 1
 
-This compacts the linear suffix of a branch so that shorter branches
-are aligned as close as possible to the merge node.
+Backward tightening stops when a branching node or a merge node is reached.
 
-After any raise, outgoing edge constraints must be propagated forward again
-so that for every edge A → B,
+### 4. Forward re-propagation
+
+After any raise, outgoing edge constraints must be enforced again.
+
+For every edge A → B,
 
 B.level ≥ A.level + 1
 
-Repeat merge alignment, backward chain compaction, and forward propagation
-until all levels stabilize.
+This forward propagation may raise additional descendants.
 
-After all levels are assigned, normalize the partition so that
+### 5. Fixed point
+
+Repeat merge alignment, linear upstream tightening, and forward re-propagation
+until no level changes.
+
+Levels are monotone during this process:
+they may increase, but never decrease.
+
+After all levels stabilize, normalize the partition so that
 
 min(level) = 0
 
 This definition ensures:
 
 - edge directions are respected
-- ordinary branches stay compact
+- ordinary branches remain compact
 - parents of a merge node are aligned immediately above the merge
-- shorter branches are right-aligned toward the merge through linear suffixes
+- the effect propagates only through linear upstream chains
+- connected chains are kept as tight as possible without introducing backward shifts
 
 ## 7. Partition
 
