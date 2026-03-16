@@ -97,38 +97,54 @@ A → B
 
 A.level < B.level
 
-Levels are computed so that nodes are placed as early as possible
-while respecting both parent and child constraints.
+Levels are computed in two stages.
 
-Procedure:
+### 1. Base layering
 
-1. Let parents(A) = A.pre  
-   Let children(A) = A.nxt
+First compute the most compact forward layering.
 
-2. For each node A define two bounds:
+- Every source node is assigned level 0.
+- Process nodes in topological order.
+- For each edge A → B, enforce
 
-lower(A) = max { level(P) + 1 | P ∈ parents(A) }  
-upper(A) = min { level(C) − 1 | C ∈ children(A) }
+B.level ≥ A.level + 1
 
-3. A node must satisfy
+- Assign each node the smallest level satisfying all incoming-edge constraints.
 
-lower(A) ≤ level(A) ≤ upper(A)
+Equivalently,
 
-4. The assigned level is the smallest integer satisfying the bounds:
+B.level = max { A.level + 1 | A ∈ B.pre }
 
-level(A) = lower(A)
+with source nodes taking level 0.
 
-unless this violates the child constraint.
+### 2. Merge alignment
 
-5. After all levels are computed, normalize the partition so that
+Then repeatedly apply the following rule until no level changes.
+
+If a node M has two or more parents, then every parent of M
+must be placed immediately above M.
+
+That is, for every P ∈ M.pre,
+
+P.level ≥ M.level − 1
+
+If a parent level is increased by this rule, then outgoing edge constraints
+must be propagated forward again so that for every edge A → B,
+
+B.level ≥ A.level + 1
+
+This merge-alignment step may raise levels of additional nodes.
+
+After all levels stabilize, normalize the partition so that
 
 min(level) = 0
 
-This produces a compact layering where:
+This definition ensures:
 
 - edge directions are respected
-- unnecessary vertical gaps are avoided
-- merge and branch structures remain visually balanced
+- ordinary branches stay compact
+- parents of a merge node are aligned immediately above the merge
+- the effect propagates consistently through the DAG
 
 ## 7. Partition
 

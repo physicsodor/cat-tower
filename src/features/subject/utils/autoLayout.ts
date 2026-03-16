@@ -128,27 +128,31 @@ const computeAutoLayout = (
 
     const indeg = new Map<number, number>();
     const outAdj = new Map<number, number[]>();
+    const inAdj = new Map<number, number[]>();
 
     for (const idx of ids) {
       indeg.set(idx, 0);
       outAdj.set(idx, []);
+      inAdj.set(idx, []);
     }
 
     for (const idx of ids) {
       for (const j of idx2chain.get(idx)?.nxt ?? []) {
         if (!idSet.has(j)) continue;
         outAdj.get(idx)!.push(j);
+        inAdj.get(j)!.push(idx);
         indeg.set(j, (indeg.get(j) ?? 0) + 1);
       }
     }
 
-    // ---------- topo ----------
+    // Topological order
     const q: number[] = [];
-    for (const idx of ids) if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
+    for (const idx of ids) {
+      if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
+    }
     q.sort((a, b) => a - b);
 
     const topo: number[] = [];
-
     while (q.length) {
       const cur = q.shift()!;
       topo.push(cur);
@@ -157,57 +161,55 @@ const computeAutoLayout = (
         indeg.set(j, (indeg.get(j) ?? 1) - 1);
         if ((indeg.get(j) ?? 0) === 0) q.push(j);
       }
-
       q.sort((a, b) => a - b);
     }
 
-    // ---------- forward (parent constraint) ----------
-    const lower = new Map<number, number>();
-    for (const idx of ids) lower.set(idx, 0);
+    // 1) Base forward compact layering
+    const lvl = new Map<number, number>();
+    for (const idx of ids) lvl.set(idx, 0);
 
     for (const cur of topo) {
-      const curL = lower.get(cur) ?? 0;
-
+      const curL = lvl.get(cur) ?? 0;
       for (const j of outAdj.get(cur) ?? []) {
-        lower.set(j, Math.max(lower.get(j) ?? 0, curL + 1));
+        lvl.set(j, Math.max(lvl.get(j) ?? 0, curL + 1));
       }
     }
 
-    // ---------- backward (child constraint) ----------
-    const upper = new Map<number, number>();
+    // 2) Merge alignment to fixed point
+    let changed = true;
+    while (changed) {
+      changed = false;
 
-    for (let i = topo.length - 1; i >= 0; i--) {
-      const idx = topo[i];
-      const children = outAdj.get(idx) ?? [];
+      // Raise parents of every merge node to child.level - 1
+      for (const m of topo) {
+        const parents = inAdj.get(m) ?? [];
+        if (parents.length < 2) continue;
 
-      if (children.length === 0) {
-        upper.set(idx, Infinity);
-        continue;
+        const target = (lvl.get(m) ?? 0) - 1;
+        for (const p of parents) {
+          if ((lvl.get(p) ?? 0) < target) {
+            lvl.set(p, target);
+            changed = true;
+          }
+        }
       }
 
-      let m = Infinity;
-
-      for (const c of children) {
-        m = Math.min(m, (upper.get(c) ?? Infinity) - 1);
+      // Re-propagate edge constraints forward after any raise
+      if (changed) {
+        for (const cur of topo) {
+          const curL = lvl.get(cur) ?? 0;
+          for (const j of outAdj.get(cur) ?? []) {
+            if ((lvl.get(j) ?? 0) < curL + 1) {
+              lvl.set(j, curL + 1);
+            }
+          }
+        }
       }
-
-      upper.set(idx, m);
     }
 
-    // ---------- choose level ----------
-    const lvl = new Map<number, number>();
-
-    for (const idx of topo) {
-      const lo = lower.get(idx) ?? 0;
-      const hi = upper.get(idx) ?? Infinity;
-
-      lvl.set(idx, Math.min(lo, hi));
-    }
-
-    // ---------- normalize ----------
+    // Normalize so min(level) = 0
     let minL = Infinity;
     for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
-
     for (const idx of ids) {
       lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
     }
