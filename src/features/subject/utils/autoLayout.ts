@@ -855,4 +855,4 @@ const computeAutoLayout = (
   return result;
 };
 
-export default computeAutoLayout;
+export { computeAutoLayout };
