@@ -142,13 +142,13 @@ const computeAutoLayout = (
       }
     }
 
+    // ---------- topo ----------
     const q: number[] = [];
-    for (const idx of ids) {
-      if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
-    }
+    for (const idx of ids) if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
     q.sort((a, b) => a - b);
 
     const topo: number[] = [];
+
     while (q.length) {
       const cur = q.shift()!;
       topo.push(cur);
@@ -157,34 +157,56 @@ const computeAutoLayout = (
         indeg.set(j, (indeg.get(j) ?? 1) - 1);
         if ((indeg.get(j) ?? 0) === 0) q.push(j);
       }
+
       q.sort((a, b) => a - b);
     }
 
-    // Reverse-topological latest-feasible layering:
-    // sink = 0
-    // parent = min(child - 1)
-    const lvl = new Map<number, number>();
+    // ---------- forward (parent constraint) ----------
+    const lower = new Map<number, number>();
+    for (const idx of ids) lower.set(idx, 0);
+
+    for (const cur of topo) {
+      const curL = lower.get(cur) ?? 0;
+
+      for (const j of outAdj.get(cur) ?? []) {
+        lower.set(j, Math.max(lower.get(j) ?? 0, curL + 1));
+      }
+    }
+
+    // ---------- backward (child constraint) ----------
+    const upper = new Map<number, number>();
 
     for (let i = topo.length - 1; i >= 0; i--) {
       const idx = topo[i];
-      const nxt = (outAdj.get(idx) ?? []).filter((j) => idSet.has(j));
+      const children = outAdj.get(idx) ?? [];
 
-      if (nxt.length === 0) {
-        lvl.set(idx, 0);
+      if (children.length === 0) {
+        upper.set(idx, Infinity);
         continue;
       }
 
-      let best = Infinity;
-      for (const j of nxt) {
-        best = Math.min(best, (lvl.get(j) ?? 0) - 1);
+      let m = Infinity;
+
+      for (const c of children) {
+        m = Math.min(m, (upper.get(c) ?? Infinity) - 1);
       }
-      lvl.set(idx, best);
+
+      upper.set(idx, m);
     }
 
-    let minL = Infinity;
-    for (const idx of ids) {
-      minL = Math.min(minL, lvl.get(idx) ?? 0);
+    // ---------- choose level ----------
+    const lvl = new Map<number, number>();
+
+    for (const idx of topo) {
+      const lo = lower.get(idx) ?? 0;
+      const hi = upper.get(idx) ?? Infinity;
+
+      lvl.set(idx, Math.min(lo, hi));
     }
+
+    // ---------- normalize ----------
+    let minL = Infinity;
+    for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
 
     for (const idx of ids) {
       lvl.set(idx, (lvl.get(idx) ?? 0) - minL);

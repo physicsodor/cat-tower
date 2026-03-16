@@ -97,31 +97,38 @@ A → B
 
 A.level < B.level
 
-Levels are assigned so that each node is placed as late as possible
-while satisfying all outgoing edge constraints.
+Levels are computed so that nodes are placed as early as possible
+while respecting both parent and child constraints.
 
 Procedure:
 
-1. Consider the nodes of a partition in reverse topological order.
+1. Let parents(A) = A.pre  
+   Let children(A) = A.nxt
 
-2. If a node A has no children (A.nxt = ∅),  
-   it is treated as a sink and assigned a base level.
+2. For each node A define two bounds:
 
-3. If a node A has children, its level is defined as
+lower(A) = max { level(P) + 1 | P ∈ parents(A) }  
+upper(A) = min { level(C) − 1 | C ∈ children(A) }
 
-A.level = min { B.level − 1 | B ∈ A.nxt }
+3. A node must satisfy
 
-This guarantees that A is placed immediately before its closest child.
+lower(A) ≤ level(A) ≤ upper(A)
 
-After all levels are assigned, normalize the partition so that
+4. The assigned level is the smallest integer satisfying the bounds:
+
+level(A) = lower(A)
+
+unless this violates the child constraint.
+
+5. After all levels are computed, normalize the partition so that
 
 min(level) = 0
 
-This definition ensures:
+This produces a compact layering where:
 
 - edge directions are respected
-- nodes are positioned as close as possible to their descendants
-- merge structures naturally pull parents toward the shared child level
+- unnecessary vertical gaps are avoided
+- merge and branch structures remain visually balanced
 
 ## 7. Partition
 
