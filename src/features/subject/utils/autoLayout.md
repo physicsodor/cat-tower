@@ -1,44 +1,452 @@
-# autoLayout.ts 작성 요청
+# autoLayout.ts Specification
 
-## 목적
+## 1. Goal
 
-- computeAutoLayout의 목적은 SbjCnvsItem(이하 노드)들이 서로 겹치지 않고 SbjCnvsCrv(이하 엣지)들이 가능한 서로 교차하지 않으며 전체적으로 노드들의 간격이 compact하게 배치되도록 하는 것이다.
+computeAutoLayout computes node coordinates for a DAG.
 
-## 정의 및 전제
+The layout uses a recursive block-tree algorithm.
 
-- 임의의 노드 A, B에 대해, 엣지 A→B가 부여될 수 있다.
-- B.pre = {x | x→B}이다.
-- A.nxt = {x | A→x}이다.
-- B.preSet = {x | x→...→B}이다. 따라서, B.pre는 B.preSet의 subset이다.
-- A.nxtSet = {x | A→...→x}이다. 따라서, A.nxt는 A.nxtSet의 subset이다.
-- B.pre가 empty이면 B는 source라 한다.
-- A.nxt가 empty이면 A는 sink라 한다.
-- idx2chain는 idx -> {pre, nxt, preSet, nxtSet} 매핑이다.
-- idx2sbj는 idx -> {x, y, ...} 매핑으로, x, y는 현재 노드 중앙의 위치를 의미한다.
-- sizes는 idx -> {w, h} 매핑으로, w, h는 노드의 가로, 세로 길이를 의미한다.
-- partition은 →로 연결된 노드들로 partition을 나눈 것이다.
-- 각 노드는 level이 부여되며, idx2level은 idx -> level 매핑이다.
-- level의 최소값은 0이다.
-- A.level = B.level이고, A.nxt와 B.nxt의 교집합이 non-empty일 때, A와 B를 친척이라 부른다. A와 B가 친척이면 A와 B는 당연히 같은 partition에 속한다.
-- A.level = B.level이고, A.nxt와 B.nxt의 교집합이 empty이고 A와 B가 같은 partition에 속할 때, A와 B를 이웃이라 부른다.
-- A.nxt에 속하는 노드들을 envelope하는 직사각형을 A.house라 쓴다.
+Blocks are processed from deepest to root.
 
-## 정렬 규칙
+Structure
 
-1. 같은 level의 노드들은 같은 y를 갖는다.
-2. A.level < B.level이면 A.y < B.y이다.
-3. 한 partition 내에서 임의의 level n에 대해 level이 n인 노드들과 level이 n+1인 노드들 사이의 간격 중 가장 작은 값은 LAYOUT_ROW_GAP이어야 한다. 만약 partition이 다르거나 인접한 level이 아닐 경우 이 규칙은 무시한다.
-4. 한 partition 내에서 같은 level의 노드들은 최소 LAYOUT_COLUMN_GAP 이상의 간격을 유지해야 한다.
-5. 서로 다른 두 partition의 노드들은 최소 LAYOUT_PARTITION_GAP 이상의 간격을 유지해야 한다.
-6. A와 B가 이웃이면, A.house와 B.house는 최소 LAYOUT_COLUMN_GAP 이상의 간격을 유지해야 한다.
-7. A.nxt가 non-empty이고 A의 친척이 없을 때, A.x는 A.house의 중앙의 x좌표와 같아야 한다. A.nxt의 노드들의 위치가 조정될 경우 A의 위치도 같이 조정되어야 한다.
-8. 최종적으로 모든 노드들을 envelop하는 직사각형의 중앙 위치가 원점이 되도록 normalize 한다.
+partition  
+ subpartition  
+ subpartition  
+ ...
 
-## 적절한 조정이 필요한 규칙
+Layout order
 
-9. {A, ..., B}가 친척일 때, A.x, ..., B.x는 각각 A.house, ..., B.house의 중앙의 x좌표를 기본으로 한다.
-10. 단, 규칙 9가 규칙 4, 5를 위반하는 경우 A.x, ..., B.x를 적절히 조정할 수 있다.
-11. 만약 규칙 10의 조정으로 인해 {A, ..., B}에 속하는 노드 C가 이웃인 노드 X에 대해서 정렬 규칙 4, 5를 위반하게 될 경우 위치를 적절히 조정한다. 단, {A, ..., B}와 그 nxtSet에 속하는 노드들의 x는 한꺼번에 동일하게 조정하고, C와 C.nxtSet에 속하는 노드들의 x는 한꺼번에 동일하게 조정한다.
-12. 규칙 9, 10, 11, 12, 또는 이 문서에 기술하지 않은 이유로 인해 임의의 노드의 x가 변경될 경우 규칙 7에 따른 위치 조정이 필요하다.
-13. 한 partition에서 같은 level에 있는 노드들의 순서는 위 규칙을 위반하지 않는 선에서 원래의 위치에 따른 순서를 가능한 보존한다.
-14. 위 규칙을 위반하지 않는 선에서 모든 노드들은 compact하게 배치되어야 한다. 즉, 모든 노드들을 envelop하는 직사각형의 가로길이를 최소화 해야 한다.
+1. layout deepest block
+2. layout parent block
+
+---
+
+## 2. Hard Constraints
+
+1. Nodes must not overlap.
+2. Minimum spacing must be respected.
+
+horizontal gap ≥ LAYOUT_COL_GAP  
+vertical gap ≥ LAYOUT_ROW_GAP  
+partition gap ≥ LAYOUT_PART_GAP
+
+3. Subpartition internal layout must remain unchanged in upper levels.
+4. Nodes in the same town share identical y coordinate.
+
+---
+
+## 3. Node Data
+
+Each node has
+
+idx : number  
+x : number (center)  
+y : number (center)  
+w : number  
+h : number
+
+Mappings
+
+idx2chain : idx → { pre, nxt, preSet, nxtSet }  
+idx2sbj : idx → { x, y }  
+sizes : idx → { w, h }
+
+Graph is DAG.
+
+---
+
+## 4. Graph Relations
+
+Directed edge
+
+A → B
+
+Sets
+
+A.pre = { x.idx | x → A }  
+A.nxt = { x.idx | A → x }
+
+Transitive sets
+
+A.preSet = { x.idx | x → ... → A }  
+A.nxtSet = { x.idx | A → ... → x }
+
+---
+
+## 5. Bounding Box
+
+Coordinates use center reference.
+
+left(A) = A.x - A.w / 2  
+right(A) = A.x + A.w / 2  
+top(A) = A.y - A.h / 2  
+bottom(A) = A.y + A.h / 2
+
+---
+
+## 6. Level
+
+level is defined once per partition.
+
+It satisfies longest-path layering.
+
+For any edge
+
+A → B
+
+A.level < B.level
+
+For any path
+
+A → ... → B
+
+let n be the node count of the longest path.
+
+Then
+
+A.level = B.level - n + 1
+
+Each partition is normalized so that
+
+min(level) = 0
+
+---
+
+## 7. Partition
+
+Partition = connected component ignoring edge direction.
+
+Each node has
+
+partId
+
+Partitions are processed independently.
+
+---
+
+## 8. Town
+
+A town is the set of nodes with
+
+same partition  
+same level
+
+All nodes in a town share identical y coordinate.
+
+Town bounding box = envelope(nodes)
+
+---
+
+## 9. House
+
+house(A) = envelope(A.nxt)
+
+Used to compute parent alignment.
+
+Nodes with no children have no house.
+
+---
+
+## 10. Kinship
+
+Nodes A and B are kin if
+
+A.nxt ∩ B.nxt ≠ ∅
+
+Strength
+
+kinship(A,B) = |A.nxt ∩ B.nxt|
+
+Kinship is used only inside the same median group.
+
+Heuristic rule (1-pass adjacent swap):
+
+Given nodes ordered
+
+A B C
+
+If
+
+kinship(A,C) > kinship(A,B)
+
+then swap B and C
+
+Result
+
+A C B
+
+This heuristic runs once per median group.
+
+---
+
+## 11. Block Decomposition
+
+Block S
+
+1. find nodes with minimum level
+2. remove them
+3. compute connected components ignoring direction
+
+components(T) means connected components of the induced subgraph on T.
+
+children(S) = components(S − minLevelNodes)
+
+---
+
+## 12. Recursive Layout
+
+layout_block(S)
+
+1 children = components(remove_min_level_nodes(S))
+
+2 for each child  
+ layout_block(child)
+
+3 order(children)
+
+4 place(children)
+
+5 parent_nodes = nodes in S with level = minLevel(S)
+
+6 order(parent_nodes)
+
+7 compute ideal x
+
+8 spacing sweep
+
+9 recenter
+
+Only parent_nodes are directly arranged.
+
+Child blocks behave as rigid bodies.
+
+---
+
+## 13. Child Block Ordering
+
+Children blocks are ordered using
+
+1 median score  
+2 existing x  
+3 idx2chain order
+
+Median score = median x of the child block's top-level nodes.
+
+existing x means the current x at this stage of layout.
+
+---
+
+## 14. Parent Node Ordering
+
+Parent row nodes are ordered by
+
+1 median(x of A.nxt)  
+2 kinship heuristic (within same median group)  
+3 existing x  
+4 idx2chain order
+
+Median equality
+
+abs(a − b) ≤ EPS_MEDIAN
+
+EPS_MEDIAN = 1e-6
+
+existing x refers to the current x at the time ordering is executed.
+
+---
+
+## 15. Ideal X
+
+For node A
+
+ideal(A) = center(house(A))
+
+Nodes with no children have no ideal.
+
+---
+
+## 16. Layout Item Abstraction
+
+All compact placement and sweep steps operate on layout items.
+
+A layout item may be
+
+1. a node
+2. a child block
+
+A node is treated as a special case of a block occupying exactly one level.
+
+Each layout item provides
+
+levels(item) = set of occupied levels
+
+levelLeft(item, level) = left boundary at that level  
+levelRight(item, level) = right boundary at that level
+
+centerX(item) = current center x  
+idealX(item) = ideal center x if defined
+
+shiftX(item, dx) = rigid x shift of the entire item
+
+For a node occupying level L
+
+levels(node) = {L}  
+levelLeft(node, L) = x - w / 2  
+levelRight(node, L) = x + w / 2
+
+For a child block
+
+levels(block) = levels occupied by the block  
+levelLeft(block, level) = row bbox left at that level  
+levelRight(block, level) = row bbox right at that level
+
+---
+
+## 17. Item Spacing Rule
+
+For two items A and B with fixed order
+
+A on the left  
+B on the right
+
+Let
+
+commonLevels = intersection(levels(A), levels(B))
+
+If commonLevels is empty, A and B impose no horizontal constraint.
+
+For each level in commonLevels define
+
+requiredShift(level) = levelRight(A, level) + LAYOUT_COL_GAP − levelLeft(B, level)
+
+Then
+
+requiredShift(A,B) = max(0, max over commonLevels requiredShift(level))
+
+This rule applies to
+
+node-node  
+node-block  
+block-block
+
+---
+
+## 18. Child Block Compact Placement
+
+Child blocks may span multiple levels.
+
+Given ordered child blocks
+
+B1, B2, ..., Bk
+
+place them in order while preserving internal layout.
+
+For each adjacent pair
+
+Bi, Bi+1
+
+shift Bi+1 by at least
+
+requiredShift(Bi, Bi+1)
+
+Nodes are treated as blocks occupying a single level.
+
+---
+
+## 19. Bilateral Sweep
+
+Parent-row items are already ordered.
+
+Each item initially sits at its ideal position if ideal exists.
+
+Items without ideal are assigned a temporary ideal before sweep.
+
+Rules for assigning temporary ideals:
+
+1. If n consecutive items have no ideal and are between two items A and B with ideals,
+   divide the interval between ideal(A) and ideal(B) into n+1 equal segments
+   and assign the intermediate points as their ideals.
+
+2. If n consecutive items have no ideal and only one side has an item A with ideal,
+   assign ideals by placing the items compactly adjacent to A using spacing rules.
+
+3. If the entire row contains only items without ideal,
+   compact them using spacing rules and normalize afterward.
+
+Anchor = center of the union bbox of all ideal positions.
+
+Split items by ideal center
+
+left chain = idealCenter ≤ anchor  
+right chain = idealCenter ≥ anchor
+
+Right chain is compacted left → right.
+
+Left chain is compacted right → left.
+
+Ideal positions are never violated.
+
+Spacing constraints use the layout item spacing rule.
+
+---
+
+## 20. Recenter
+
+anchor = center of ideal bbox
+
+current_center = center of actual bbox
+
+shift = anchor − current_center
+
+Apply shift to the entire row.
+
+Recenter affects x only.
+
+---
+
+## 21. Nodes Without Children
+
+Nodes with
+
+A.nxt = ∅
+
+have no house and no ideal.
+
+They participate in spacing and bilateral sweep using the temporary ideal rules.
+
+---
+
+## 22. Row Layout (Y axis)
+
+row height = max node height in that level
+
+Rows are placed so that bbox gap ≥ LAYOUT_ROW_GAP.
+
+Partitions preserve internal vertical layout.
+
+All partitions are vertically shifted so that level 0 rows share the same y.
+
+Finally the global layout bbox center y becomes 0.
+
+---
+
+## 23. Partition Placement
+
+Partitions are ordered by
+
+1 partition bbox center x  
+2 earliest idx2chain among level 0 nodes
+
+Partitions are packed left → right with gap
+
+LAYOUT_PART_GAP
+
+---
+
+## 24. Final Normalize
+
+Translate layout so that
+
+center_x = 0  
+center_y = 0
