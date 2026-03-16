@@ -97,7 +97,7 @@ A → B
 
 A.level < B.level
 
-Levels are computed in two stages.
+Levels are computed in three stages.
 
 ### 1. Base layering
 
@@ -128,14 +128,32 @@ That is, for every P ∈ M.pre,
 
 P.level ≥ M.level − 1
 
-If a parent level is increased by this rule, then outgoing edge constraints
-must be propagated forward again so that for every edge A → B,
+### 3. Backward chain compaction
+
+If a node X is raised by merge alignment, then the raise is propagated
+backward through the maximal linear chain ending at X.
+
+Backward propagation continues from child C to parent P only when
+
+- C has exactly one parent, and
+- P has exactly one child.
+
+In that case,
+
+P.level ≥ C.level − 1
+
+This compacts the linear suffix of a branch so that shorter branches
+are aligned as close as possible to the merge node.
+
+After any raise, outgoing edge constraints must be propagated forward again
+so that for every edge A → B,
 
 B.level ≥ A.level + 1
 
-This merge-alignment step may raise levels of additional nodes.
+Repeat merge alignment, backward chain compaction, and forward propagation
+until all levels stabilize.
 
-After all levels stabilize, normalize the partition so that
+After all levels are assigned, normalize the partition so that
 
 min(level) = 0
 
@@ -144,7 +162,7 @@ This definition ensures:
 - edge directions are respected
 - ordinary branches stay compact
 - parents of a merge node are aligned immediately above the merge
-- the effect propagates consistently through the DAG
+- shorter branches are right-aligned toward the merge through linear suffixes
 
 ## 7. Partition
 

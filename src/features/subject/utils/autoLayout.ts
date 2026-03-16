@@ -168,48 +168,79 @@ const computeAutoLayout = (
     const lvl = new Map<number, number>();
     for (const idx of ids) lvl.set(idx, 0);
 
-    for (const cur of topo) {
-      const curL = lvl.get(cur) ?? 0;
-      for (const j of outAdj.get(cur) ?? []) {
-        lvl.set(j, Math.max(lvl.get(j) ?? 0, curL + 1));
+    const propagateForward = (): boolean => {
+      let changed = false;
+      for (const cur of topo) {
+        const curL = lvl.get(cur) ?? 0;
+        for (const j of outAdj.get(cur) ?? []) {
+          const need = curL + 1;
+          if ((lvl.get(j) ?? 0) < need) {
+            lvl.set(j, need);
+            changed = true;
+          }
+        }
       }
-    }
+      return changed;
+    };
 
-    // 2) Merge alignment to fixed point
+    propagateForward();
+
+    // 2) Merge alignment + backward linear-chain compaction
+    const pullBackwardLinearChain = (startChild: number): boolean => {
+      let changed = false;
+      let child = startChild;
+
+      while (true) {
+        const parents = inAdj.get(child) ?? [];
+        if (parents.length !== 1) break;
+
+        const parent = parents[0];
+        const parentChildren = outAdj.get(parent) ?? [];
+        if (parentChildren.length !== 1) break;
+
+        const target = (lvl.get(child) ?? 0) - 1;
+        if ((lvl.get(parent) ?? 0) < target) {
+          lvl.set(parent, target);
+          changed = true;
+        }
+
+        child = parent;
+      }
+
+      return changed;
+    };
+
     let changed = true;
     while (changed) {
       changed = false;
 
-      // Raise parents of every merge node to child.level - 1
       for (const m of topo) {
         const parents = inAdj.get(m) ?? [];
         if (parents.length < 2) continue;
 
         const target = (lvl.get(m) ?? 0) - 1;
+
         for (const p of parents) {
           if ((lvl.get(p) ?? 0) < target) {
             lvl.set(p, target);
             changed = true;
           }
+
+          if (pullBackwardLinearChain(p)) {
+            changed = true;
+          }
         }
       }
 
-      // Re-propagate edge constraints forward after any raise
-      if (changed) {
-        for (const cur of topo) {
-          const curL = lvl.get(cur) ?? 0;
-          for (const j of outAdj.get(cur) ?? []) {
-            if ((lvl.get(j) ?? 0) < curL + 1) {
-              lvl.set(j, curL + 1);
-            }
-          }
-        }
+      if (propagateForward()) {
+        changed = true;
       }
     }
 
     // Normalize so min(level) = 0
     let minL = Infinity;
     for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
+
     for (const idx of ids) {
       lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
     }
