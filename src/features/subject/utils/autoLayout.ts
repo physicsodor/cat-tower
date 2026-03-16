@@ -60,8 +60,11 @@ const computeAutoLayout = (
   const nodeIds = [...idx2sbj.keys()].sort((a, b) => a - b);
 
   const getChain = (idx: number): ChainLike => {
-    const chain = idx2chain.get(idx) as ChainLike | undefined;
-    return chain ?? { pre: new Set<number>(), nxt: new Set<number>() };
+    const chain = idx2chain.get(idx);
+    return {
+      pre: chain?.pre ?? new Set<number>(),
+      nxt: chain?.nxt ?? new Set<number>(),
+    };
   };
 
   const getXY = (idx: number): XY => {
