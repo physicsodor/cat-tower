@@ -1,30 +1,8 @@
+import { LAYOUT_COL_GAP, LAYOUT_PART_GAP, LAYOUT_ROW_GAP } from "../constants";
 import type { ChainMap } from "../types/Chain/chainOp";
 import type { SbjMap } from "../types/Curriculum/curriculumOp";
 
-const LAYOUT_COL_GAP = 40;
-const LAYOUT_ROW_GAP = 60;
-const LAYOUT_PART_GAP = 160;
 const EPS_MEDIAN = 1e-6;
-
-type XY = { x: number; y: number };
-type Size = { w: number; h: number };
-
-type ChainLike = {
-  pre: Set<number>;
-  nxt: Set<number>;
-  preSet?: Set<number>;
-  nxtSet?: Set<number>;
-};
-
-type NodeInfo = {
-  idx: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  partId: number;
-  level: number;
-};
 
 type BlockLayout = {
   nodeIds: number[];
@@ -59,48 +37,12 @@ const computeAutoLayout = (
 
   const nodeIds = [...idx2sbj.keys()].sort((a, b) => a - b);
 
-  const getChain = (idx: number): ChainLike => {
-    const chain = idx2chain.get(idx);
-    return {
-      pre: chain?.pre ?? new Set<number>(),
-      nxt: chain?.nxt ?? new Set<number>(),
-    };
-  };
+  const getSize = (idx: number) => sizes?.get(idx) ?? { w: 120, h: 48 };
 
-  const getXY = (idx: number): XY => {
-    const sbj = idx2sbj.get(idx);
-    if (sbj?.sbjType === "COURSE") return { x: 0, y: 0 };
-    return { x: sbj?.x ?? 0, y: sbj?.y ?? 0 };
-  };
-
-  const getSize = (idx: number): Size => {
-    const size = sizes?.get(idx);
-    return { w: size?.w ?? 120, h: size?.h ?? 48 };
-  };
-
-  const leftOf = (idx: number): number => {
-    const p = result.get(idx)!;
-    const { w } = getSize(idx);
-    return p.x - w / 2;
-  };
-
-  const rightOf = (idx: number): number => {
-    const p = result.get(idx)!;
-    const { w } = getSize(idx);
-    return p.x + w / 2;
-  };
-
-  const topOf = (idx: number): number => {
-    const p = result.get(idx)!;
-    const { h } = getSize(idx);
-    return p.y - h / 2;
-  };
-
-  const bottomOf = (idx: number): number => {
-    const p = result.get(idx)!;
-    const { h } = getSize(idx);
-    return p.y + h / 2;
-  };
+  const leftOf = (idx: number) => result.get(idx)!.x - getSize(idx).w / 2;
+  const rightOf = (idx: number) => result.get(idx)!.x + getSize(idx).w / 2;
+  const topOf = (idx: number) => result.get(idx)!.y - getSize(idx).h / 2;
+  const bottomOf = (idx: number) => result.get(idx)!.y + getSize(idx).h / 2;
 
   const shiftNodesX = (ids: number[], dx: number): void => {
     if (Math.abs(dx) <= EPS_MEDIAN) return;
@@ -127,11 +69,11 @@ const computeAutoLayout = (
       : (sorted[m - 1] + sorted[m]) / 2;
   };
 
-  const centerOfBbox = (ids: number[]): XY => {
-    let l = Infinity;
-    let r = -Infinity;
-    let t = Infinity;
-    let b = -Infinity;
+  const centerOfBbox = (ids: number[]): { x: number; y: number } => {
+    let l = Infinity,
+      r = -Infinity,
+      t = Infinity,
+      b = -Infinity;
     for (const idx of ids) {
       l = Math.min(l, leftOf(idx));
       r = Math.max(r, rightOf(idx));
@@ -142,28 +84,17 @@ const computeAutoLayout = (
     return { x: (l + r) / 2, y: (t + b) / 2 };
   };
 
-  const buildUndirectedAdj = (ids: Set<number>): Map<number, Set<number>> => {
+  const connectedComponentsUndirected = (ids: number[]): number[][] => {
+    const idSet = new Set(ids);
     const adj = new Map<number, Set<number>>();
-    for (const idx of ids) adj.set(idx, new Set<number>());
-    for (const idx of ids) {
-      const { pre, nxt } = getChain(idx);
-      for (const j of pre) {
-        if (!ids.has(j)) continue;
-        adj.get(idx)!.add(j);
-        adj.get(j)!.add(idx);
-      }
-      for (const j of nxt) {
-        if (!ids.has(j)) continue;
+    for (const idx of idSet) adj.set(idx, new Set<number>());
+    for (const idx of idSet) {
+      for (const j of idx2chain.get(idx)?.nxt ?? []) {
+        if (!idSet.has(j)) continue;
         adj.get(idx)!.add(j);
         adj.get(j)!.add(idx);
       }
     }
-    return adj;
-  };
-
-  const connectedComponentsUndirected = (ids: number[]): number[][] => {
-    const idSet = new Set(ids);
-    const adj = buildUndirectedAdj(idSet);
     const visited = new Set<number>();
     const comps: number[][] = [];
     for (const start of ids) {
@@ -174,10 +105,10 @@ const computeAutoLayout = (
       while (stack.length) {
         const cur = stack.pop()!;
         comp.push(cur);
-        for (const nxt of adj.get(cur) ?? []) {
-          if (visited.has(nxt)) continue;
-          visited.add(nxt);
-          stack.push(nxt);
+        for (const nb of adj.get(cur)!) {
+          if (visited.has(nb)) continue;
+          visited.add(nb);
+          stack.push(nb);
         }
       }
       comps.push(comp);
@@ -194,28 +125,34 @@ const computeAutoLayout = (
 
   const computeLevelsForPartition = (ids: number[]): Map<number, number> => {
     const idSet = new Set(ids);
+
     const indeg = new Map<number, number>();
     const outAdj = new Map<number, number[]>();
+
     for (const idx of ids) {
       indeg.set(idx, 0);
       outAdj.set(idx, []);
     }
+
     for (const idx of ids) {
-      const { nxt } = getChain(idx);
-      for (const j of nxt) {
+      for (const j of idx2chain.get(idx)?.nxt ?? []) {
         if (!idSet.has(j)) continue;
         outAdj.get(idx)!.push(j);
         indeg.set(j, (indeg.get(j) ?? 0) + 1);
       }
     }
+
     const q: number[] = [];
-    for (const idx of ids) if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
+    for (const idx of ids) {
+      if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
+    }
     q.sort((a, b) => a - b);
 
     const topo: number[] = [];
     while (q.length) {
       const cur = q.shift()!;
       topo.push(cur);
+
       for (const j of outAdj.get(cur) ?? []) {
         indeg.set(j, (indeg.get(j) ?? 1) - 1);
         if ((indeg.get(j) ?? 0) === 0) q.push(j);
@@ -223,19 +160,36 @@ const computeAutoLayout = (
       q.sort((a, b) => a - b);
     }
 
+    // Reverse-topological latest-feasible layering:
+    // sink = 0
+    // parent = min(child - 1)
     const lvl = new Map<number, number>();
-    for (const idx of ids) lvl.set(idx, 0);
 
-    for (const cur of topo) {
-      const curL = lvl.get(cur) ?? 0;
-      for (const j of outAdj.get(cur) ?? []) {
-        lvl.set(j, Math.max(lvl.get(j) ?? 0, curL + 1));
+    for (let i = topo.length - 1; i >= 0; i--) {
+      const idx = topo[i];
+      const nxt = (outAdj.get(idx) ?? []).filter((j) => idSet.has(j));
+
+      if (nxt.length === 0) {
+        lvl.set(idx, 0);
+        continue;
       }
+
+      let best = Infinity;
+      for (const j of nxt) {
+        best = Math.min(best, (lvl.get(j) ?? 0) - 1);
+      }
+      lvl.set(idx, best);
     }
 
     let minL = Infinity;
-    for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
-    for (const idx of ids) lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
+    for (const idx of ids) {
+      minL = Math.min(minL, lvl.get(idx) ?? 0);
+    }
+
+    for (const idx of ids) {
+      lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
+    }
+
     return lvl;
   };
 
@@ -245,32 +199,23 @@ const computeAutoLayout = (
     for (const [idx, lv] of partLevels) idx2level.set(idx, lv);
   });
 
-  const nodes = new Map<number, NodeInfo>();
   for (const idx of nodeIds) {
-    const { x, y } = getXY(idx);
-    const { w, h } = getSize(idx);
-    const info: NodeInfo = {
+    const sbj = idx2sbj.get(idx);
+    result.set(
       idx,
-      x,
-      y,
-      w,
-      h,
-      partId: idx2part.get(idx) ?? -1,
-      level: idx2level.get(idx) ?? 0,
-    };
-    nodes.set(idx, info);
-    result.set(idx, { x, y });
+      sbj?.sbjType === "SUBJECT" ? { x: sbj.x, y: sbj.y } : { x: 0, y: 0 },
+    );
   }
 
   const rowIdsByPartition = new Map<number, Map<number, number[]>>();
   for (const idx of nodeIds) {
-    const info = nodes.get(idx)!;
-    if (!rowIdsByPartition.has(info.partId)) {
-      rowIdsByPartition.set(info.partId, new Map<number, number[]>());
-    }
-    const rowMap = rowIdsByPartition.get(info.partId)!;
-    if (!rowMap.has(info.level)) rowMap.set(info.level, []);
-    rowMap.get(info.level)!.push(idx);
+    const partId = idx2part.get(idx) ?? -1;
+    const level = idx2level.get(idx) ?? 0;
+    if (!rowIdsByPartition.has(partId))
+      rowIdsByPartition.set(partId, new Map());
+    const rowMap = rowIdsByPartition.get(partId)!;
+    if (!rowMap.has(level)) rowMap.set(level, []);
+    rowMap.get(level)!.push(idx);
   }
 
   const assignInitialYForPartition = (partId: number): void => {
@@ -308,8 +253,6 @@ const computeAutoLayout = (
   for (let partId = 0; partId < partitionIds.length; partId++) {
     assignInitialYForPartition(partId);
   }
-
-  const compareChainOrder = (a: number, b: number): number => a - b;
 
   const buildBlockLayout = (ids: number[]): BlockLayout => {
     const levelLeft = new Map<number, number>();
@@ -499,7 +442,6 @@ const computeAutoLayout = (
           rightItem = it;
         }
       } else {
-        // Entire row has no ideal: compact by current x order around existing positions.
         const chunk = orderedItems.slice(i, j);
         for (const it of chunk) temp.set(it.id, it.getCenterX());
       }
@@ -587,7 +529,6 @@ const computeAutoLayout = (
     }
 
     if (!hadAnyRealIdeal) {
-      // Row consisted only of no-ideal items: normalize row center to 0.
       let l = Infinity;
       let r = -Infinity;
       for (const item of orderedItems) {
@@ -620,9 +561,9 @@ const computeAutoLayout = (
   };
 
   const parentMedian = (idx: number): number => {
-    const { nxt } = getChain(idx);
+    const nxt = idx2chain.get(idx)?.nxt;
     const xs: number[] = [];
-    for (const j of nxt) {
+    for (const j of nxt ?? []) {
       if (!result.has(j)) continue;
       xs.push(result.get(j)!.x);
     }
@@ -639,10 +580,10 @@ const computeAutoLayout = (
   };
 
   const kinship = (a: number, b: number): number => {
-    const an = getChain(a).nxt;
-    const bn = getChain(b).nxt;
+    const an = idx2chain.get(a)?.nxt;
+    const bn = idx2chain.get(b)?.nxt;
     let cnt = 0;
-    for (const x of an) if (bn.has(x)) cnt++;
+    for (const x of an ?? []) if (bn?.has(x)) cnt++;
     return cnt;
   };
 
@@ -659,7 +600,7 @@ const computeAutoLayout = (
       if (Math.abs(xa - xb) > EPS_MEDIAN) return xa - xb;
       const ia = Math.min(...a.nodeIds);
       const ib = Math.min(...b.nodeIds);
-      return compareChainOrder(ia, ib);
+      return ia - ib;
     });
   };
 
@@ -691,7 +632,7 @@ const computeAutoLayout = (
       const xa = result.get(a)!.x;
       const xb = result.get(b)!.x;
       if (Math.abs(xa - xb) > EPS_MEDIAN) return xa - xb;
-      return compareChainOrder(a, b);
+      return a - b;
     });
 
     // Kinship heuristic: one-pass adjacent local swap within same median group.
@@ -757,21 +698,17 @@ const computeAutoLayout = (
 
     const idealMap = new Map<number, number | undefined>();
     for (const idx of orderedParent) {
-      const { nxt } = getChain(idx);
+      const nxt = idx2chain.get(idx)?.nxt;
       const xs: number[] = [];
       let minL = Infinity;
       let maxR = -Infinity;
-      for (const j of nxt) {
+      for (const j of nxt ?? []) {
         if (!blockSet.has(j)) continue;
         xs.push(result.get(j)!.x);
         minL = Math.min(minL, leftOf(j));
         maxR = Math.max(maxR, rightOf(j));
       }
-      if (xs.length === 0) {
-        idealMap.set(idx, undefined);
-      } else {
-        idealMap.set(idx, (minL + maxR) / 2);
-      }
+      idealMap.set(idx, xs.length === 0 ? undefined : (minL + maxR) / 2);
     }
 
     bilateralSweep(items, idealMap);
@@ -791,11 +728,11 @@ const computeAutoLayout = (
 
     const aLv0 = a.nodeIds
       .filter((idx) => (idx2level.get(idx) ?? 0) === 0)
-      .sort(compareChainOrder);
+      .sort((a, b) => a - b);
     const bLv0 = b.nodeIds
       .filter((idx) => (idx2level.get(idx) ?? 0) === 0)
-      .sort(compareChainOrder);
-    return compareChainOrder(aLv0[0] ?? Infinity, bLv0[0] ?? Infinity);
+      .sort((a, b) => a - b);
+    return (aLv0[0] ?? Infinity) - (bLv0[0] ?? Infinity);
   });
 
   for (let i = 1; i < orderedPartitions.length; i++) {
@@ -839,20 +776,18 @@ const computeAutoLayout = (
 
   // Final normalize to center (0, 0).
   if (nodeIds.length) {
-    let l = Infinity;
-    let r = -Infinity;
-    let t = Infinity;
-    let b = -Infinity;
+    let l = Infinity,
+      r = -Infinity,
+      t = Infinity,
+      b = -Infinity;
     for (const idx of nodeIds) {
       l = Math.min(l, leftOf(idx));
       r = Math.max(r, rightOf(idx));
       t = Math.min(t, topOf(idx));
       b = Math.max(b, bottomOf(idx));
     }
-    const cx = (l + r) / 2;
-    const cy = (t + b) / 2;
-    shiftNodesX(nodeIds, -cx);
-    shiftNodesY(nodeIds, -cy);
+    shiftNodesX(nodeIds, -(l + r) / 2);
+    shiftNodesY(nodeIds, -(t + b) / 2);
   }
 
   return result;

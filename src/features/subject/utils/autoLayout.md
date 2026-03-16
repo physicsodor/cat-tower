@@ -87,31 +87,41 @@ bottom(A) = A.y + A.h / 2
 
 ## 6. Level
 
-level is defined once per partition.
+Level is defined independently for each partition.
 
-It satisfies longest-path layering.
+Levels must satisfy the edge direction constraint.
 
-For any edge
+For every edge
 
 A → B
 
 A.level < B.level
 
-For any path
+Levels are assigned so that each node is placed as late as possible
+while satisfying all outgoing edge constraints.
 
-A → ... → B
+Procedure:
 
-let n be the node count of the longest path.
+1. Consider the nodes of a partition in reverse topological order.
 
-Then
+2. If a node A has no children (A.nxt = ∅),  
+   it is treated as a sink and assigned a base level.
 
-A.level = B.level - n + 1
+3. If a node A has children, its level is defined as
 
-Each partition is normalized so that
+A.level = min { B.level − 1 | B ∈ A.nxt }
+
+This guarantees that A is placed immediately before its closest child.
+
+After all levels are assigned, normalize the partition so that
 
 min(level) = 0
 
----
+This definition ensures:
+
+- edge directions are respected
+- nodes are positioned as close as possible to their descendants
+- merge structures naturally pull parents toward the shared child level
 
 ## 7. Partition
 
