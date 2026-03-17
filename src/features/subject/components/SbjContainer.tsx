@@ -1,4 +1,4 @@
-import { SbjProvider } from "@/features/subject/context/SbjProvider";
+import { SbjProvider } from "@/features/subject/store/SbjProvider";
 import SbjCnvs from "./SbjCnvs/SbjCnvs";
 import SbjTree from "./SbjTree/SbjTree";
 import SbjAuthPanel from "./SbjAuthPanel";

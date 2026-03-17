@@ -1,9 +1,10 @@
 import { createContext, useContext } from "react";
-import type { SbjMap } from "../types/Curriculum/curriculumOp";
-import type { FamilyMap, BroDir } from "../types/Family/familyOp";
-import type { ChainMap } from "../types/Chain/chainOp";
+import type { SbjMap } from "../model/Curriculum/curriculum";
+import type { FamilyMap, BroDir } from "@/lib/Family/family";
+import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "@/components/InfiniteCanvas";
+import type { BBox } from "../model/rect";
 
 type SbjDataContextValue = {
   idx2sbj: SbjMap;
@@ -22,8 +23,9 @@ type SbjDataContextValue = {
   setTreeBro: (trg: ReadonlySet<number>, idx: number, dir: BroDir) => void;
   setCnvsPre: (idx: number) => void;
   setCnvsPos: (trg: Set<number>, dxy: { dx: number; dy: number }) => void;
-  autoLayout: (sizes?: Map<number, { w: number; h: number }>) => void;
-  getZoom: () => number;
+  autoLayout: (bboxMap: Map<number, BBox>) => void;
+  getCamera: () => Camera;
+  setCamera: (camera: Camera) => void;
   treeDrag: GetSet<Set<number>>;
   cnvsDrag: GetSet<Set<number>>;
   preSource: GetSet<number>;

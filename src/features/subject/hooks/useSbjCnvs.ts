@@ -3,14 +3,13 @@ import type {
   Course,
   Curriculum,
   Subject,
-} from "@/features/subject/types/Curriculum/Curriculum";
-import { setPre, type ChainMap } from "@/features/subject/types/Chain/chainOp";
+} from "@/features/subject/model/Curriculum/curriculum";
+import { setPre, type ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
 import { computeAutoLayout } from "@/features/subject/utils/autoLayout";
-import { buildSbjMap } from "../types/Curriculum/curriculumOp";
+import type { BBox } from "../model/rect";
 
 export const useSbjCnvs = (
-  list: ReadonlyArray<Curriculum>,
   idx2chain: ChainMap,
   setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
   preSource: GetSet<number>,
@@ -41,8 +40,8 @@ export const useSbjCnvs = (
   };
 
   const autoLayout = useCallback(
-    (sizes?: Map<number, { w: number; h: number }>) => {
-      const positions = computeAutoLayout(idx2chain, buildSbjMap(list), sizes);
+    (bboxMap: Map<number, BBox>) => {
+      const positions = computeAutoLayout(idx2chain, bboxMap);
       setList((prev) =>
         prev.map((item) => {
           if (item.sbjType === "COURSE") return item;
@@ -52,7 +51,7 @@ export const useSbjCnvs = (
         }),
       );
     },
-    [list, idx2chain, setList],
+    [idx2chain, setList],
   );
 
   return { setCnvsPre, setCnvsPos, autoLayout };

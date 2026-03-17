@@ -1,3 +1,4 @@
+@use "../../styles/djColorSystem" as cs;
 // Bttn.scss
 // Self-contained styles for SVG icon buttons.
 // Uses CSS variables — override in your project's :root.
@@ -68,11 +69,6 @@
     pointer-events: none;
   }
   &.del {
-    --C-DDD: oklch(45% 20% 30deg);
-    --C-DD: oklch(55% 20% 30deg);
-    --C-D: oklch(65% 20% 30deg);
-    --C-B: oklch(75% 20% 30deg);
-    --C-L: oklch(80% 20% 30deg);
-    --C-LL: oklch(90% 20% 30deg);
+    @include cs.C-setting(0);
   }
 }

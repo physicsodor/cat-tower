@@ -1,9 +1,9 @@
 import { useDragGhost } from "@/hooks/useDragGhost";
 import React, { useEffect, useRef, useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
-import type { BroDir } from "@/features/subject/types/Family/familyOp";
-import { useSbjData } from "../../context/SbjDataContext";
-import { useSbjSelect } from "../../context/SbjSelectContext";
+import type { BroDir } from "@/lib/Family/family";
+import { useSbjData } from "../../store/SbjDataContext";
+import { useSbjSelect } from "../../store/SbjSelectContext";
 import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
 import BttnEdt from "@/components/Bttn/BttnEdt";
 import BttnDel from "@/components/Bttn/BttnDel";

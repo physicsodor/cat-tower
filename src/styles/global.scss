@@ -1,8 +1,9 @@
 @use "mixins" as m;
 @use "variables" as v;
+@use "djColorSystem" as cs;
 :root {
   @include m.G-setting;
-  @include m.C-setting(7);
+  @include cs.C-setting(7);
   --z-sbj-cnvs-crs-bck: 0;
   --z-sbj-cnvs-curve: 1;
   --z-sbj-cnvs: 2;
@@ -39,7 +40,7 @@
 .sbj-cnvs {
   --margin: var(--G-XL);
   @include m.fixed-full(--z-sbj-cnvs);
-  // @include m.C-setting(0);
+  // @include cs.C-setting(0);
   // background-color: var(--C-LL);
   user-select: none;
   touch-action: none;
@@ -76,10 +77,10 @@
     }
   }
   &.-pre {
-    @include m.C-setting(6);
+    @include cs.C-setting(6);
   }
   &.-nxt {
-    @include m.C-setting(8);
+    @include cs.C-setting(8);
   }
 }
 
@@ -132,16 +133,16 @@
   padding: var(--G-S);
   line-height: 1;
   &.-edt {
-    color: m.C(DDD, 3);
+    color: cs.C(DDD, 3);
   }
   &.-del {
-    color: m.C(DDD, 1);
+    color: cs.C(DDD, 1);
   }
   &:hover {
-    background: m.black-a(0.08);
+    background: cs.black-a(0.08);
   }
   &:active {
-    background: m.black-a(0.16);
+    background: cs.black-a(0.16);
   }
   @media (hover: none) {
     padding: var(--G-L);
@@ -152,7 +153,7 @@
   --z: --z-sbj-cnvs-crs;
   &.-bck {
     --z: var(--z-sbj-cnvs-crs-bck);
-    background-color: m.C-alpha(--C-LL, 0.3);
+    background-color: cs.C-alpha(--C-LL, 0.3);
   }
   @include m.fixed-item(--z);
   @include m.box-lrtb-gap(--G-XL);
@@ -197,7 +198,7 @@
   z-index: var(--z-sbj-ctx-menu);
   background: var(--C-LL);
   border: 1px solid var(--C-D);
-  box-shadow: 2px 4px 12px m.black-a(0.15);
+  box-shadow: 2px 4px 12px cs.black-a(0.15);
   border-radius: var(--G-M);
   padding: var(--G-S) 0;
   min-width: 8rem;
@@ -269,10 +270,10 @@
       margin-left: 0.5rem;
     }
     &:hover {
-      background-color: m.black-a(0.1);
+      background-color: cs.black-a(0.1);
     }
     &:active {
-      background-color: m.black-a(0.18);
+      background-color: cs.black-a(0.18);
     }
     &.-slc {
       background-color: var(--C-B);
@@ -402,7 +403,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-proj-picker);
-  background: m.black-a(0.45);
+  background: cs.black-a(0.45);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
@@ -455,10 +456,10 @@
   padding: var(--G-S);
   line-height: 1;
   &:hover {
-    background: m.black-a(0.07);
+    background: cs.black-a(0.07);
   }
   &:active {
-    background: m.black-a(0.15);
+    background: cs.black-a(0.15);
   }
   @media (hover: none) {
     padding: var(--G-M) var(--G-L);
@@ -583,10 +584,10 @@
   padding: 0 var(--G-S);
   line-height: 1.4;
   &:hover {
-    background: m.black-a(0.08);
+    background: cs.black-a(0.08);
   }
   &:active {
-    background: m.black-a(0.16);
+    background: cs.black-a(0.16);
   }
   @media (hover: none) {
     padding: var(--G-M) var(--G-L);
@@ -612,13 +613,13 @@
     font: inherit;
     font-size: 0.9rem;
     &:hover {
-      background: m.black-a(0.07);
+      background: cs.black-a(0.07);
     }
     &:active {
-      background: m.black-a(0.15);
+      background: cs.black-a(0.15);
     }
     &.-danger {
-      color: m.C(DDD, 1);
+      color: cs.C(DDD, 1);
     }
   }
 }
@@ -645,7 +646,7 @@
   inset: 0;
   z-index: var(--z-sbj-edit);
   backdrop-filter: blur(4px);
-  background: m.black-a(0.35);
+  background: cs.black-a(0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,7 +746,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-share);
-  background: m.black-a(0.45);
+  background: cs.black-a(0.45);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;

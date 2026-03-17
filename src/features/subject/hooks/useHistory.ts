@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Curriculum } from "../types/Curriculum/Curriculum";
+import type { Curriculum } from "../model/Curriculum/curriculum";
 
 const MAX_HISTORY = 50;
 

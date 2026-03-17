@@ -3,7 +3,7 @@ import SbjTreeTitle from "./SbjTreeTitle";
 import SbjTreeNext from "./SbjTreeNext";
 import SbjTreeItem from "./SbjTreeItem";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjData } from "../../store/SbjDataContext";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx?: number; title?: string };

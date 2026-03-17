@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { generateNKeysBetween } from "fractional-indexing";
-import type { Curriculum, Subject, Course } from "../types/Curriculum/Curriculum";
-import type { FamilyMap } from "../types/Family/familyOp";
-import { getNewIdx } from "../types/IdxItem/idxItemOp";
-import { removePre } from "../types/Chain/chainOp";
+import type { Curriculum, Subject, Course } from "../model/Curriculum/curriculum";
+import type { FamilyMap } from "@/lib/Family/family";
+import { getNewIdx } from "@/lib/IdxItem/idxItem";
+import { removePre } from "@/lib/Chain/chain";
 import { PASTE_OFFSET } from "@/features/subject/constants";
 
 export const isEditingText = () => {

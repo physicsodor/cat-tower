@@ -1,4 +1,4 @@
-import { useSbjData } from "../context/SbjDataContext";
+import { useSbjData } from "../store/SbjDataContext";
 
 const SbjTest = () => {
   const { idx2family } = useSbjData();

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjData } from "../../store/SbjDataContext";
 import { renderMarkup, stripMarkup, truncateBytes } from "../../utils/markup";
 import { CONTENT_PREVIEW_BYTES } from "@/features/subject/constants";
 

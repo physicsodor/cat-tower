@@ -7,6 +7,8 @@ export type InfiniteCanvasCtx = {
   dxy: { dx: number; dy: number };
   /** Call on pointerdown when an item drag begins. */
   startItemDrag: (startX: number, startY: number) => void;
+  /** Programmatically set the camera (e.g. for fit-to-content). */
+  setCamera: (camera: Camera) => void;
 };
 
 export const InfiniteCanvasContext = createContext<InfiniteCanvasCtx | null>(null);

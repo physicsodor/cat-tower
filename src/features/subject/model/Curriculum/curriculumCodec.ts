@@ -1,4 +1,4 @@
-import type { Course, Curriculum, Subject } from "./Curriculum";
+import type { Course, Curriculum, Subject } from "./curriculum";
 import { zipText, unzipText } from "@/utils/textZip";
 import {
   compressToEncodedURIComponent,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
-import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjData } from "../../store/SbjDataContext";
 import { treeRegistry } from "./treeRegistry";
 
 type Props = { idx: number };

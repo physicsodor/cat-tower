@@ -1,26 +1,26 @@
 import type { CSSProperties } from "react";
 import { makeClassName } from "@/utils/makeClassName";
+import type { BBox } from "../../model/rect";
 
-type LRTB = { l: number; r: number; t: number; b: number };
 type Props = {
   setRef: (e: HTMLDivElement) => void;
   idx: number;
-  lrtb: LRTB;
+  bbox: BBox;
   label: string;
   back?: boolean;
 };
 
-const SbjCnvsCrs = ({ setRef, idx: _idx, lrtb, label, back = false }: Props) => {
+const SbjCnvsCrs = ({ setRef, idx: _idx, bbox, label, back = false }: Props) => {
   return (
     <div
       ref={setRef}
       className={makeClassName("sbj-cnvs-crs", back && "-bck")}
       style={
         {
-          "--l": `${lrtb.l}px`,
-          "--r": `${lrtb.r}px`,
-          "--t": `${lrtb.t}px`,
-          "--b": `${lrtb.b}px`,
+          "--l": `${bbox.l}px`,
+          "--r": `${bbox.r}px`,
+          "--t": `${bbox.t}px`,
+          "--b": `${bbox.b}px`,
         } as CSSProperties
       }
     >

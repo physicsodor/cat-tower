@@ -1,29 +1,3 @@
-$L-steps: (
-  DDD: 45%,
-  DD: 55%,
-  D: 65%,
-  B: 75%,
-  L: 80%,
-  LL: 90%,
-);
-
-// $C-fixed : percentage chroma — used by C-setting() to generate CSS custom properties
-// $C-vivid  : absolute chroma  — used by C() to generate inline oklch values (e.g. icon/text colors)
-$C-fixed: 20%;
-$C-vivid: 0.2;
-
-$H-steps: (
-  0: 30deg,
-  1: 75deg,
-  2: 105deg,
-  3: 135deg,
-  4: 165deg,
-  5: 240deg,
-  6: 270deg,
-  7: 300deg,
-  8: 345deg,
-);
-
 $Gap: (
   S: 0.1rem,
   M: 0.3rem,
@@ -32,7 +6,7 @@ $Gap: (
 );
 
 // ── 컨트롤 패널 ──────────────────────────────────────────────────────────────
-$ctrl-handle: 2rem;           // 32px
-$ctrl-handle-touch: 2.75rem;  // 44px — touch 디바이스
+$ctrl-handle: 2rem; // 32px
+$ctrl-handle-touch: 2.75rem; // 44px — touch 디바이스
 $ctrl-panel-max-h: 80vh;
-$ctrl-panel-hdr-h: 3rem;      // 48px — 스크롤 영역 상단 여백
+$ctrl-panel-hdr-h: 3rem; // 48px — 스크롤 영역 상단 여백

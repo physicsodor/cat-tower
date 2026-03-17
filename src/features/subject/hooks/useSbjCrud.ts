@@ -1,12 +1,12 @@
 import { useCallback, type RefObject } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
+import type { Curriculum } from "@/features/subject/model/Curriculum/curriculum";
 import {
   addCourse,
   addSubject,
   deleteCourse,
   deleteSubject,
-} from "@/features/subject/types/Curriculum/curriculumOp";
-import type { FamilyMap } from "../types/Family/familyOp";
+} from "@/features/subject/model/Curriculum/curriculum";
+import type { FamilyMap } from "@/lib/Family/family";
 import type { Camera } from "@/components/InfiniteCanvas";
 
 export const useSbjCrud = (

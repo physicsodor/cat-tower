@@ -7,7 +7,7 @@ import {
 } from "@/features/subject/constants";
 import BttnUndo from "@/components/Bttn/BttnUndo";
 import BttnRedo from "@/components/Bttn/BttnRedo";
-import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjData } from "../../store/SbjDataContext";
 
 const clampPos = (x: number, y: number) => ({
   x: Math.max(MARGIN, Math.min(x, window.innerWidth - HANDLE - MARGIN)),

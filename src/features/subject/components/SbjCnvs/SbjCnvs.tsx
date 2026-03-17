@@ -1,81 +1,46 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef } from "react";
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
-import { useSbjData } from "../../context/SbjDataContext";
-import { useSbjSelect } from "../../context/SbjSelectContext";
+import { useSbjData } from "../../store/SbjDataContext";
+import { useSbjSelect } from "../../store/SbjSelectContext";
 import InfiniteCanvas, {
   useInfiniteCanvas,
   type Camera,
 } from "@/components/InfiniteCanvas";
-
-type LRTB = { l: number; r: number; t: number; b: number };
+import { useBBoxMap } from "../../hooks/useBBoxMap";
+import { bboxFromXYWH, type BBox } from "../../model/rect";
+import BttnAutoLayout from "@/components/Bttn/BttnAutoLayout";
 
 // ── Inner content (reads camera/dxy from InfiniteCanvasContext) ───────────────
 
 type InnerProps = {
-  itemsRef: React.MutableRefObject<Map<number, HTMLDivElement | null>>;
-  lrtbMapRef: React.MutableRefObject<Map<number, LRTB>>;
+  itemsRef: React.RefObject<Map<number, HTMLDivElement | null>>;
+  bboxMapRef: React.RefObject<Map<number, BBox>>;
 };
 
-const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
+const SbjCnvsInner = ({ itemsRef, bboxMapRef }: InnerProps) => {
   const { camera, dxy } = useInfiniteCanvas();
   const { idx2sbj, idx2family, syncCamera } = useSbjData();
 
   useEffect(() => {
     syncCamera(camera);
   }, [camera, syncCamera]);
-  const [lrtbMap, setLrtbMap] = useState(new Map<number, LRTB>());
 
-  useLayoutEffect(() => {
-    const map = new Map<number, LRTB>();
-    const getLRTB = (idx: number): LRTB | null => {
-      if (map.has(idx)) return map.get(idx)!;
-      const f = idx2family.get(idx);
-      const kids = f?.kids;
-      if (!kids) {
-        const item = itemsRef.current.get(idx);
-        if (!item) return null;
-        const rect = item.getBoundingClientRect();
-        const lrtb = { l: rect.left, r: rect.right, t: rect.top, b: rect.bottom };
-        map.set(idx, lrtb);
-        return lrtb;
-      }
-      let lrtb: LRTB | null = null;
-      for (const k of kids) {
-        const kidLrtb = getLRTB(k);
-        if (!kidLrtb) continue;
-        if (lrtb === null) lrtb = kidLrtb;
-        else
-          lrtb = {
-            l: Math.min(lrtb.l, kidLrtb.l),
-            r: Math.max(lrtb.r, kidLrtb.r),
-            t: Math.min(lrtb.t, kidLrtb.t),
-            b: Math.max(lrtb.b, kidLrtb.b),
-          };
-      }
-      if (lrtb !== null) map.set(idx, lrtb);
-      return lrtb;
-    };
-    for (const [idx] of idx2family) {
-      if (idx < 0) continue;
-      getLRTB(idx);
-    }
-    setLrtbMap(map);
-    lrtbMapRef.current = map;
-  }, [idx2sbj, idx2family, dxy, camera, lrtbMapRef, itemsRef]);
+  const bboxMap = useBBoxMap(
+    itemsRef,
+    bboxMapRef,
+    idx2sbj,
+    idx2family,
+    dxy,
+    camera,
+  );
 
   return (
     <>
-      <SbjCnvsCrsContainer lrtbMap={lrtbMap} items={itemsRef.current} back />
-      <SbjCnvsCurveContainer lrtbMap={lrtbMap} zoom={camera.zoom} />
-      <SbjCnvsCrsContainer lrtbMap={lrtbMap} items={itemsRef.current} />
+      <SbjCnvsCrsContainer bboxMap={bboxMap} items={itemsRef.current} back />
+      <SbjCnvsCurveContainer bboxMap={bboxMap} zoom={camera.zoom} />
+      <SbjCnvsCrsContainer bboxMap={bboxMap} items={itemsRef.current} />
       <SbjCnvsItemContainer items={itemsRef.current} />
     </>
   );
@@ -84,21 +49,27 @@ const SbjCnvsInner = ({ itemsRef, lrtbMapRef }: InnerProps) => {
 // ── Outer wrapper ─────────────────────────────────────────────────────────────
 
 const SbjCnvs = () => {
-  const { cnvsDrag, idx2sbj, setCnvsPos, autoLayout, getZoom } = useSbjData();
+  const { cnvsDrag, idx2sbj, setCnvsPos, autoLayout, getCamera } = useSbjData();
   const { selectMany, selectedSet } = useSbjSelect();
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
-  const lrtbMapRef = useRef(new Map<number, LRTB>());
+  const bboxMapRef = useRef(new Map<number, BBox>());
 
   const onAutoLayout = useCallback(() => {
-    const zoom = getZoom();
-    const sizes = new Map<number, { w: number; h: number }>();
-    for (const [idx, el] of itemsRef.current) {
-      if (!el) continue;
-      const rect = el.getBoundingClientRect();
-      sizes.set(idx, { w: rect.width / zoom, h: rect.height / zoom });
+    const { x: cx, y: cy, zoom } = getCamera();
+    const worldBBoxes = new Map<number, BBox>();
+    for (const [idx, bbox] of bboxMapRef.current) {
+      worldBBoxes.set(
+        idx,
+        bboxFromXYWH(
+          (bbox.x - cx) / zoom,
+          (bbox.y - cy) / zoom,
+          bbox.w / zoom,
+          bbox.h / zoom,
+        ),
+      );
     }
-    autoLayout(sizes);
-  }, [autoLayout, getZoom]);
+    autoLayout(worldBBoxes);
+  }, [autoLayout, getCamera, bboxMapRef]);
 
   const onItemDragEnd = useCallback(
     (worldDx: number, worldDy: number) => {
@@ -122,20 +93,20 @@ const SbjCnvs = () => {
       shiftKey: boolean,
     ) => {
       const hit = new Set<number>();
-      for (const [idx, lrtb] of lrtbMapRef.current) {
+      for (const [idx, bbox] of bboxMapRef.current) {
         if (idx < 0) continue;
         const s = idx2sbj.get(idx);
         if (!s || s.sbjType !== "SUBJECT") continue;
         if (mode === "window") {
           if (
-            lrtb.l >= selL &&
-            lrtb.r <= selR &&
-            lrtb.t >= selT &&
-            lrtb.b <= selB
+            bbox.l >= selL &&
+            bbox.r <= selR &&
+            bbox.t >= selT &&
+            bbox.b <= selB
           )
             hit.add(idx);
         } else {
-          if (lrtb.l < selR && lrtb.r > selL && lrtb.t < selB && lrtb.b > selT)
+          if (bbox.l < selR && bbox.r > selL && bbox.t < selB && bbox.b > selT)
             hit.add(idx);
         }
       }
@@ -180,9 +151,9 @@ const SbjCnvs = () => {
       onItemDragEnd={onItemDragEnd}
       onMarqueeSelect={onMarqueeSelect}
       onFitRequest={onFitRequest}
-      onAutoLayout={onAutoLayout}
+      controls={<BttnAutoLayout onDown={onAutoLayout} className="-big" />}
     >
-      <SbjCnvsInner itemsRef={itemsRef} lrtbMapRef={lrtbMapRef} />
+      <SbjCnvsInner itemsRef={itemsRef} bboxMapRef={bboxMapRef} />
     </InfiniteCanvas>
   );
 };

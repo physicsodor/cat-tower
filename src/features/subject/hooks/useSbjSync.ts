@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Curriculum } from "@/features/subject/types/Curriculum/Curriculum";
+import type { Curriculum } from "@/features/subject/model/Curriculum/curriculum";
 import { supabase } from "@/features/auth/supabase";
-import { decodeList, decodeListCompact, encodeList, encodeListCompact } from "../types/Curriculum/curriculumCodec";
-import type { Project } from "../types/Project";
+import { decodeList, decodeListCompact, encodeList, encodeListCompact } from "../model/Curriculum/curriculumCodec";
+import type { Project } from "../model/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 
 const PRE_LOGIN_KEY = "sbj_pre_login_state";

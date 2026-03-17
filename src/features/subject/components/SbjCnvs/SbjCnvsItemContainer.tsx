@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useSbjData } from "../../context/SbjDataContext";
-import { useSbjSelect } from "../../context/SbjSelectContext";
+import { useSbjData } from "../../store/SbjDataContext";
+import { useSbjSelect } from "../../store/SbjSelectContext";
 import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
 import SbjCnvsItem from "./SbjCnvsItem";
 

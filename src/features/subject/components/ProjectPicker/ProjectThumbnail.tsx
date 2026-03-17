@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { decodeList } from "../../types/Curriculum/curriculumCodec";
-import type { Curriculum } from "../../types/Curriculum/Curriculum";
+import { decodeList } from "../../model/Curriculum/curriculumCodec";
+import type { Curriculum } from "../../model/Curriculum/curriculum";
 import { THUMB_W as W, THUMB_H as H, THUMB_PAD as PAD } from "@/features/subject/constants";
 
 type Props = { data: string };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSbjData } from "../context/SbjDataContext";
+import { useSbjData } from "../store/SbjDataContext";
 import { renderMarkup, countBytes, limitBytes } from "@/components/TextEditor";
 import TextEditor from "@/components/TextEditor";
 import { SHORT_MAX_BYTES } from "@/features/subject/constants";

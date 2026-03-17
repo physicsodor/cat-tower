@@ -1,6 +1,6 @@
 import { renderMarkup } from "@/components/TextEditor";
-import { useSbjData } from "../../context/SbjDataContext";
-import { useSbjSelect } from "../../context/SbjSelectContext";
+import { useSbjData } from "../../store/SbjDataContext";
+import { useSbjSelect } from "../../store/SbjSelectContext";
 import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
 
 type PE = React.PointerEvent | PointerEvent;

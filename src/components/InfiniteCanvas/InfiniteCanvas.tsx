@@ -9,9 +9,8 @@ import {
 import { InfiniteCanvasContext, type Camera } from "./InfiniteCanvasContext";
 import { useWheelZoom } from "./useWheelZoom";
 import { useTouchPinch } from "./useTouchPinch";
-import BttnAutoLayout from "@/components/Bttn/BttnAutoLayout";
-import BttnFit from "@/components/Bttn/BttnFit";
 import BttnZoom1 from "@/components/Bttn/BttnZoom1";
+import BttnFit from "@/components/Bttn/BttnFit";
 import "./InfiniteCanvas.scss";
 
 type PE = React.PointerEvent | PointerEvent;
@@ -39,14 +38,10 @@ type Props = {
     ctrlKey: boolean,
     shiftKey: boolean,
   ) => void;
-  /**
-   * Called when the fit button is pressed.
-   * Return the desired Camera, or null to do nothing.
-   * If not provided, the fit button is not rendered.
-   */
+  /** Extra buttons rendered in the controls panel (e.g. auto-layout). */
+  controls?: ReactNode;
+  /** Called to compute the fit camera. Return null to skip. */
   onFitRequest?: () => Camera | null;
-  /** Called when the auto-layout button is pressed. If not provided, the button is not rendered. */
-  onAutoLayout?: () => void;
 };
 
 /**
@@ -70,8 +65,8 @@ const InfiniteCanvas = ({
   marqueeSuppressSelector,
   onItemDragEnd,
   onMarqueeSelect,
+  controls,
   onFitRequest,
-  onAutoLayout,
 }: Props) => {
   const [camera, setCamera] = useState<Camera>(() => ({
     x: window.innerWidth / 2,
@@ -234,10 +229,10 @@ const InfiniteCanvas = ({
     if (!onFitRequest) return;
     const newCamera = onFitRequest();
     if (newCamera) setCamera(newCamera);
-  }, [onFitRequest]);
+  }, [onFitRequest, setCamera]);
 
   const ctxValue = useMemo(
-    () => ({ camera, dxy, startItemDrag }),
+    () => ({ camera, dxy, startItemDrag, setCamera }),
     [camera, dxy, startItemDrag],
   );
 
@@ -263,9 +258,7 @@ const InfiniteCanvas = ({
         )}
         <div className="ic-controls">
           <div className="ic-controls-btns">
-            {onAutoLayout && (
-              <BttnAutoLayout onDown={onAutoLayout} className="-big" />
-            )}
+            {controls}
             {onFitRequest && <BttnFit onDown={onFit} className="-big" />}
             <BttnZoom1 onDown={onZoomReset} className="-big" />
           </div>

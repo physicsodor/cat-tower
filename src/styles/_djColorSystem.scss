@@ -1,0 +1,57 @@
+@use "sass:map";
+@use "sass:string";
+
+$L-steps: (
+  DDD: 45%,
+  DD: 55%,
+  D: 65%,
+  B: 75%,
+  L: 80%,
+  LL: 90%,
+);
+
+$C-fixed: 20%;
+$C-vivid: 0.2;
+
+$H-steps: (
+  0: 30deg,
+  1: 75deg,
+  2: 105deg,
+  3: 135deg,
+  4: 165deg,
+  5: 240deg,
+  6: 270deg,
+  7: 300deg,
+  8: 345deg,
+);
+
+// 색상 CSS 변수 세팅 (특정 hue)
+@mixin C-setting($H-step) {
+  @if map.has-key($H-steps, $H-step) == false {
+    @error "Unknown hue number: #{$H-step}";
+  }
+  $H: map.get($H-steps, $H-step);
+  $C: $C-fixed;
+  @each $LL, $L in $L-steps {
+    --C-#{$LL}: oklch(#{$L} #{$C} #{$H});
+  }
+}
+
+// CSS 변수 기반 oklch alpha 색상
+@function C-alpha($C-name, $alpha) {
+  @return string.unquote("oklch(from var(#{$C-name}) l c h / #{$alpha})");
+}
+
+// 정적 oklch 색상 (L-step, H-step 기반)
+@function C($L-step, $H-step) {
+  $L: map.get($L-steps, $L-step);
+  $H: map.get($H-steps, $H-step);
+  @if not $L { @error "Unknown L-step: #{$L-step}"; }
+  @if not $H { @error "Unknown H-step: #{$H-step}"; }
+  @return string.unquote("oklch(#{$L} #{$C-vivid} #{$H})");
+}
+
+// 반투명 검정 (오버레이, hover/active 틴트, 테두리)
+@function black-a($alpha) {
+  @return string.unquote("oklch(0% 0 0 / #{$alpha})");
+}

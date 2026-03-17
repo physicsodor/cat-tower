@@ -1,4 +1,4 @@
-import type { BroDir } from "@/features/subject/types/Family/familyOp";
+import type { BroDir } from "@/lib/Family/family";
 
 export type TreeDropTarget = {
   el: HTMLElement;

@@ -1,5 +1,5 @@
-import { useSbjData } from "../context/SbjDataContext";
-import { useSbjSelect } from "../context/SbjSelectContext";
+import { useSbjData } from "../store/SbjDataContext";
+import { useSbjSelect } from "../store/SbjSelectContext";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
 import BttnGrp from "@/components/Bttn/BttnGrp";

@@ -1,21 +1,21 @@
-import { useSbjData } from "../../context/SbjDataContext";
+import { useSbjData } from "../../store/SbjDataContext";
 import SbjCnvsCrs from "./SbjCnvsCrs";
+import type { BBox } from "../../model/rect";
 
-type LRTB = { l: number; r: number; t: number; b: number };
 type Props = {
-  lrtbMap: ReadonlyMap<number, LRTB>;
+  bboxMap: ReadonlyMap<number, BBox>;
   items: Map<number, HTMLDivElement | null>;
   back?: boolean;
 };
 
-const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
+const SbjCnvsCrsContainer = ({ bboxMap, items, back = false }: Props) => {
   const { idx2family, idx2sbj } = useSbjData();
   return (
     <div>
       {[...idx2family].map(([idx, f]) => {
         if (!f.kids) return null;
-        const lrtb = lrtbMap.get(idx);
-        if (!lrtb) return null;
+        const bbox = bboxMap.get(idx);
+        if (!bbox) return null;
         const s = idx2sbj.get(idx);
         const label = s ? (s.short || s.title) : "";
         return (
@@ -25,7 +25,7 @@ const SbjCnvsCrsContainer = ({ lrtbMap, items, back = false }: Props) => {
               if (x) items.set(idx, x);
               else items.delete(idx);
             }}
-            {...{ idx, lrtb, label, back }}
+            {...{ idx, bbox, label, back }}
           />
         );
       })}

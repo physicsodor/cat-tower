@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { useSbjSyncCtx } from "../../context/SbjSyncContext";
+import { useSbjSyncCtx } from "../../store/SbjSyncContext";
 import { ProjectThumbnail } from "./ProjectThumbnail";
-import type { Project } from "../../types/Project";
+import type { Project } from "../../model/Project";
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 

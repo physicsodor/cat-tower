@@ -1,5 +1,5 @@
 import { useAuth } from "@/features/auth/useAuth";
-import { useSbjSyncCtx } from "../context/SbjSyncContext";
+import { useSbjSyncCtx } from "../store/SbjSyncContext";
 import SbjShareModal from "./SbjShareModal";
 
 const SbjAuthPanel = () => {

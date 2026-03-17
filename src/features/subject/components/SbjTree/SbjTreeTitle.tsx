@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import React from "react";
 import { useDragGhost } from "@/hooks/useDragGhost";
 import { makeClassName } from "@/utils/makeClassName";
-import type { BroDir } from "@/features/subject/types/Family/familyOp";
+import type { BroDir } from "@/lib/Family/family";
 import BttnPM from "@/components/Bttn/BttnPM";
 import BttnDel from "@/components/Bttn/BttnDel";
 import BttnChk from "@/components/Bttn/BttnChk";
 import BttnEdt from "@/components/Bttn/BttnEdt";
-import { useSbjData } from "@/features/subject/context/SbjDataContext";
-import { useSbjSelect } from "@/features/subject/context/SbjSelectContext";
+import { useSbjData } from "@/features/subject/store/SbjDataContext";
+import { useSbjSelect } from "@/features/subject/store/SbjSelectContext";
 import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
 import { renderMarkup } from "@/components/TextEditor";
 
