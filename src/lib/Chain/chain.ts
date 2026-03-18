@@ -125,151 +125,39 @@ const removePre = <T extends Chain, S extends IdxItem>(
   return { updater };
 };
 
-const getPartition = (idx2chain: ChainMap): number[][] => {
-  const components: number[][] = [];
-  const globalVisited = new Set<number>();
-  for (const startIdx of idx2chain.keys()) {
-    if (globalVisited.has(startIdx)) continue;
-    const component: number[] = [];
-    const compQ = [startIdx];
-    globalVisited.add(startIdx);
-    while (compQ.length > 0) {
-      const v = compQ.shift()!;
-      component.push(v);
-      const info = idx2chain.get(v)!;
-      for (const nb of [...(info.pre ?? []), ...(info.nxt ?? [])]) {
-        if (idx2chain.has(nb) && !globalVisited.has(nb)) {
-          globalVisited.add(nb);
-          compQ.push(nb);
-        }
-      }
-    }
-    components.push(component);
-  }
-  return components;
-};
-
-const buildChainLevelMap = (
+const getPartition = (
   idx2chain: ChainMap,
-  partition: number[][],
-): Map<number, number> => {
-  const idx2chainLevel = new Map<number, number>();
-
-  if (idx2chain.size === 0) return idx2chainLevel;
-
-  for (const component of partition) {
-    const startIdx = component[0];
-
-    // ── fully-tight BFS 시도 (undirected: 순방향 +1, 역방향 -1) ──
-    const tempLevel = new Map<number, number>([[startIdx, 0]]);
-    let consistent = true;
-    const tightQ = [startIdx];
-    outer: while (tightQ.length > 0) {
-      const v = tightQ.shift()!;
-      const vLv = tempLevel.get(v)!;
-      const info = idx2chain.get(v)!;
-      for (const wIdx of info.nxt ?? []) {
-        if (!idx2chain.has(wIdx)) continue;
-        const exp = vLv + 1;
-        if (!tempLevel.has(wIdx)) {
-          tempLevel.set(wIdx, exp);
-          tightQ.push(wIdx);
-        } else if (tempLevel.get(wIdx) !== exp) {
-          consistent = false;
-          break outer;
-        }
-      }
-      for (const uIdx of info.pre ?? []) {
-        if (!idx2chain.has(uIdx)) continue;
-        const exp = vLv - 1;
-        if (!tempLevel.has(uIdx)) {
-          tempLevel.set(uIdx, exp);
-          tightQ.push(uIdx);
-        } else if (tempLevel.get(uIdx) !== exp) {
-          consistent = false;
-          break outer;
-        }
-      }
+  ids: number[],
+): number[][] => {
+  const idSet = new Set(ids);
+  const adj = new Map<number, Set<number>>();
+  for (const idx of idSet) adj.set(idx, new Set<number>());
+  for (const idx of idSet) {
+    for (const j of idx2chain.get(idx)?.nxt ?? []) {
+      if (!idSet.has(j)) continue;
+      adj.get(idx)!.add(j);
+      adj.get(j)!.add(idx);
     }
-
-    if (consistent) {
-      for (const idx of component) idx2chainLevel.set(idx, tempLevel.get(idx)!);
-    } else {
-      // ── fallback: ASAP → ALAP (suffix tight) ──
-
-      // ASAP: 소스=0, 전방 Kahn's BFS
-      const inDeg = new Map<number, number>();
-      for (const idx of component) {
-        let deg = 0;
-        for (const p of idx2chain.get(idx)!.pre ?? [])
-          if (idx2chain.has(p)) deg++;
-        inDeg.set(idx, deg);
-      }
-      // partial BFS tempLevel을 정규화해 ASAP 하한으로 활용
-      const tempMin = Math.min(...[...tempLevel.values()]);
-      const asap = new Map<number, number>();
-      for (const idx of component) {
-        const tl = tempLevel.get(idx);
-        asap.set(idx, tl !== undefined ? Math.max(0, tl - tempMin) : 0);
-      }
-      const asapQ = component.filter((idx) => inDeg.get(idx) === 0);
-      while (asapQ.length > 0) {
-        const v = asapQ.shift()!;
-        const vLv = asap.get(v)!;
-        for (const w of idx2chain.get(v)!.nxt ?? []) {
-          if (!idx2chain.has(w)) continue;
-          if (vLv + 1 > asap.get(w)!) asap.set(w, vLv + 1);
-          const nd = inDeg.get(w)! - 1;
-          inDeg.set(w, nd);
-          if (nd === 0) asapQ.push(w);
-        }
-      }
-
-      // 위상 정렬 (ALAP 역방향 처리를 위해)
-      const inDeg2 = new Map<number, number>();
-      for (const idx of component) {
-        let deg = 0;
-        for (const p of idx2chain.get(idx)!.pre ?? [])
-          if (idx2chain.has(p)) deg++;
-        inDeg2.set(idx, deg);
-      }
-      const topoOrder: number[] = [];
-      const topoQ = component.filter((idx) => inDeg2.get(idx) === 0);
-      while (topoQ.length > 0) {
-        const v = topoQ.shift()!;
-        topoOrder.push(v);
-        for (const w of idx2chain.get(v)!.nxt ?? []) {
-          if (!idx2chain.has(w)) continue;
-          const nd = inDeg2.get(w)! - 1;
-          inDeg2.set(w, nd);
-          if (nd === 0) topoQ.push(w);
-        }
-      }
-
-      // ALAP: 싱크는 ASAP 레벨 유지, 비싱크는 min(후계자.alap) - 1
-      const alap = new Map<number, number>(asap);
-      for (let i = topoOrder.length - 1; i >= 0; i--) {
-        const v = topoOrder[i];
-        const succs = [...(idx2chain.get(v)!.nxt ?? [])].filter((w) =>
-          idx2chain.has(w),
-        );
-        if (succs.length > 0)
-          alap.set(v, Math.min(...succs.map((w) => alap.get(w)!)) - 1);
-      }
-
-      for (const idx of component) idx2chainLevel.set(idx, alap.get(idx)!);
-    }
-
-    // ── normalize: 컴포넌트 최솟값을 0으로 ──
-    const minLevel = Math.min(
-      ...component.map((idx) => idx2chainLevel.get(idx)!),
-    );
-    if (minLevel !== 0)
-      for (const idx of component)
-        idx2chainLevel.set(idx, idx2chainLevel.get(idx)! - minLevel);
   }
-
-  return idx2chainLevel;
+  const visited = new Set<number>();
+  const comps: number[][] = [];
+  for (const start of ids) {
+    if (visited.has(start)) continue;
+    const comp: number[] = [];
+    const stack = [start];
+    visited.add(start);
+    while (stack.length) {
+      const cur = stack.pop()!;
+      comp.push(cur);
+      for (const nb of adj.get(cur)!) {
+        if (visited.has(nb)) continue;
+        visited.add(nb);
+        stack.push(nb);
+      }
+    }
+    comps.push(comp);
+  }
+  return comps;
 };
 
-export { buildChainMap, setPre, removePre, getPartition, buildChainLevelMap };
+export { buildChainMap, setPre, removePre, getPartition };

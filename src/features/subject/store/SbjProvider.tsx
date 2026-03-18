@@ -140,7 +140,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     setSelectedSet,
     cameraRef,
   );
-  const { setTreeMom, setTreeBro } = useSbjTree(idx2family, setList, treeDrag);
+  const { setTreeMom, setTreeBro, exitTreeMom } = useSbjTree(idx2family, setList, treeDrag);
   const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(
     idx2chain,
     setList,
@@ -195,6 +195,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       hasClip,
       setTreeMom,
       setTreeBro,
+      exitTreeMom,
       setCnvsPre,
       setCnvsPos,
       autoLayout,
@@ -230,6 +231,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       hasClip,
       setTreeMom,
       setTreeBro,
+      exitTreeMom,
       setCnvsPre,
       setCnvsPos,
       autoLayout,

@@ -3,6 +3,7 @@ import type { Curriculum } from "@/features/subject/model/Curriculum/curriculum"
 import {
   setBro,
   setMom,
+  exitMom,
   type BroDir,
   type FamilyMap,
 } from "@/lib/Family/family";
@@ -31,5 +32,13 @@ export const useSbjTree = (
     [idx2family, setList, treeDrag]
   );
 
-  return { setTreeMom, setTreeBro };
+  const exitTreeMom = useCallback(
+    (trg: ReadonlySet<number>) => {
+      const { updater } = exitMom<Curriculum>(idx2family, trg);
+      setList(updater);
+    },
+    [idx2family, setList]
+  );
+
+  return { setTreeMom, setTreeBro, exitTreeMom };
 };

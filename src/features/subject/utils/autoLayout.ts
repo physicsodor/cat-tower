@@ -1,4 +1,5 @@
 import { LAYOUT_COL_GAP, LAYOUT_PART_GAP, LAYOUT_ROW_GAP } from "../constants";
+import { getPartition } from "@/lib/Chain/chain";
 import type { ChainMap } from "@/lib/Chain/chain";
 import { bboxFromXYWH, type BBox } from "../model/rect";
 
@@ -40,32 +41,19 @@ const median = (xs: number[]): number => {
   if (xs.length === 0) return 0;
   const sorted = [...xs].sort((a, b) => a - b);
   const m = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[m]
-    : (sorted[m - 1] + sorted[m]) / 2;
+  return sorted.length % 2 === 1 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
 };
 
-const shiftNodesX = (
+const shiftNodes = (
   result: Map<number, BBox>,
   ids: number[],
   dx: number,
-): void => {
-  if (Math.abs(dx) <= EPS_MEDIAN) return;
-  for (const idx of ids) {
-    const p = result.get(idx)!;
-    result.set(idx, bboxFromXYWH(p.x + dx, p.y, p.w, p.h));
-  }
-};
-
-const shiftNodesY = (
-  result: Map<number, BBox>,
-  ids: number[],
   dy: number,
 ): void => {
-  if (Math.abs(dy) <= EPS_MEDIAN) return;
+  if (Math.abs(dx) <= EPS_MEDIAN && Math.abs(dy) <= EPS_MEDIAN) return;
   for (const idx of ids) {
     const p = result.get(idx)!;
-    result.set(idx, bboxFromXYWH(p.x, p.y + dy, p.w, p.h));
+    result.set(idx, bboxFromXYWH(p.x + dx, p.y + dy, p.w, p.h));
   }
 };
 
@@ -86,41 +74,6 @@ const centerOfBbox = (
   }
   if (!ids.length) return { x: 0, y: 0 };
   return { x: (l + r) / 2, y: (t + b) / 2 };
-};
-
-const connectedComponentsUndirected = (
-  idx2chain: ChainMap,
-  ids: number[],
-): number[][] => {
-  const idSet = new Set(ids);
-  const adj = new Map<number, Set<number>>();
-  for (const idx of idSet) adj.set(idx, new Set<number>());
-  for (const idx of idSet) {
-    for (const j of idx2chain.get(idx)?.nxt ?? []) {
-      if (!idSet.has(j)) continue;
-      adj.get(idx)!.add(j);
-      adj.get(j)!.add(idx);
-    }
-  }
-  const visited = new Set<number>();
-  const comps: number[][] = [];
-  for (const start of ids) {
-    if (visited.has(start)) continue;
-    const comp: number[] = [];
-    const stack = [start];
-    visited.add(start);
-    while (stack.length) {
-      const cur = stack.pop()!;
-      comp.push(cur);
-      for (const nb of adj.get(cur)!) {
-        if (visited.has(nb)) continue;
-        visited.add(nb);
-        stack.push(nb);
-      }
-    }
-    comps.push(comp);
-  }
-  return comps;
 };
 
 const computeLevelsForPartition = (
@@ -284,7 +237,7 @@ const makeNodeItem = (ctx: LayoutCtx, idx: number): LayoutItem => {
       const p = ctx.result.get(idx)!;
       ctx.result.set(idx, bboxFromXYWH(x, p.y, p.w, p.h));
     },
-    shiftX: (dx: number) => shiftNodesX(ctx.result, [idx], dx),
+    shiftX: (dx: number) => shiftNodes(ctx.result, [idx], dx, 0),
   };
 };
 
@@ -305,14 +258,14 @@ const makeBlockItem = (
     getIdealX: () => centerOfBbox(ctx.result, layout.nodeIds).x,
     setCenterX: (x: number) => {
       const cur = centerOfBbox(ctx.result, layout.nodeIds).x;
-      shiftNodesX(ctx.result, layout.nodeIds, x - cur);
+      shiftNodes(ctx.result, layout.nodeIds, x - cur, 0);
       const next = refresh();
       layout.levels = next.levels;
       layout.levelLeft = next.levelLeft;
       layout.levelRight = next.levelRight;
     },
     shiftX: (dx: number) => {
-      shiftNodesX(ctx.result, layout.nodeIds, dx);
+      shiftNodes(ctx.result, layout.nodeIds, dx, 0);
       const next = refresh();
       layout.levels = next.levels;
       layout.levelLeft = next.levelLeft;
@@ -375,6 +328,22 @@ const getCompactCentersRight = (
   return centers;
 };
 
+const getCompactCentersLeft = (
+  ctx: LayoutCtx,
+  anchorX: number,
+  items: LayoutItem[],
+): number[] => {
+  const centers: number[] = new Array(items.length);
+  centers[items.length - 1] = anchorX;
+  for (let i = items.length - 2; i >= 0; i--) {
+    items[i].setCenterX(anchorX);
+    items[i + 1].setCenterX(centers[i + 1]);
+    const req = requiredShift(ctx, items[i], items[i + 1]);
+    centers[i] = centers[i + 1] - req;
+  }
+  return centers;
+};
+
 const assignTemporaryIdeals = (
   ctx: LayoutCtx,
   orderedItems: LayoutItem[],
@@ -415,21 +384,10 @@ const assignTemporaryIdeals = (
       }
     } else if (!leftHas && rightHas) {
       const anchorX = base[j]!;
-      orderedItems[j].setCenterX(anchorX);
-      refreshItemBounds(ctx, orderedItems[j]);
-      let rightItem = orderedItems[j];
-      let rightX = anchorX;
-      for (let k = j - 1; k >= i; k--) {
-        const it = orderedItems[k];
-        it.setCenterX(rightX);
-        refreshItemBounds(ctx, it);
-        const req = requiredShift(ctx, it, rightItem);
-        const itX = rightX - req;
-        temp.set(it.id, itX);
-        it.setCenterX(itX);
-        refreshItemBounds(ctx, it);
-        rightX = itX;
-        rightItem = it;
+      const chunk = orderedItems.slice(i, j + 1);
+      const centers = getCompactCentersLeft(ctx, anchorX, chunk);
+      for (let k = 0; k < chunk.length - 1; k++) {
+        temp.set(chunk[k].id, centers[k]);
       }
     } else {
       const chunk = orderedItems.slice(i, j);
@@ -439,6 +397,19 @@ const assignTemporaryIdeals = (
   }
 
   return temp;
+};
+
+const calcItemsCenter = (ctx: LayoutCtx, items: LayoutItem[]): number => {
+  let l = Infinity,
+    r = -Infinity;
+  for (const item of items) {
+    refreshItemBounds(ctx, item);
+    for (const lv of item.levels) {
+      l = Math.min(l, item.levelLeft.get(lv) ?? Infinity);
+      r = Math.max(r, item.levelRight.get(lv) ?? -Infinity);
+    }
+  }
+  return (l + r) / 2;
 };
 
 const bilateralSweep = (
@@ -484,69 +455,42 @@ const bilateralSweep = (
     if ((tempIdeal.get(orderedItems[i].id) ?? 0) <= anchor) split = i;
   }
 
-  const leftChain = orderedItems.slice(0, split + 1);
-  const rightChain = orderedItems.slice(split + 1);
-
-  if (leftChain.length) {
-    const last = leftChain[leftChain.length - 1];
-    last.setCenterX(tempIdeal.get(last.id)!);
-    refreshItemBounds(ctx, last);
-    for (let i = leftChain.length - 2; i >= 0; i--) {
-      const cur = leftChain[i];
-      const rightNeighbor = leftChain[i + 1];
-      cur.setCenterX(tempIdeal.get(cur.id)!);
-      refreshItemBounds(ctx, cur);
-      const req = requiredShift(ctx, cur, rightNeighbor);
-      const maxCenter = tempIdeal.get(cur.id)! - req;
-      cur.setCenterX(Math.min(tempIdeal.get(cur.id)!, maxCenter));
-      refreshItemBounds(ctx, cur);
-    }
-  }
-
-  if (rightChain.length) {
-    const first = rightChain[0];
-    first.setCenterX(tempIdeal.get(first.id)!);
-    refreshItemBounds(ctx, first);
-    for (let i = 1; i < rightChain.length; i++) {
-      const cur = rightChain[i];
-      const leftNeighbor = rightChain[i - 1];
-      cur.setCenterX(tempIdeal.get(cur.id)!);
-      refreshItemBounds(ctx, cur);
-      const req = requiredShift(ctx, leftNeighbor, cur);
-      const minCenter = tempIdeal.get(cur.id)! + req;
-      cur.setCenterX(Math.max(tempIdeal.get(cur.id)!, minCenter));
-      refreshItemBounds(ctx, cur);
-    }
-  }
-
-  if (!hadAnyRealIdeal) {
-    let l = Infinity;
-    let r = -Infinity;
-    for (const item of orderedItems) {
-      refreshItemBounds(ctx, item);
-      for (const lv of item.levels) {
-        l = Math.min(l, item.levelLeft.get(lv) ?? Infinity);
-        r = Math.max(r, item.levelRight.get(lv) ?? -Infinity);
+  const sweepChain = (chain: LayoutItem[], dir: "left" | "right"): void => {
+    if (chain.length === 0) return;
+    const anchor = dir === "left" ? chain[chain.length - 1] : chain[0];
+    anchor.setCenterX(tempIdeal.get(anchor.id)!);
+    refreshItemBounds(ctx, anchor);
+    if (dir === "left") {
+      for (let i = chain.length - 2; i >= 0; i--) {
+        const cur = chain[i];
+        cur.setCenterX(tempIdeal.get(cur.id)!);
+        refreshItemBounds(ctx, cur);
+        const req = requiredShift(ctx, cur, chain[i + 1]);
+        cur.setCenterX(tempIdeal.get(cur.id)! - req);
+        refreshItemBounds(ctx, cur);
+      }
+    } else {
+      for (let i = 1; i < chain.length; i++) {
+        const cur = chain[i];
+        cur.setCenterX(tempIdeal.get(cur.id)!);
+        refreshItemBounds(ctx, cur);
+        const req = requiredShift(ctx, chain[i - 1], cur);
+        cur.setCenterX(tempIdeal.get(cur.id)! + req);
+        refreshItemBounds(ctx, cur);
       }
     }
-    const center = (l + r) / 2;
+  };
+
+  sweepChain(orderedItems.slice(0, split + 1), "left");
+  sweepChain(orderedItems.slice(split + 1), "right");
+
+  if (!hadAnyRealIdeal) {
+    const center = calcItemsCenter(ctx, orderedItems);
     for (const item of orderedItems) item.shiftX(-center);
     return;
   }
 
-  let actualLeft = Infinity;
-  let actualRight = -Infinity;
-  for (const item of orderedItems) {
-    refreshItemBounds(ctx, item);
-    for (const lv of item.levels) {
-      actualLeft = Math.min(actualLeft, item.levelLeft.get(lv) ?? Infinity);
-      actualRight = Math.max(
-        actualRight,
-        item.levelRight.get(lv) ?? -Infinity,
-      );
-    }
-  }
-  const currentCenter = (actualLeft + actualRight) / 2;
+  const currentCenter = calcItemsCenter(ctx, orderedItems);
   const shift = anchor - currentCenter;
   for (const item of orderedItems) item.shiftX(shift);
 };
@@ -681,7 +625,7 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
   );
   const rest = blockNodeIds.filter((idx) => !parentNodes.includes(idx));
 
-  const childrenComps = connectedComponentsUndirected(ctx.idx2chain, rest);
+  const childrenComps = getPartition(ctx.idx2chain, rest);
   const childLayouts = childrenComps.map((comp) => layoutBlock(ctx, comp));
 
   const orderedChildren = orderChildren(ctx, childLayouts);
@@ -719,6 +663,7 @@ const insertDummyNodes = (
   localChain: ChainMap;
   dummyIds: Set<number>;
   dummyLevel: Map<number, number>;
+  dummyToReal: Map<number, number>;
 } => {
   const localChain: ChainMap = new Map();
   for (const [id, info] of idx2chain) {
@@ -731,6 +676,7 @@ const insertDummyNodes = (
 
   const dummyIds = new Set<number>();
   const dummyLevel = new Map<number, number>();
+  const dummyToReal = new Map<number, number>();
   let nextDummyId = DUMMY_ID_START;
 
   const allocDummyId = (): number => {
@@ -754,6 +700,7 @@ const insertDummyNodes = (
         const dId = allocDummyId();
         dummyIds.add(dId);
         dummyLevel.set(dId, lv);
+        dummyToReal.set(dId, fromId);
         localChain.set(dId, { pre: new Set(), nxt: new Set() });
         chain.push(dId);
       }
@@ -766,7 +713,7 @@ const insertDummyNodes = (
     }
   }
 
-  return { localChain, dummyIds, dummyLevel };
+  return { localChain, dummyIds, dummyLevel, dummyToReal };
 };
 
 const computeAutoLayout = (
@@ -777,7 +724,7 @@ const computeAutoLayout = (
   const nodeIds = [...bboxMap.keys()];
   const realNodeIdSet = new Set(nodeIds);
 
-  const partitionIdsInit = connectedComponentsUndirected(idx2chain, nodeIds);
+  const partitionIdsInit = getPartition(idx2chain, nodeIds);
 
   const idx2level = new Map<number, number>();
   partitionIdsInit.forEach((ids) => {
@@ -790,38 +737,20 @@ const computeAutoLayout = (
     result.set(idx, bboxFromXYWH(node.x, node.y, node.w, node.h));
   }
 
-  // Insert dummy nodes for long edges (level diff >= 2).
-  const { localChain, dummyIds, dummyLevel } = insertDummyNodes(idx2chain, idx2level, realNodeIdSet);
-  for (const [dId, lv] of dummyLevel) idx2level.set(dId, lv);
-  for (const dId of dummyIds) result.set(dId, bboxFromXYWH(0, 0, -LAYOUT_COL_GAP, 0));
-  const allLayoutIds = [...nodeIds, ...dummyIds];
-
-  // Re-compute partitions including dummy nodes.
-  const partitionIds = connectedComponentsUndirected(localChain, allLayoutIds);
-  const idx2part = new Map<number, number>();
-  partitionIds.forEach((ids, partId) => {
-    for (const idx of ids) idx2part.set(idx, partId);
-  });
-
-  const rowIdsByPartition = new Map<number, Map<number, number[]>>();
-  for (const idx of allLayoutIds) {
-    const partId = idx2part.get(idx) ?? -1;
-    const level = idx2level.get(idx) ?? 0;
-    if (!rowIdsByPartition.has(partId))
-      rowIdsByPartition.set(partId, new Map());
-    const rowMap = rowIdsByPartition.get(partId)!;
-    if (!rowMap.has(level)) rowMap.set(level, []);
-    rowMap.get(level)!.push(idx);
-  }
-
-  for (let partId = 0; partId < partitionIds.length; partId++) {
-    const rowMap = rowIdsByPartition.get(partId)!;
+  // Assign Y coordinates (real nodes only).
+  partitionIdsInit.forEach((ids) => {
+    const rowMap = new Map<number, number[]>();
+    for (const idx of ids) {
+      const lv = idx2level.get(idx) ?? 0;
+      if (!rowMap.has(lv)) rowMap.set(lv, []);
+      rowMap.get(lv)!.push(idx);
+    }
     const levels = [...rowMap.keys()].sort((a, b) => a - b);
     const rowHeight = new Map<number, number>();
     for (const lv of levels) {
       let h = 0;
       for (const idx of rowMap.get(lv) ?? [])
-        if (realNodeIdSet.has(idx)) h = Math.max(h, bboxMap.get(idx)!.h);
+        h = Math.max(h, bboxMap.get(idx)!.h);
       rowHeight.set(lv, h);
     }
     const rowY = new Map<number, number>();
@@ -829,12 +758,13 @@ const computeAutoLayout = (
     for (let i = 1; i < levels.length; i++) {
       const prev = levels[i - 1];
       const cur = levels[i];
-      const y =
+      rowY.set(
+        cur,
         (rowY.get(prev) ?? 0) +
-        (rowHeight.get(prev) ?? 0) / 2 +
-        LAYOUT_ROW_GAP +
-        (rowHeight.get(cur) ?? 0) / 2;
-      rowY.set(cur, y);
+          (rowHeight.get(prev) ?? 0) / 2 +
+          LAYOUT_ROW_GAP +
+          (rowHeight.get(cur) ?? 0) / 2,
+      );
     }
     for (const lv of levels) {
       const y = rowY.get(lv) ?? 0;
@@ -843,7 +773,28 @@ const computeAutoLayout = (
         result.set(idx, bboxFromXYWH(p.x, y, p.w, p.h));
       }
     }
-  }
+  });
+
+  // Insert dummy nodes for long edges (level diff >= 2).
+  const { localChain, dummyIds, dummyLevel, dummyToReal } = insertDummyNodes(
+    idx2chain,
+    idx2level,
+    realNodeIdSet,
+  );
+  for (const [dId, lv] of dummyLevel) idx2level.set(dId, lv);
+  for (const dId of dummyIds)
+    result.set(dId, bboxFromXYWH(0, 0, -LAYOUT_COL_GAP, 0));
+  const allLayoutIds = [...nodeIds, ...dummyIds];
+
+  // Assign partition IDs: real nodes from partitionIdsInit, dummy nodes directly from dummyToReal.
+  const idx2part = new Map<number, number>();
+  partitionIdsInit.forEach((ids, partId) => {
+    for (const idx of ids) idx2part.set(idx, partId);
+  });
+  for (const [dId, realId] of dummyToReal)
+    idx2part.set(dId, idx2part.get(realId)!);
+  const partitionIds: number[][] = partitionIdsInit.map(() => []);
+  for (const idx of allLayoutIds) partitionIds[idx2part.get(idx)!].push(idx);
 
   const ctx: LayoutCtx = {
     result,
@@ -873,8 +824,16 @@ const computeAutoLayout = (
   });
 
   for (let i = 1; i < orderedPartitions.length; i++) {
-    const prev = buildBlockLayout(result, idx2level, orderedPartitions[i - 1].nodeIds);
-    const cur = buildBlockLayout(result, idx2level, orderedPartitions[i].nodeIds);
+    const prev = buildBlockLayout(
+      result,
+      idx2level,
+      orderedPartitions[i - 1].nodeIds,
+    );
+    const cur = buildBlockLayout(
+      result,
+      idx2level,
+      orderedPartitions[i].nodeIds,
+    );
     const prevItem = makeBlockItem(ctx, prev, ctx.nextBlockId++);
     ctx.blockId2layout.set(prevItem.id, prev);
     const curItem = makeBlockItem(ctx, cur, ctx.nextBlockId++);
@@ -897,35 +856,10 @@ const computeAutoLayout = (
     curItem.shiftX(Math.max(0, req));
   }
 
-  // Align all level-0 rows vertically.
-  const level0Ys: number[] = [];
-  for (const ids of partitionIds) {
-    const lv0 = ids.filter((idx) => (idx2level.get(idx) ?? 0) === 0);
-    if (lv0.length) level0Ys.push(result.get(lv0[0])!.y);
-  }
-  const targetLevel0Y = level0Ys.length ? median(level0Ys) : 0;
-  for (const ids of partitionIds) {
-    const lv0 = ids.filter((idx) => (idx2level.get(idx) ?? 0) === 0);
-    if (!lv0.length) continue;
-    const dy = targetLevel0Y - result.get(lv0[0])!.y;
-    shiftNodesY(result, ids, dy);
-  }
-
   // Final normalize to center (0, 0). Bounds from real nodes only.
   if (nodeIds.length) {
-    let l = Infinity,
-      r = -Infinity,
-      t = Infinity,
-      b = -Infinity;
-    for (const idx of nodeIds) {
-      const p = result.get(idx)!;
-      l = Math.min(l, p.l);
-      r = Math.max(r, p.r);
-      t = Math.min(t, p.t);
-      b = Math.max(b, p.b);
-    }
-    shiftNodesX(result, allLayoutIds, -(l + r) / 2);
-    shiftNodesY(result, allLayoutIds, -(t + b) / 2);
+    const c = centerOfBbox(result, nodeIds);
+    shiftNodes(result, allLayoutIds, -c.x, -c.y);
   }
 
   // Remove dummy nodes from result.

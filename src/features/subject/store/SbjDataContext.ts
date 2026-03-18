@@ -21,6 +21,7 @@ type SbjDataContextValue = {
   hasClip: boolean;
   setTreeMom: (trg: ReadonlySet<number>, mom: number) => void;
   setTreeBro: (trg: ReadonlySet<number>, idx: number, dir: BroDir) => void;
+  exitTreeMom: (trg: ReadonlySet<number>) => void;
   setCnvsPre: (idx: number) => void;
   setCnvsPos: (trg: Set<number>, dxy: { dx: number; dy: number }) => void;
   autoLayout: (bboxMap: Map<number, BBox>) => void;

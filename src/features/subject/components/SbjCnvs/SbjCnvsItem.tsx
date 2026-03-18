@@ -3,6 +3,7 @@ import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../store/SbjDataContext";
+import { useSbjSelect } from "../../store/SbjSelectContext";
 import { renderMarkup, stripMarkup, truncateBytes } from "../../utils/markup";
 import { CONTENT_PREVIEW_BYTES } from "@/features/subject/constants";
 
@@ -54,9 +55,13 @@ const SbjCnvsItem = ({
     delSbjOne,
     openEdit,
     removePreLink,
+    setTreeMom,
+    exitTreeMom,
     idx2chain,
     idx2sbj,
+    idx2family,
   } = useSbjData();
+  const { selectedSet } = useSbjSelect();
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -65,6 +70,12 @@ const SbjCnvsItem = ({
     type: "in" | "out";
     x: number;
     y: number;
+  } | null>(null);
+  const [exitCtxMenu, setExitCtxMenu] = useState<{
+    x: number;
+    y: number;
+    grandmom: number;
+    showAll: boolean;
   } | null>(null);
   const outRef = useRef<HTMLDivElement | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,6 +192,23 @@ const SbjCnvsItem = ({
     [ctxMenu, idx, removePreLink],
   );
 
+  const onBodyContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const f = idx2family.get(idx);
+      if (!f || f.mom === undefined || f.mom === -1) return;
+      const grandmom = idx2family.get(f.mom)?.mom ?? -1;
+      setExitCtxMenu({
+        x: e.clientX,
+        y: e.clientY,
+        grandmom,
+        showAll: selectedSet.has(idx),
+      });
+    },
+    [idx, idx2family, selectedSet],
+  );
+
   const ctxItems = useMemo(() => {
     if (!ctxMenu) return [];
     const idxs =
@@ -229,6 +257,7 @@ const SbjCnvsItem = ({
         onPointerMove={onItemPointerMove}
         onPointerUp={onItemPointerUp}
         onPointerCancel={onItemPointerUp}
+        onContextMenu={onBodyContextMenu}
       >
         {isOver ? (
           <div className="sbj-cnvs-item-sum">
@@ -270,6 +299,41 @@ const SbjCnvsItem = ({
         mousePos={mousePos}
         zoom={camera.zoom}
       />
+      {exitCtxMenu && (
+        <>
+          <div
+            className="sbj-cnvs-ctx-overlay"
+            onPointerDown={() => setExitCtxMenu(null)}
+          />
+          <div
+            className="sbj-cnvs-ctx-menu"
+            style={{ left: exitCtxMenu.x, top: exitCtxMenu.y }}
+          >
+            <div
+              className="sbj-cnvs-ctx-menu-item"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setTreeMom(new Set([idx]), exitCtxMenu.grandmom);
+                setExitCtxMenu(null);
+              }}
+            >
+              이 항목을 그룹에서 제외
+            </div>
+            {exitCtxMenu.showAll && (
+              <div
+                className="sbj-cnvs-ctx-menu-item"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  exitTreeMom(selectedSet);
+                  setExitCtxMenu(null);
+                }}
+              >
+                선택한 모든 항목을 그룹에서 제외
+              </div>
+            )}
+          </div>
+        </>
+      )}
       {ctxMenu && (
         <>
           <div

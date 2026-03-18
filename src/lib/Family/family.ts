@@ -177,4 +177,41 @@ const reparentKids = <T extends Family>(
   return { updater };
 };
 
-export { buildFamilyMap, setMom, setBro, getFlatIdxs, reparentKids };
+const exitMom = <T extends Family>(
+  idx2family: FamilyMap,
+  targetSet: ReadonlySet<number>,
+): { updater: (list: ReadonlyArray<T>) => T[] } => {
+  const idx2grandmom = new Map<number, number>();
+  for (const idx of targetSet) {
+    const f = idx2family.get(idx);
+    if (!f || f.mom === undefined || f.mom === -1) continue;
+    const grandmom = idx2family.get(f.mom)?.mom ?? -1;
+    idx2grandmom.set(idx, grandmom);
+  }
+  if (idx2grandmom.size === 0) return { updater: (x) => x as T[] };
+
+  const byGrandmom = new Map<number, number[]>();
+  for (const [idx, gm] of idx2grandmom) {
+    const arr = byGrandmom.get(gm) ?? [];
+    arr.push(idx);
+    byGrandmom.set(gm, arr);
+  }
+
+  const idx2bro = new Map<number, string>();
+  for (const [gm, idxs] of byGrandmom) {
+    const firstBro = idx2family.get(gm)?.first ?? null;
+    const bros = generateNKeysBetween(null, firstBro, idxs.length);
+    idxs.forEach((i, j) => idx2bro.set(i, bros[j]));
+  }
+
+  const updater = (list: ReadonlyArray<T>) =>
+    list.map((x) => {
+      const gm = idx2grandmom.get(x.idx);
+      if (gm === undefined) return x;
+      return { ...x, mom: gm, bro: idx2bro.get(x.idx) ?? "" };
+    }) as T[];
+
+  return { updater };
+};
+
+export { buildFamilyMap, setMom, setBro, getFlatIdxs, reparentKids, exitMom };
