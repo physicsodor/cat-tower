@@ -511,5 +511,45 @@ LAYOUT_PART_GAP
 
 Translate layout so that
 
-center_x = 0  
+center_x = 0
 center_y = 0
+
+Bounding box for normalization is computed from real nodes only.
+
+---
+
+## 25. Dummy Nodes
+
+For every directed edge A → B where
+
+  level(B) − level(A) ≥ 2
+
+insert dummy nodes d₁, d₂, ..., dₖ at each intermediate level:
+
+  level(dᵢ) = level(A) + i   (i = 1 ... k,  k = level(B) − level(A) − 1)
+
+Replace the original edge with the chain
+
+  A → d₁ → d₂ → ... → dₖ → B
+
+Dummy nodes participate in all ordering and placement steps
+(connectedComponentsUndirected, parentMedian, childMedian, bilateralSweep)
+in exactly the same way as real nodes.
+
+Dummy node geometry
+
+  w = −LAYOUT_COL_GAP
+  h = 0
+
+With this width the spacing rule
+
+  requiredShift = levelRight(A) + LAYOUT_COL_GAP − levelLeft(B)
+
+produces the same value whether computed directly between two real nodes
+or through an intermediate dummy chain.
+Dummy nodes therefore impose no additional horizontal space.
+
+Dummy nodes are removed from the result before returning.
+
+Dummy ID range: [500_000_000, 999_999_999].
+Collision with real node IDs is checked only when max(real IDs) ≥ 500_000_000.

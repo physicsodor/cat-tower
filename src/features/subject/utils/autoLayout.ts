@@ -709,21 +709,78 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
   return buildBlockLayout(ctx.result, ctx.idx2level, blockNodeIds);
 };
 
+const DUMMY_ID_START = 500_000_000;
+
+const insertDummyNodes = (
+  idx2chain: ChainMap,
+  idx2level: Map<number, number>,
+  realNodeIdSet: Set<number>,
+): {
+  localChain: ChainMap;
+  dummyIds: Set<number>;
+  dummyLevel: Map<number, number>;
+} => {
+  const localChain: ChainMap = new Map();
+  for (const [id, info] of idx2chain) {
+    if (!realNodeIdSet.has(id)) continue;
+    localChain.set(id, {
+      pre: new Set(info.pre ?? []),
+      nxt: new Set(info.nxt ?? []),
+    });
+  }
+
+  const dummyIds = new Set<number>();
+  const dummyLevel = new Map<number, number>();
+  let nextDummyId = DUMMY_ID_START;
+
+  const allocDummyId = (): number => {
+    while (realNodeIdSet.has(nextDummyId) || dummyIds.has(nextDummyId))
+      nextDummyId++;
+    return nextDummyId++;
+  };
+
+  for (const fromId of realNodeIdSet) {
+    const lvA = idx2level.get(fromId) ?? 0;
+    for (const toId of idx2chain.get(fromId)?.nxt ?? []) {
+      if (!realNodeIdSet.has(toId)) continue;
+      const lvB = idx2level.get(toId) ?? 0;
+      if (lvB - lvA < 2) continue;
+
+      localChain.get(fromId)!.nxt!.delete(toId);
+      localChain.get(toId)!.pre!.delete(fromId);
+
+      const chain: number[] = [fromId];
+      for (let lv = lvA + 1; lv < lvB; lv++) {
+        const dId = allocDummyId();
+        dummyIds.add(dId);
+        dummyLevel.set(dId, lv);
+        localChain.set(dId, { pre: new Set(), nxt: new Set() });
+        chain.push(dId);
+      }
+      chain.push(toId);
+
+      for (let i = 0; i < chain.length - 1; i++) {
+        localChain.get(chain[i])!.nxt!.add(chain[i + 1]);
+        localChain.get(chain[i + 1])!.pre!.add(chain[i]);
+      }
+    }
+  }
+
+  return { localChain, dummyIds, dummyLevel };
+};
+
 const computeAutoLayout = (
   idx2chain: ChainMap,
   bboxMap: Map<number, BBox>,
 ): Map<number, BBox> => {
   const result = new Map<number, BBox>();
   const nodeIds = [...bboxMap.keys()];
+  const realNodeIdSet = new Set(nodeIds);
 
-  const partitionIds = connectedComponentsUndirected(idx2chain, nodeIds);
-  const idx2part = new Map<number, number>();
-  partitionIds.forEach((ids, partId) => {
-    for (const idx of ids) idx2part.set(idx, partId);
-  });
+  const partitionIdsInit = connectedComponentsUndirected(idx2chain, nodeIds);
 
   const idx2level = new Map<number, number>();
-  partitionIds.forEach((ids) => {
+  partitionIdsInit.forEach((ids) => {
     const partLevels = computeLevelsForPartition(idx2chain, ids);
     for (const [idx, lv] of partLevels) idx2level.set(idx, lv);
   });
@@ -733,8 +790,21 @@ const computeAutoLayout = (
     result.set(idx, bboxFromXYWH(node.x, node.y, node.w, node.h));
   }
 
+  // Insert dummy nodes for long edges (level diff >= 2).
+  const { localChain, dummyIds, dummyLevel } = insertDummyNodes(idx2chain, idx2level, realNodeIdSet);
+  for (const [dId, lv] of dummyLevel) idx2level.set(dId, lv);
+  for (const dId of dummyIds) result.set(dId, bboxFromXYWH(0, 0, -LAYOUT_COL_GAP, 0));
+  const allLayoutIds = [...nodeIds, ...dummyIds];
+
+  // Re-compute partitions including dummy nodes.
+  const partitionIds = connectedComponentsUndirected(localChain, allLayoutIds);
+  const idx2part = new Map<number, number>();
+  partitionIds.forEach((ids, partId) => {
+    for (const idx of ids) idx2part.set(idx, partId);
+  });
+
   const rowIdsByPartition = new Map<number, Map<number, number[]>>();
-  for (const idx of nodeIds) {
+  for (const idx of allLayoutIds) {
     const partId = idx2part.get(idx) ?? -1;
     const level = idx2level.get(idx) ?? 0;
     if (!rowIdsByPartition.has(partId))
@@ -750,7 +820,8 @@ const computeAutoLayout = (
     const rowHeight = new Map<number, number>();
     for (const lv of levels) {
       let h = 0;
-      for (const idx of rowMap.get(lv) ?? []) h = Math.max(h, bboxMap.get(idx)!.h);
+      for (const idx of rowMap.get(lv) ?? [])
+        if (realNodeIdSet.has(idx)) h = Math.max(h, bboxMap.get(idx)!.h);
       rowHeight.set(lv, h);
     }
     const rowY = new Map<number, number>();
@@ -776,7 +847,7 @@ const computeAutoLayout = (
 
   const ctx: LayoutCtx = {
     result,
-    idx2chain,
+    idx2chain: localChain,
     idx2level,
     blockId2layout: new Map<number, BlockLayout>(),
     nextBlockId: 1_000_000_000,
@@ -840,7 +911,7 @@ const computeAutoLayout = (
     shiftNodesY(result, ids, dy);
   }
 
-  // Final normalize to center (0, 0).
+  // Final normalize to center (0, 0). Bounds from real nodes only.
   if (nodeIds.length) {
     let l = Infinity,
       r = -Infinity,
@@ -853,9 +924,12 @@ const computeAutoLayout = (
       t = Math.min(t, p.t);
       b = Math.max(b, p.b);
     }
-    shiftNodesX(result, nodeIds, -(l + r) / 2);
-    shiftNodesY(result, nodeIds, -(t + b) / 2);
+    shiftNodesX(result, allLayoutIds, -(l + r) / 2);
+    shiftNodesY(result, allLayoutIds, -(t + b) / 2);
   }
+
+  // Remove dummy nodes from result.
+  for (const dId of dummyIds) result.delete(dId);
 
   return result;
 };
