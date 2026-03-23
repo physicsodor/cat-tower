@@ -448,10 +448,11 @@ const compactPlaceChildren = (
   });
 
   for (let i = 1; i < items.length; i++) {
-    const prev = items[i - 1];
-    const cur = items[i];
-    const dx = requiredShift(ctx, prev, cur);
-    cur.shiftX(dx);
+    let maxDx = 0;
+    for (let j = 0; j < i; j++) {
+      maxDx = Math.max(maxDx, requiredShift(ctx, items[j], items[i]));
+    }
+    items[i].shiftX(maxDx);
   }
 };
 
