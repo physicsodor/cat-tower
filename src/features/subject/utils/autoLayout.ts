@@ -351,6 +351,8 @@ const compactPlaceChildren = (
     return makeBlockItem(ctx, child, id);
   });
 
+  for (const item of items) item.setCenterX(0);
+
   for (let i = 1; i < items.length; i++) {
     let maxDx = 0;
     for (let j = 0; j < i; j++) {
