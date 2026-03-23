@@ -2,6 +2,7 @@ import { LAYOUT_COL_GAP, LAYOUT_PART_GAP, LAYOUT_ROW_GAP } from "../constants";
 import { getPartition } from "@/lib/Chain/chain";
 import type { ChainMap } from "@/lib/Chain/chain";
 import { bboxFromXYWH, type BBox } from "../model/rect";
+import { computeLevelsForPartition } from "./computeLevels";
 
 const EPS_MEDIAN = 1e-6;
 
@@ -76,111 +77,6 @@ const centerOfBbox = (
   return { x: (l + r) / 2, y: (t + b) / 2 };
 };
 
-const computeLevelsForPartition = (
-  idx2chain: ChainMap,
-  ids: number[],
-): Map<number, number> => {
-  const idSet = new Set(ids);
-  const indeg = new Map<number, number>();
-  const outAdj = new Map<number, number[]>();
-  const inAdj = new Map<number, number[]>();
-
-  for (const idx of ids) {
-    indeg.set(idx, 0);
-    outAdj.set(idx, []);
-    inAdj.set(idx, []);
-  }
-  for (const idx of ids) {
-    for (const j of idx2chain.get(idx)?.nxt ?? []) {
-      if (!idSet.has(j)) continue;
-      outAdj.get(idx)!.push(j);
-      inAdj.get(j)!.push(idx);
-      indeg.set(j, (indeg.get(j) ?? 0) + 1);
-    }
-  }
-
-  const q: number[] = [];
-  for (const idx of ids) {
-    if ((indeg.get(idx) ?? 0) === 0) q.push(idx);
-  }
-  q.sort((a, b) => a - b);
-
-  const topo: number[] = [];
-  while (q.length) {
-    const cur = q.shift()!;
-    topo.push(cur);
-    for (const j of outAdj.get(cur) ?? []) {
-      indeg.set(j, (indeg.get(j) ?? 1) - 1);
-      if ((indeg.get(j) ?? 0) === 0) q.push(j);
-    }
-    q.sort((a, b) => a - b);
-  }
-
-  const lvl = new Map<number, number>();
-  for (const idx of ids) lvl.set(idx, 0);
-
-  const propagateForward = (): boolean => {
-    let changed = false;
-    for (const cur of topo) {
-      const curL = lvl.get(cur) ?? 0;
-      for (const j of outAdj.get(cur) ?? []) {
-        const need = curL + 1;
-        if ((lvl.get(j) ?? 0) < need) {
-          lvl.set(j, need);
-          changed = true;
-        }
-      }
-    }
-    return changed;
-  };
-
-  propagateForward();
-
-  // Pull backward only through maximal linear upstream chain:
-  // child has exactly one parent, parent has exactly one child.
-  const tightenLinearUpstream = (startChild: number): boolean => {
-    let changed = false;
-    let child = startChild;
-    while (true) {
-      const parents = inAdj.get(child) ?? [];
-      if (parents.length !== 1) break;
-      const parent = parents[0];
-      const parentChildren = outAdj.get(parent) ?? [];
-      if (parentChildren.length !== 1) break;
-      const target = (lvl.get(child) ?? 0) - 1;
-      if ((lvl.get(parent) ?? 0) >= target) break;
-      lvl.set(parent, target);
-      changed = true;
-      child = parent;
-    }
-    return changed;
-  };
-
-  // Merge alignment + linear upstream tightening + forward re-propagation
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const m of topo) {
-      const parents = inAdj.get(m) ?? [];
-      if (parents.length < 2) continue;
-      const target = (lvl.get(m) ?? 0) - 1;
-      for (const p of parents) {
-        if ((lvl.get(p) ?? 0) < target) {
-          lvl.set(p, target);
-          changed = true;
-        }
-        if (tightenLinearUpstream(p)) changed = true;
-      }
-    }
-    if (propagateForward()) changed = true;
-  }
-
-  let minL = Infinity;
-  for (const idx of ids) minL = Math.min(minL, lvl.get(idx) ?? 0);
-  for (const idx of ids) lvl.set(idx, (lvl.get(idx) ?? 0) - minL);
-
-  return lvl;
-};
 
 const buildBlockLayout = (
   result: Map<number, BBox>,
