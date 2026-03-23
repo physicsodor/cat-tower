@@ -305,14 +305,29 @@ const parentMedian = (ctx: LayoutCtx, idx: number): number => {
   return xs.length ? median(xs) : NaN;
 };
 
+const originalCenterX = (ctx: LayoutCtx, nodeIds: number[]): number => {
+  let l = Infinity,
+    r = -Infinity;
+  for (const id of nodeIds) {
+    const b = ctx.bboxMap.get(id);
+    if (b) {
+      l = Math.min(l, b.l);
+      r = Math.max(r, b.r);
+    }
+  }
+  return Number.isFinite(l) ? (l + r) / 2 : centerOfBbox(ctx.result, nodeIds).x;
+};
+
 const childMedian = (ctx: LayoutCtx, layout: BlockLayout): number => {
   const topLevel = layout.minLevel;
   const xs: number[] = [];
   for (const idx of layout.nodeIds) {
-    if ((ctx.idx2level.get(idx) ?? 0) === topLevel)
-      xs.push(ctx.result.get(idx)!.x);
+    if ((ctx.idx2level.get(idx) ?? 0) === topLevel) {
+      const ox = ctx.bboxMap.get(idx)?.x;
+      xs.push(ox ?? ctx.result.get(idx)!.x);
+    }
   }
-  return xs.length ? median(xs) : centerOfBbox(ctx.result, layout.nodeIds).x;
+  return xs.length ? median(xs) : originalCenterX(ctx, layout.nodeIds);
 };
 
 const kinship = (idx2chain: ChainMap, a: number, b: number): number => {
@@ -331,8 +346,8 @@ const orderChildren = (
     const ma = childMedian(ctx, a);
     const mb = childMedian(ctx, b);
     if (Math.abs(ma - mb) > EPS_MEDIAN) return ma - mb;
-    const xa = centerOfBbox(ctx.result, a.nodeIds).x;
-    const xb = centerOfBbox(ctx.result, b.nodeIds).x;
+    const xa = originalCenterX(ctx, a.nodeIds);
+    const xb = originalCenterX(ctx, b.nodeIds);
     if (Math.abs(xa - xb) > EPS_MEDIAN) return xa - xb;
     const ia = Math.min(...a.nodeIds);
     const ib = Math.min(...b.nodeIds);
@@ -370,8 +385,8 @@ const orderParentNodes = (ctx: LayoutCtx, ids: number[]): number[] => {
     const bHas = !Number.isNaN(mb);
     if (aHas && bHas && Math.abs(ma - mb) > EPS_MEDIAN) return ma - mb;
     if (aHas !== bHas) return aHas ? -1 : 1;
-    const xa = ctx.result.get(a)!.x;
-    const xb = ctx.result.get(b)!.x;
+    const xa = ctx.bboxMap.get(a)?.x ?? ctx.result.get(a)!.x;
+    const xb = ctx.bboxMap.get(b)?.x ?? ctx.result.get(b)!.x;
     if (Math.abs(xa - xb) > EPS_MEDIAN) return xa - xb;
     return a - b;
   });
