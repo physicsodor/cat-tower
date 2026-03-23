@@ -36,6 +36,7 @@ type LayoutCtx = {
   idx2level: Map<number, number>;
   blockId2layout: Map<number, BlockLayout>;
   nextBlockId: number;
+  bboxMap: Map<number, BBox>;
 };
 
 const median = (xs: number[]): number => {
@@ -205,190 +206,93 @@ const requiredShift = (
   return Math.max(0, req);
 };
 
-const getCompactCentersRight = (
-  ctx: LayoutCtx,
-  anchorX: number,
-  items: LayoutItem[],
-): number[] => {
-  const centers: number[] = [];
-  for (let i = 0; i < items.length; i++) {
-    if (i === 0) {
-      centers.push(anchorX);
-      continue;
-    }
-    items[i].setCenterX(anchorX);
-    items[i - 1].setCenterX(centers[i - 1]);
-    const req = requiredShift(ctx, items[i - 1], items[i]);
-    centers.push(centers[i - 1] + req);
-  }
-  return centers;
-};
-
-const getCompactCentersLeft = (
-  ctx: LayoutCtx,
-  anchorX: number,
-  items: LayoutItem[],
-): number[] => {
-  const centers: number[] = new Array(items.length);
-  centers[items.length - 1] = anchorX;
-  for (let i = items.length - 2; i >= 0; i--) {
-    items[i].setCenterX(anchorX);
-    items[i + 1].setCenterX(centers[i + 1]);
-    const req = requiredShift(ctx, items[i], items[i + 1]);
-    centers[i] = centers[i + 1] - req;
-  }
-  return centers;
-};
-
-const assignTemporaryIdeals = (
+const groupedProjection = (
   ctx: LayoutCtx,
   orderedItems: LayoutItem[],
-  idealMap: Map<number, number | undefined>,
-): Map<number, number> => {
-  const temp = new Map<number, number>();
-  const base = orderedItems.map((it) => idealMap.get(it.id));
-
-  let i = 0;
-  while (i < orderedItems.length) {
-    if (base[i] !== undefined) {
-      temp.set(orderedItems[i].id, base[i]!);
-      i++;
-      continue;
-    }
-    let j = i;
-    while (j < orderedItems.length && base[j] === undefined) j++;
-
-    const leftHas = i - 1 >= 0 && base[i - 1] !== undefined;
-    const rightHas = j < orderedItems.length && base[j] !== undefined;
-    const len = j - i;
-
-    if (leftHas && rightHas) {
-      const leftIdeal = base[i - 1]!;
-      const rightIdeal = base[j]!;
-      for (let k = 0; k < len; k++) {
-        temp.set(
-          orderedItems[i + k].id,
-          leftIdeal + ((rightIdeal - leftIdeal) * (k + 1)) / (len + 1),
-        );
-      }
-    } else if (leftHas && !rightHas) {
-      const anchorX = base[i - 1]!;
-      const chunk = orderedItems.slice(i - 1, j);
-      const centers = getCompactCentersRight(ctx, anchorX, chunk);
-      for (let k = 1; k < centers.length; k++) {
-        temp.set(chunk[k].id, centers[k]);
-      }
-    } else if (!leftHas && rightHas) {
-      const anchorX = base[j]!;
-      const chunk = orderedItems.slice(i, j + 1);
-      const centers = getCompactCentersLeft(ctx, anchorX, chunk);
-      for (let k = 0; k < chunk.length - 1; k++) {
-        temp.set(chunk[k].id, centers[k]);
-      }
-    } else {
-      const chunk = orderedItems.slice(i, j);
-      for (const it of chunk) temp.set(it.id, it.getCenterX());
-    }
-    i = j;
-  }
-
-  return temp;
-};
-
-const calcItemsCenter = (ctx: LayoutCtx, items: LayoutItem[]): number => {
-  let l = Infinity,
-    r = -Infinity;
-  for (const item of items) {
-    refreshItemBounds(ctx, item);
-    for (const lv of item.levels) {
-      l = Math.min(l, item.levelLeft.get(lv) ?? Infinity);
-      r = Math.max(r, item.levelRight.get(lv) ?? -Infinity);
-    }
-  }
-  return (l + r) / 2;
-};
-
-const bilateralSweep = (
-  ctx: LayoutCtx,
-  orderedItems: LayoutItem[],
-  idealMapInput: Map<number, number | undefined>,
+  idealMap: Map<number, number>,
 ): void => {
   if (orderedItems.length === 0) return;
 
-  const hadAnyRealIdeal = [...idealMapInput.values()].some(
-    (v) => v !== undefined,
-  );
-  const tempIdeal = assignTemporaryIdeals(ctx, orderedItems, idealMapInput);
+  type Group = {
+    start: number; // index into orderedItems (inclusive)
+    end: number;   // index into orderedItems (inclusive)
+    idealSum: number; // sum of all member ideals
+  };
 
-  for (const item of orderedItems) {
-    const ix = tempIdeal.get(item.id);
-    if (ix !== undefined) item.setCenterX(ix);
-    refreshItemBounds(ctx, item);
-  }
+  const groups: Group[] = orderedItems.map((item, i) => ({
+    start: i,
+    end: i,
+    idealSum: idealMap.get(item.id)!,
+  }));
 
-  let idealLeft = Infinity;
-  let idealRight = -Infinity;
-  for (const item of orderedItems) {
-    const cx = tempIdeal.get(item.id)!;
-    refreshItemBounds(ctx, item);
-    const curCx = item.getCenterX();
-    const dx = cx - curCx;
-    for (const lv of item.levels) {
-      idealLeft = Math.min(
-        idealLeft,
-        (item.levelLeft.get(lv) ?? Infinity) + dx,
-      );
-      idealRight = Math.max(
-        idealRight,
-        (item.levelRight.get(lv) ?? -Infinity) + dx,
-      );
+  // Compact-pack items in a group and center them at `center` (mean of positions).
+  const packGroup = (g: Group, center: number): void => {
+    const items = orderedItems.slice(g.start, g.end + 1);
+    // Place items[0] at 0, each subsequent at (0 + requiredShift from previous).
+    // requiredShift(prev, cur) with cur placed at 0 gives exactly the tight-pack position.
+    items[0].setCenterX(0);
+    refreshItemBounds(ctx, items[0]);
+    for (let k = 1; k < items.length; k++) {
+      items[k].setCenterX(0);
+      refreshItemBounds(ctx, items[k]);
+      const req = requiredShift(ctx, items[k - 1], items[k]);
+      items[k].setCenterX(req);
+      refreshItemBounds(ctx, items[k]);
     }
-  }
-  const anchor = (idealLeft + idealRight) / 2;
-
-  let split = -1;
-  for (let i = 0; i < orderedItems.length; i++) {
-    if ((tempIdeal.get(orderedItems[i].id) ?? 0) <= anchor) split = i;
-  }
-
-  const sweepChain = (chain: LayoutItem[], dir: "left" | "right"): void => {
-    if (chain.length === 0) return;
-    const anchor = dir === "left" ? chain[chain.length - 1] : chain[0];
-    anchor.setCenterX(tempIdeal.get(anchor.id)!);
-    refreshItemBounds(ctx, anchor);
-    if (dir === "left") {
-      for (let i = chain.length - 2; i >= 0; i--) {
-        const cur = chain[i];
-        cur.setCenterX(tempIdeal.get(cur.id)!);
-        refreshItemBounds(ctx, cur);
-        const req = requiredShift(ctx, cur, chain[i + 1]);
-        cur.setCenterX(tempIdeal.get(cur.id)! - req);
-        refreshItemBounds(ctx, cur);
-      }
-    } else {
-      for (let i = 1; i < chain.length; i++) {
-        const cur = chain[i];
-        cur.setCenterX(tempIdeal.get(cur.id)!);
-        refreshItemBounds(ctx, cur);
-        const req = requiredShift(ctx, chain[i - 1], cur);
-        cur.setCenterX(tempIdeal.get(cur.id)! + req);
-        refreshItemBounds(ctx, cur);
-      }
+    // Shift so that the mean of item positions equals `center`.
+    const mean =
+      items.reduce((s, it) => s + it.getCenterX(), 0) / items.length;
+    const shift = center - mean;
+    for (const item of items) {
+      item.shiftX(shift);
+      refreshItemBounds(ctx, item);
     }
   };
 
-  sweepChain(orderedItems.slice(0, split + 1), "left");
-  sweepChain(orderedItems.slice(split + 1), "right");
+  // Merge groups[gi] and groups[gi+1] into groups[gi].
+  const mergeGroups = (gi: number): void => {
+    const a = groups[gi];
+    const b = groups[gi + 1];
+    const countA = a.end - a.start + 1;
+    const countB = b.end - b.start + 1;
+    const mergedIdeal = (a.idealSum + b.idealSum) / (countA + countB);
+    a.end = b.end;
+    a.idealSum = a.idealSum + b.idealSum;
+    groups.splice(gi + 1, 1);
+    packGroup(a, mergedIdeal);
+  };
 
-  if (!hadAnyRealIdeal) {
-    const center = calcItemsCenter(ctx, orderedItems);
-    for (const item of orderedItems) item.shiftX(-center);
-    return;
+  // Initial placement: each item at its ideal.
+  for (const item of orderedItems) {
+    item.setCenterX(idealMap.get(item.id)!);
+    refreshItemBounds(ctx, item);
   }
 
-  const currentCenter = calcItemsCenter(ctx, orderedItems);
-  const shift = anchor - currentCenter;
-  for (const item of orderedItems) item.shiftX(shift);
+  // Left-to-right scan with leftward cascade on merge.
+  let i = 1;
+  while (i < groups.length) {
+    const prevLastItem = orderedItems[groups[i - 1].end];
+    const curFirstItem = orderedItems[groups[i].start];
+    const req = requiredShift(ctx, prevLastItem, curFirstItem);
+    if (req > 0) {
+      mergeGroups(i - 1);
+      if (i - 1 > 0) i = i - 1; // cascade left
+    } else {
+      i++;
+    }
+  }
+
+  // Final uniform shift: move all items so mean(positions) = mean(ideals).
+  // This minimises Σ(pos_i − ideal_i)² over a uniform translation.
+  const meanIdeal =
+    orderedItems.reduce((s, it) => s + idealMap.get(it.id)!, 0) /
+    orderedItems.length;
+  const meanPos =
+    orderedItems.reduce((s, it) => s + it.getCenterX(), 0) /
+    orderedItems.length;
+  const finalShift = meanIdeal - meanPos;
+  if (Math.abs(finalShift) > EPS_MEDIAN)
+    for (const item of orderedItems) item.shiftX(finalShift);
 };
 
 const parentMedian = (ctx: LayoutCtx, idx: number): number => {
@@ -531,7 +435,7 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
   const orderedParent = orderParentNodes(ctx, parentNodes);
   const items = orderedParent.map((idx) => makeNodeItem(ctx, idx));
 
-  const idealMap = new Map<number, number | undefined>();
+  const idealMap = new Map<number, number>();
   for (const idx of orderedParent) {
     const nxt = ctx.idx2chain.get(idx)?.nxt;
     const xs: number[] = [];
@@ -543,10 +447,12 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
       minL = Math.min(minL, ctx.result.get(j)!.l);
       maxR = Math.max(maxR, ctx.result.get(j)!.r);
     }
-    idealMap.set(idx, xs.length === 0 ? undefined : (minL + maxR) / 2);
+    const childIdeal = xs.length === 0 ? undefined : (minL + maxR) / 2;
+    // Fall back to original bbox x if no child constraint; dummy nodes have no bboxMap entry so use current position
+    idealMap.set(idx, childIdeal ?? ctx.bboxMap.get(idx)?.x ?? ctx.result.get(idx)!.x);
   }
 
-  bilateralSweep(ctx, items, idealMap);
+  groupedProjection(ctx, items, idealMap);
   return buildBlockLayout(ctx.result, ctx.idx2level, blockNodeIds);
 };
 
@@ -699,6 +605,7 @@ const computeAutoLayout = (
     idx2level,
     blockId2layout: new Map<number, BlockLayout>(),
     nextBlockId: 1_000_000_000,
+    bboxMap,
   };
 
   const partitionLayouts: BlockLayout[] = [];
