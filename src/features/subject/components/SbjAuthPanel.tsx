@@ -4,7 +4,7 @@ import SbjShareModal from "./SbjShareModal";
 
 const SbjAuthPanel = () => {
   const { user, signOut } = useAuth();
-  const { saveNow, dirty, savePending, currentProjectTitle, openPicker, openShare, closeShare, shareUrl, shareLoading, signIn } = useSbjSyncCtx();
+  const { saveNow, dirty, savePending, currentProjectTitle, currentPublicProject, openPicker, openShare, closeShare, shareUrl, shareLoading, signIn } = useSbjSyncCtx();
 
   return (
     <div className="sbj-auth-panel">
@@ -16,7 +16,7 @@ const SbjAuthPanel = () => {
               onClick={openPicker}
               title="프로젝트 전환"
             >
-              📁 {currentProjectTitle}
+              {currentPublicProject ? "🌐" : "📁"} {currentProjectTitle}
             </button>
           )}
           {!currentProjectTitle && (

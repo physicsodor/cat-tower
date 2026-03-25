@@ -636,6 +636,12 @@
   color: var(--C-D);
 }
 
+.proj-card-slug {
+  font-size: 0.78rem;
+  color: var(--C-B);
+  font-family: monospace;
+}
+
 .proj-card-menu-wrap {
   position: relative;
 }
@@ -687,6 +693,36 @@
       color: cs.C(DDD, 1);
     }
   }
+}
+
+// ─── Public Projects Section (admin) ─────────────────────────────────────────
+
+.proj-picker-section {
+  border-top: 1px solid var(--C-L);
+  flex-shrink: 0;
+}
+
+.proj-picker-section-title {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--C-D);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--G-M) var(--G-XL) var(--G-S);
+  margin: 0;
+
+  &--personal {
+    border-top: 1px solid var(--C-L);
+    padding-top: var(--G-L);
+  }
+}
+
+.proj-publish-label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--C-DD);
+  margin-bottom: var(--G-S);
+  margin-top: var(--G-M);
 }
 
 // ─── New Project Name Dialog ──────────────────────────────────────────────────
