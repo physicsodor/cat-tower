@@ -9,9 +9,9 @@ import BttnEdt from "@/components/Bttn/BttnEdt";
 import BttnDel from "@/components/Bttn/BttnDel";
 import { renderMarkup } from "@/components/TextEditor";
 
-type Props = { idx: number; title: string };
+type Props = { idx: number; title: string; numPrefix?: string };
 
-const SbjTreeItem = ({ idx, title }: Props) => {
+const SbjTreeItem = ({ idx, title, numPrefix }: Props) => {
   const { treeDrag, setTreeBro, openEdit, delSbjOne } = useSbjData();
   const { selectedSet, selectItem } = useSbjSelect();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
@@ -90,11 +90,12 @@ const SbjTreeItem = ({ idx, title }: Props) => {
       )}
     >
       <div
-        style={{ touchAction: "none", flex: 1 }}
+        style={{ touchAction: "none" }}
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerCancel={onCancel}
       >
+        {numPrefix && <span className="sbj-tree-num">{numPrefix}.</span>}
         {renderMarkup(title)}
       </div>
       <BttnEdt

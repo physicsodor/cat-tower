@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
@@ -11,21 +11,55 @@ import InfiniteCanvas, {
 import { useBBoxMap } from "../../hooks/useBBoxMap";
 import { bboxFromXYWH, type BBox } from "../../model/rect";
 import BttnAutoLayout from "@/components/Bttn/BttnAutoLayout";
+import { Toggle } from "@/components/Toggle/Toggle";
+import { useSbjSyncCtx } from "../../store/SbjSyncContext";
+import { HORIZONTAL_MODE_KEY } from "../../constants";
 
 // ── Inner content (reads camera/dxy from InfiniteCanvasContext) ───────────────
 
 type InnerProps = {
   itemsRef: React.RefObject<Map<number, HTMLDivElement | null>>;
   bboxMapRef: React.RefObject<Map<number, BBox>>;
+  horizontal: boolean;
 };
 
-const SbjCnvsInner = ({ itemsRef, bboxMapRef }: InnerProps) => {
+const SbjCnvsInner = ({ itemsRef, bboxMapRef, horizontal }: InnerProps) => {
   const { camera, dxy } = useInfiniteCanvas();
   const { idx2sbj, idx2family, syncCamera } = useSbjData();
+  const { selectMany } = useSbjSelect();
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [pinnedSet, setPinnedSet] = useState<ReadonlySet<number>>(new Set());
 
   useEffect(() => {
     syncCamera(camera);
   }, [camera, syncCamera]);
+
+  const onPinToggle = useCallback((idx: number) => {
+    setPinnedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = document.activeElement as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable)
+      )
+        return;
+      setPinnedSet(new Set());
+      selectMany(new Set());
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectMany]);
 
   const bboxMap = useBBoxMap(
     itemsRef,
@@ -34,14 +68,39 @@ const SbjCnvsInner = ({ itemsRef, bboxMapRef }: InnerProps) => {
     idx2family,
     dxy,
     camera,
+    horizontal,
   );
+
+  const activeHoveredIdx =
+    hoveredIdx !== null && idx2sbj.has(hoveredIdx) ? hoveredIdx : null;
+  const anyHovered = activeHoveredIdx !== null || pinnedSet.size > 0;
 
   return (
     <>
-      <SbjCnvsCrsContainer bboxMap={bboxMap} items={itemsRef.current} back />
-      <SbjCnvsCurveContainer bboxMap={bboxMap} zoom={camera.zoom} />
-      <SbjCnvsCrsContainer bboxMap={bboxMap} items={itemsRef.current} />
-      <SbjCnvsItemContainer items={itemsRef.current} />
+      <SbjCnvsCrsContainer
+        bboxMap={bboxMap}
+        items={itemsRef.current}
+        back
+        anyHovered={anyHovered}
+      />
+      <SbjCnvsCurveContainer
+        bboxMap={bboxMap}
+        zoom={camera.zoom}
+        horizontal={horizontal}
+      />
+      <SbjCnvsCrsContainer
+        bboxMap={bboxMap}
+        items={itemsRef.current}
+        anyHovered={anyHovered}
+      />
+      <SbjCnvsItemContainer
+        items={itemsRef.current}
+        horizontal={horizontal}
+        activeHoveredIdx={activeHoveredIdx}
+        pinnedSet={pinnedSet}
+        onHoverChange={setHoveredIdx}
+        onPinToggle={onPinToggle}
+      />
     </>
   );
 };
@@ -49,8 +108,66 @@ const SbjCnvsInner = ({ itemsRef, bboxMapRef }: InnerProps) => {
 // ── Outer wrapper ─────────────────────────────────────────────────────────────
 
 const SbjCnvs = () => {
-  const { cnvsDrag, idx2sbj, setCnvsPos, autoLayout, getCamera } = useSbjData();
+  const {
+    cnvsDrag,
+    idx2sbj,
+    idx2chain,
+    setCnvsPos,
+    autoLayout,
+    getCamera,
+    addCrs,
+  } = useSbjData();
   const { selectMany, selectedSet } = useSbjSelect();
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable)
+      )
+        return;
+      if (e.key === "g" || e.key === "G") {
+        if (selectedSet.size > 0) {
+          e.preventDefault();
+          addCrs();
+        }
+      } else if (e.key === "a" || e.key === "A") {
+        e.preventDefault();
+        const all = new Set<number>();
+        for (const [idx, sbj] of idx2sbj) {
+          if (sbj.sbjType === "SUBJECT") all.add(idx);
+        }
+        selectMany(all);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedSet, addCrs, selectMany, idx2sbj]);
+  const { currentProjectId } = useSbjSyncCtx();
+
+  const loadHorizontal = (projectId: string | null): boolean =>
+    localStorage.getItem(`${HORIZONTAL_MODE_KEY}_${projectId ?? "draft"}`) === "true";
+
+  const [projectIdForHorizontal, setProjectIdForHorizontal] = useState(currentProjectId);
+  const [horizontal, setHorizontalState] = useState(() => loadHorizontal(currentProjectId));
+
+  if (projectIdForHorizontal !== currentProjectId) {
+    setProjectIdForHorizontal(currentProjectId);
+    setHorizontalState(loadHorizontal(currentProjectId));
+  }
+
+  const setHorizontal = useCallback(
+    (value: boolean) => {
+      localStorage.setItem(`${HORIZONTAL_MODE_KEY}_${currentProjectId ?? "draft"}`, String(value));
+      setHorizontalState(value);
+    },
+    [currentProjectId],
+  );
+
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const bboxMapRef = useRef(new Map<number, BBox>());
 
@@ -58,28 +175,39 @@ const SbjCnvs = () => {
     const { x: cx, y: cy, zoom } = getCamera();
     const worldBBoxes = new Map<number, BBox>();
     for (const [idx, bbox] of bboxMapRef.current) {
+      if (!idx2chain.has(idx)) continue;
       worldBBoxes.set(
         idx,
-        bboxFromXYWH(
-          (bbox.x - cx) / zoom,
-          (bbox.y - cy) / zoom,
-          bbox.w / zoom,
-          bbox.h / zoom,
-        ),
+        horizontal
+          ? bboxFromXYWH(
+              (bbox.y - cy) / zoom,
+              (bbox.x - cx) / zoom,
+              bbox.h / zoom,
+              bbox.w / zoom,
+            )
+          : bboxFromXYWH(
+              (bbox.x - cx) / zoom,
+              (bbox.y - cy) / zoom,
+              bbox.w / zoom,
+              bbox.h / zoom,
+            ),
       );
     }
     autoLayout(worldBBoxes);
-  }, [autoLayout, getCamera, bboxMapRef]);
+  }, [autoLayout, getCamera, bboxMapRef, idx2chain, horizontal]);
 
   const onItemDragEnd = useCallback(
     (worldDx: number, worldDy: number) => {
       const drag = cnvsDrag.get();
       if (drag.size > 0) {
-        setCnvsPos(drag, { dx: Math.round(worldDx), dy: Math.round(worldDy) });
+        setCnvsPos(drag, {
+          dx: Math.round(horizontal ? worldDy : worldDx),
+          dy: Math.round(horizontal ? worldDx : worldDy),
+        });
         cnvsDrag.set(new Set());
       }
     },
-    [cnvsDrag, setCnvsPos],
+    [cnvsDrag, setCnvsPos, horizontal],
   );
 
   const onMarqueeSelect = useCallback(
@@ -124,25 +252,27 @@ const SbjCnvs = () => {
   );
 
   const onFitRequest = useCallback((): Camera | null => {
-    let minX = Infinity,
-      maxX = -Infinity,
-      minY = Infinity,
-      maxY = -Infinity;
+    let minSX = Infinity,
+      maxSX = -Infinity,
+      minSY = Infinity,
+      maxSY = -Infinity;
     for (const [, s] of idx2sbj) {
       if (s.sbjType !== "SUBJECT") continue;
-      minX = Math.min(minX, s.x);
-      maxX = Math.max(maxX, s.x);
-      minY = Math.min(minY, s.y);
-      maxY = Math.max(maxY, s.y);
+      const sx = horizontal ? s.y : s.x;
+      const sy = horizontal ? s.x : s.y;
+      minSX = Math.min(minSX, sx);
+      maxSX = Math.max(maxSX, sx);
+      minSY = Math.min(minSY, sy);
+      maxSY = Math.max(maxSY, sy);
     }
-    if (!isFinite(minX))
+    if (!isFinite(minSX))
       return { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 };
     return {
       zoom: 1,
-      x: window.innerWidth / 2 - (minX + maxX) / 2,
-      y: window.innerHeight / 2 - (minY + maxY) / 2,
+      x: window.innerWidth / 2 - (minSX + maxSX) / 2,
+      y: window.innerHeight / 2 - (minSY + maxSY) / 2,
     };
-  }, [idx2sbj]);
+  }, [idx2sbj, horizontal]);
 
   return (
     <InfiniteCanvas
@@ -151,9 +281,18 @@ const SbjCnvs = () => {
       onItemDragEnd={onItemDragEnd}
       onMarqueeSelect={onMarqueeSelect}
       onFitRequest={onFitRequest}
-      controls={<BttnAutoLayout onDown={onAutoLayout} className="-big" />}
+      controls={
+        <>
+          <Toggle key={currentProjectId ?? "draft"} offLabel="세로" onLabel="가로" defaultOn={horizontal} onChange={setHorizontal} />
+          <BttnAutoLayout onDown={onAutoLayout} className="-big" />
+        </>
+      }
     >
-      <SbjCnvsInner itemsRef={itemsRef} bboxMapRef={bboxMapRef} />
+      <SbjCnvsInner
+        itemsRef={itemsRef}
+        bboxMapRef={bboxMapRef}
+        horizontal={horizontal}
+      />
     </InfiniteCanvas>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSbjSyncCtx } from "../../store/SbjSyncContext";
 import { ProjectThumbnail } from "./ProjectThumbnail";
 import type { Project } from "../../model/Project";
@@ -149,6 +149,27 @@ export const ProjectPickerModal = () => {
   } = useSbjSyncCtx();
 
   const [search, setSearch] = useState("");
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("새 프로젝트");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (nameDialogOpen) nameInputRef.current?.select();
+  }, [nameDialogOpen]);
+
+  const handleNewProjectClick = useCallback(() => {
+    setNameInput("새 프로젝트");
+    setNameDialogOpen(true);
+  }, []);
+
+  const handleNameConfirm = useCallback(() => {
+    newProject(nameInput.trim() || "새 프로젝트");
+    setNameDialogOpen(false);
+  }, [newProject, nameInput]);
+
+  const handleNameCancel = useCallback(() => {
+    setNameDialogOpen(false);
+  }, []);
 
   if (!isPickerOpen) return null;
 
@@ -175,10 +196,33 @@ export const ProjectPickerModal = () => {
 
         {/* New project button */}
         <div className="proj-picker-toolbar">
-          <button className="proj-picker-new-btn" onClick={newProject}>
+          <button className="proj-picker-new-btn" onClick={handleNewProjectClick}>
             + 새 프로젝트
           </button>
         </div>
+
+        {/* Name input dialog */}
+        {nameDialogOpen && (
+          <div className="proj-name-dialog-overlay" onClick={handleNameCancel}>
+            <div className="proj-name-dialog" onClick={(e) => e.stopPropagation()}>
+              <p className="proj-name-dialog-label">새 프로젝트 이름</p>
+              <input
+                ref={nameInputRef}
+                className="proj-name-dialog-input"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleNameConfirm();
+                  if (e.key === "Escape") handleNameCancel();
+                }}
+              />
+              <div className="proj-name-dialog-actions">
+                <button className="proj-name-dialog-cancel" onClick={handleNameCancel}>취소</button>
+                <button className="proj-name-dialog-confirm" onClick={handleNameConfirm}>만들기</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Grid */}
         {filtered.length === 0 ? (

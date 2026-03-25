@@ -19,7 +19,7 @@
       stroke: var(--C-DD);
       stroke-linecap: round;
       stroke-linejoin: round;
-      fill: oklch(from var(--C-LL) l c h);
+      fill: var(--C-LL);
       &.bck {
         stroke: oklch(0% 0 0 / 0.2);
       }
@@ -40,13 +40,13 @@
   svg:hover {
     rect,
     rect.bck {
-      fill: oklch(from var(--C-L) l c h);
+      fill: var(--C-L);
     }
   }
   svg:active {
     rect,
     rect.bck {
-      fill: oklch(from var(--C-DD) l c h);
+      fill: var(--C-DD);
     }
     rect,
     g {
@@ -56,6 +56,12 @@
       fill: var(--C-LL);
     }
   }
+  &.-no-bck > svg > rect {
+    fill: none;
+    &.bck {
+      stroke: none;
+    }
+  }
   &.-lbig > svg {
     width: 1.9rem;
     height: 1.9rem;
@@ -63,6 +69,15 @@
   &.-big > svg {
     width: 2.4rem;
     height: 2.4rem;
+  }
+  &.-active {
+    svg rect.bck {
+      fill: var(--C-D);
+    }
+    rect,
+    g {
+      stroke: var(--C-LL);
+    }
   }
   &.-disabled {
     opacity: 0.35;

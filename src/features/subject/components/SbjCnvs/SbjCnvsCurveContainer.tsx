@@ -2,9 +2,9 @@ import { useSbjData } from "../../store/SbjDataContext";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import type { BBox } from "../../model/rect";
 
-type Props = { bboxMap: ReadonlyMap<number, BBox>; zoom: number };
+type Props = { bboxMap: ReadonlyMap<number, BBox>; zoom: number; horizontal: boolean };
 
-const SbjCnvsCurveContainer = ({ bboxMap, zoom }: Props) => {
+const SbjCnvsCurveContainer = ({ bboxMap, zoom, horizontal }: Props) => {
   const { idx2chain } = useSbjData();
   return (
     <div>
@@ -15,12 +15,19 @@ const SbjCnvsCurveContainer = ({ bboxMap, zoom }: Props) => {
         return [...c.pre].map((i) => {
           const fromBBox = bboxMap.get(i);
           if (!fromBBox) return null;
+          const sourcePos = horizontal
+            ? { x: fromBBox.r, y: fromBBox.y }
+            : { x: fromBBox.x, y: fromBBox.b };
+          const mousePos = horizontal
+            ? { x: toBBox.l, y: toBBox.y }
+            : { x: toBBox.x, y: toBBox.t };
           return (
             <SbjCnvsCurve
               key={`sbj-cnvs-curve-${i}-${idx}`}
-              sourcePos={{ x: fromBBox.x, y: fromBBox.b }}
-              mousePos={{ x: toBBox.x, y: toBBox.t }}
+              sourcePos={sourcePos}
+              mousePos={mousePos}
               zoom={zoom}
+              horizontal={horizontal}
             />
           );
         });

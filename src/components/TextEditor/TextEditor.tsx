@@ -1,4 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+
+const SYNC_DELAY = 200;
 import {
   markupToHtml, htmlToMarkup, updateMathBlock, buildMathEl,
 } from "./markup";
@@ -10,8 +12,7 @@ import "./TextEditor.scss";
 const TOOLS: { cmd: string; label: React.ReactNode; title: string }[] = [
   { cmd: "bold",        label: <strong>B</strong>,             title: "Bold" },
   { cmd: "italic",      label: <em>I</em>,                     title: "Italic" },
-  { cmd: "subscript",   label: <span>x<sub>2</sub></span>,     title: "Subscript" },
-  { cmd: "superscript", label: <span>x<sup>2</sup></span>,     title: "Superscript" },
+  { cmd: "underline",   label: <u>U</u>,                       title: "Underline" },
   { cmd: "math",        label: <span>∑</span>,                 title: "수식" },
 ];
 
@@ -27,9 +28,17 @@ const TOOLS: { cmd: string; label: React.ReactNode; title: string }[] = [
  * Dependencies: react, react-dom, katex
  * Self-contained: import TextEditor + TextEditor.scss (auto-imported here)
  */
-const TextEditor = ({ value, onChange, singleLine }: { value: string; onChange: (v: string) => void; singleLine?: boolean }) => {
+const getLineCount = (div: HTMLDivElement): number => {
+  let text = div.innerText ?? "";
+  if (text.endsWith("\n")) text = text.slice(0, -1);
+  return text === "" ? 1 : text.split("\n").length;
+};
+
+const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v: string) => void; maxLines?: number }) => {
   const divRef = useRef<HTMLDivElement>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
+  const isSingleLine = maxLines === 1;
 
   // Set initial HTML once on mount (uncontrolled after that)
   useEffect(() => {
@@ -37,9 +46,20 @@ const TextEditor = ({ value, onChange, singleLine }: { value: string; onChange: 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => () => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+  }, []);
+
   const syncMarkup = useCallback(() => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = null;
     if (divRef.current) onChange(htmlToMarkup(divRef.current.innerHTML));
   }, [onChange]);
+
+  const debouncedSyncMarkup = useCallback(() => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(syncMarkup, SYNC_DELAY);
+  }, [syncMarkup]);
 
   const handleMathConfirm = useCallback((latex: string, kind: MathKind) => {
     if (!mathEdit || !divRef.current) return;
@@ -122,16 +142,35 @@ const TextEditor = ({ value, onChange, singleLine }: { value: string; onChange: 
       </div>
       <div
         ref={divRef}
-        className={`markup-editor-body${singleLine ? " -single-line" : ""}`}
+        className={`markup-editor-body${isSingleLine ? " -single-line" : maxLines ? " -max-lines" : ""}`}
+        style={maxLines && !isSingleLine ? { "--max-lines-height": `calc(${maxLines} * 1.8em + 0.5rem)` } as React.CSSProperties : undefined}
         contentEditable
         suppressContentEditableWarning
-        onInput={syncMarkup}
+        onInput={debouncedSyncMarkup}
+        onBlur={syncMarkup}
         onClick={handleClick}
-        onKeyDown={singleLine ? (e) => { if (e.key === "Enter") e.preventDefault(); } : undefined}
-        onPaste={singleLine ? (e) => {
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+            if (e.key === "b" || e.key === "B") { e.preventDefault(); exec("bold"); return; }
+            if (e.key === "i" || e.key === "I") { e.preventDefault(); exec("italic"); return; }
+            if (e.key === "u" || e.key === "U") { e.preventDefault(); exec("underline"); return; }
+          }
+          if (maxLines && e.key === "Enter") {
+            if (isSingleLine || (divRef.current && getLineCount(divRef.current) >= maxLines))
+              e.preventDefault();
+          }
+        }}
+        onPaste={maxLines ? (e) => {
           e.preventDefault();
-          const text = e.clipboardData.getData("text/plain").replace(/[\r\n]+/g, " ");
-          document.execCommand("insertText", false, text);
+          const pasted = e.clipboardData.getData("text/plain");
+          if (isSingleLine) {
+            document.execCommand("insertText", false, pasted.replace(/[\r\n]+/g, " "));
+          } else {
+            const div = divRef.current!;
+            const remaining = maxLines - getLineCount(div);
+            const lines = pasted.split(/\r?\n/).slice(0, Math.max(remaining, 1));
+            document.execCommand("insertText", false, lines.join("\n"));
+          }
         } : undefined}
       />
       {mathEdit && (
@@ -139,7 +178,7 @@ const TextEditor = ({ value, onChange, singleLine }: { value: string; onChange: 
           state={mathEdit}
           onCancel={() => setMathEdit(null)}
           onConfirm={handleMathConfirm}
-          inlineOnly={singleLine}
+          inlineOnly={!!maxLines}
         />
       )}
     </div>

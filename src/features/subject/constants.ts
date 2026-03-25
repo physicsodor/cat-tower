@@ -32,3 +32,4 @@ export const THUMB_PAD = 14;
 
 // ── 로컬 스토리지 ─────────────────────────────────────────────────────────
 export const LAST_PROJECT_KEY = "lastProjectId";
+export const HORIZONTAL_MODE_KEY = "horizontalMode";

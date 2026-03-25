@@ -1,11 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SbjCnvsTitle from "./SbjCnvsTitle";
 import SbjCnvsCurve from "./SbjCnvsCurve";
 import { makeClassName } from "@/utils/makeClassName";
 import { useSbjData } from "../../store/SbjDataContext";
 import { useSbjSelect } from "../../store/SbjSelectContext";
-import { renderMarkup, stripMarkup, truncateBytes } from "../../utils/markup";
+import {
+  renderMarkup,
+  stripMarkup,
+  truncateBytes,
+} from "@/components/TextEditor/markup";
 import { CONTENT_PREVIEW_BYTES } from "@/features/subject/constants";
+import BttnPin from "@/components/Bttn/BttnPin";
 
 type PE = React.PointerEvent | PointerEvent;
 
@@ -34,7 +39,11 @@ type Props = {
   isHovered: boolean;
   isPre: boolean;
   isNxt: boolean;
+  isNon: boolean;
+  isPinned: boolean;
+  horizontal: boolean;
   onHoverChange: (idx: number | null) => void;
+  onPinToggle: (idx: number) => void;
 };
 
 const SbjCnvsItem = ({
@@ -47,12 +56,15 @@ const SbjCnvsItem = ({
   isHovered,
   isPre,
   isNxt,
+  isNon,
+  isPinned,
+  horizontal,
   onHoverChange,
+  onPinToggle,
 }: Props) => {
   const {
     setCnvsPre,
     preSource,
-    delSbjOne,
     openEdit,
     removePreLink,
     setTreeMom,
@@ -192,6 +204,18 @@ const SbjCnvsItem = ({
     [ctxMenu, idx, removePreLink],
   );
 
+  useEffect(() => {
+    if (!ctxMenu && !exitCtxMenu) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setCtxMenu(null);
+        setExitCtxMenu(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [ctxMenu, exitCtxMenu]);
+
   const onBodyContextMenu = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -226,8 +250,8 @@ const SbjCnvsItem = ({
     });
   }, [ctxMenu, idx, idx2chain, idx2sbj]);
 
-  const viewX = camera.x + info.x * camera.zoom + dx;
-  const viewY = camera.y + info.y * camera.zoom + dy;
+  const viewX = camera.x + (horizontal ? info.y : info.x) * camera.zoom + dx;
+  const viewY = camera.y + (horizontal ? info.x : info.y) * camera.zoom + dy;
 
   return (
     <div
@@ -248,6 +272,9 @@ const SbjCnvsItem = ({
           isHovered && "-hvr",
           isPre && "-pre",
           isNxt && "-nxt",
+          isNon && "-non",
+          isPinned && "-pin",
+          horizontal && "-h",
         )}
         style={{
           transform: `translate(${viewX}px, ${viewY}px) scale(${camera.zoom}) translate(-50%, -50%)`,
@@ -266,20 +293,11 @@ const SbjCnvsItem = ({
           </div>
         ) : null}
         <div className="sbj-cnvs-item-acts">
-          <button
-            className="sbj-cnvs-item-act -edt"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => openEdit(idx)}
-          >
-            ✱
-          </button>
-          <button
-            className="sbj-cnvs-item-act -del"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => delSbjOne(idx)}
-          >
-            ✕
-          </button>
+          <BttnPin
+            className="-no-bck"
+            isActive={isPinned}
+            onClick={() => onPinToggle(idx)}
+          />
         </div>
         <div
           className="sbj-cnvs-item-in"
@@ -298,6 +316,7 @@ const SbjCnvsItem = ({
         sourcePos={getSourcePos()}
         mousePos={mousePos}
         zoom={camera.zoom}
+        horizontal={horizontal}
       />
       {exitCtxMenu && (
         <>

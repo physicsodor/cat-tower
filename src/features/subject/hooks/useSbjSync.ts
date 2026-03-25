@@ -5,6 +5,26 @@ import { decodeList, decodeListCompact, encodeList, encodeListCompact } from "..
 import type { Project } from "../model/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 
+function makeExampleCurriculum(): Curriculum[] {
+  return [
+    {
+      idx: 1, mom: -1, bro: "a0", pre: new Set(),
+      title: "예시 과목 A", content: "여기에 과목 설명을 입력하세요.", x: -270, y: 0,
+      sbjType: "SUBJECT",
+    },
+    {
+      idx: 2, mom: -1, bro: "a1", pre: new Set([1]),
+      title: "예시 과목 B", content: "선수 과목이 있는 예시입니다.", x: 0, y: 0,
+      sbjType: "SUBJECT",
+    },
+    {
+      idx: 3, mom: -1, bro: "a2", pre: new Set([2]),
+      title: "예시 과목 C", content: "여러 과목을 연결할 수 있습니다.", x: 270, y: 0,
+      sbjType: "SUBJECT",
+    },
+  ];
+}
+
 const PRE_LOGIN_KEY = "sbj_pre_login_state";
 const DRAFT_KEY = "sbj_draft";
 const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -60,6 +80,7 @@ export const useSbjSync = (
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProjectId, _setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectTitle, _setCurrentProjectTitle] = useState<string | null>(null);
+  const currentProjectTitleRef = useRef<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
@@ -109,6 +130,7 @@ export const useSbjSync = (
   }, []);
 
   const setCurrentProjectTitle = useCallback((title: string | null) => {
+    currentProjectTitleRef.current = title;
     _setCurrentProjectTitle(title);
   }, []);
 
@@ -157,6 +179,18 @@ export const useSbjSync = (
             .single();
           if (created) fetchedProjects = [created as Project];
         }
+      }
+
+      // No projects at all — create a default example project
+      if (fetchedProjects.length === 0) {
+        const exampleData = makeExampleCurriculum();
+        const exampleEncoded = encodeList(exampleData);
+        const { data: created } = await supabase
+          .from("projects")
+          .insert({ user_id: uid, title: "예시 프로젝트", data: exampleEncoded })
+          .select()
+          .single();
+        if (created) fetchedProjects = [created as Project];
       }
 
       setProjects(fetchedProjects);
@@ -325,7 +359,7 @@ export const useSbjSync = (
         // No current project — create a new one
         const { data: created } = await supabase
           .from("projects")
-          .insert({ user_id: uid, title: "새 프로젝트", data: encoded })
+          .insert({ user_id: uid, title: currentProjectTitleRef.current ?? "새 프로젝트", data: encoded })
           .select()
           .single();
         if (created) {
@@ -370,7 +404,7 @@ export const useSbjSync = (
 
   // ─── New project ─────────────────────────────────────────────────────────
 
-  const newProject = useCallback(() => {
+  const newProject = useCallback((title: string) => {
     if (dirtyRef.current) {
       const ok = window.confirm(
         "저장되지 않은 변경이 있습니다.\n새 프로젝트를 시작하면 변경 내용이 사라집니다.\n계속하시겠습니까?"
@@ -380,7 +414,7 @@ export const useSbjSync = (
     loadList([]);
     lastSavedRef.current = "[]";
     setCurrentProjectId(null);
-    setCurrentProjectTitle("새 프로젝트");
+    setCurrentProjectTitle(title);
     sessionStorage.removeItem(LAST_PROJECT_KEY);
     localStorage.removeItem(LAST_PROJECT_KEY);
     setDirty(false);

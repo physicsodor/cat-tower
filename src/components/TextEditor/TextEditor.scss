@@ -92,6 +92,11 @@
     white-space: nowrap;
     overflow-x: auto;
   }
+  &.-max-lines {
+    min-height: unset;
+    max-height: var(--max-lines-height, 6rem);
+    overflow-y: auto;
+  }
 }
 
 // ── Display math line wrapper ─────────────────────────────────────────────────

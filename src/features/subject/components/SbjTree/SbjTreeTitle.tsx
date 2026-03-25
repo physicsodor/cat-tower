@@ -17,9 +17,10 @@ type Props = {
   title: string;
   isOpen: boolean;
   onToggle: () => void;
+  numPrefix?: string;
 };
 
-const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
+const SbjTreeTitle = ({ idx, title, isOpen, onToggle, numPrefix }: Props) => {
   const {
     delCrs,
     treeDrag,
@@ -118,15 +119,18 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
       )}
     >
       <div
-        style={{ touchAction: "none", flex: 1 }}
+        style={{ touchAction: "none" }}
         onPointerDown={idx >= 0 ? onDown : undefined}
         onPointerUp={onUp}
         onPointerCancel={onCancel}
       >
+        {numPrefix && idx >= 0 && (
+          <span className="sbj-tree-num">{numPrefix}.</span>
+        )}
         {renderMarkup(title)}
       </div>
-      {idx >= 0 ? <BttnChk onDown={onSelectDescendants} /> : null}
       {idx >= 0 ? <BttnPM isPlus={!isOpen} onDown={onToggle} /> : null}
+      <BttnChk onDown={onSelectDescendants} />
       {idx >= 0 ? (
         <BttnEdt
           onDown={(e) => {
@@ -135,7 +139,7 @@ const SbjTreeTitle = ({ idx, title, isOpen, onToggle }: Props) => {
           }}
         />
       ) : null}
-      {idx >= 0 && isOpen ? <BttnDel onDown={() => delCrs(idx)} /> : null}
+      {idx >= 0 ? <BttnDel onDown={() => delCrs(idx)} /> : null}
     </div>
   );
 };

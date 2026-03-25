@@ -1,0 +1,95 @@
+@use "../../styles/djColorSystem" as cs;
+
+// ── Basic toggle ────────────────────────────────────────────────────────────
+
+.slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.6rem;
+  height: 1.4rem;
+  border-radius: 0.3rem;
+  background: oklch(from var(--C-LL) l c h);
+  border: 1.5px solid var(--C-DD);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+
+  &:hover {
+    background: oklch(from var(--C-L) l c h);
+  }
+
+  &.on {
+    background: oklch(from var(--C-DD) l c h);
+
+    &:hover {
+      background: oklch(from var(--C-D) l c h);
+    }
+  }
+}
+
+.knob {
+  position: absolute;
+  left: 0.15rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 0.2rem;
+  background: var(--C-DD);
+  box-shadow: 0 1px 2px cs.black-a(0.2);
+  transition:
+    transform 0.15s,
+    background 0.15s;
+
+  .on & {
+    transform: translateX(1.25rem);
+    background: var(--C-LL);
+  }
+}
+
+// ── Labeled toggle ──────────────────────────────────────────────────────────
+
+.labeled {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 0.3rem;
+  background: oklch(from var(--C-LL) l c h);
+  border: 1.5px solid var(--C-DD);
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: oklch(from var(--C-L) l c h);
+  }
+}
+
+.labelKnob {
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  border-radius: 0.2rem;
+  background: oklch(from var(--C-DD) l c h);
+  transition: transform 0.15s;
+  pointer-events: none;
+
+  .labeled.on & {
+    transform: translateX(100%);
+  }
+}
+
+.labelItem {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  text-align: center;
+  padding: 0.3rem 0.75rem;
+  font-weight: bold;
+  font-size: 0.875rem;
+  color: var(--C-DD);
+  transition: color 0.15s;
+  white-space: nowrap;
+
+  &.activeLabel {
+    color: var(--C-LL);
+  }
+}

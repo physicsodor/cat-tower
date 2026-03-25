@@ -11,11 +11,14 @@ export const useBBoxMap = (
   idx2family: FamilyMap,
   dxy: { dx: number; dy: number },
   camera: Camera,
+  horizontal: boolean,
 ): Map<number, BBox> => {
   const [bboxMap, setBBoxMap] = useState(new Map<number, BBox>());
 
   useLayoutEffect(() => {
     const map = new Map<number, BBox>();
+    const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const gXL = rootFontSize; // --G-XL = 1rem
 
     const getBBox = (idx: number): BBox | null => {
       if (map.has(idx)) return map.get(idx)!;
@@ -31,8 +34,18 @@ export const useBBoxMap = (
       }
       let merged: BBox | null = null;
       for (const k of kids) {
-        const kidBBox = getBBox(k);
+        const kf = idx2family.get(k);
+        let kidBBox: BBox | null = getBBox(k);
         if (!kidBBox) continue;
+        // 자식이 Crs이면 실제 시각적 크기(padding 포함)로 확장
+        if (kf?.kids) {
+          kidBBox = bboxFromLRTB(
+            kidBBox.l - gXL,
+            kidBBox.r + gXL,
+            kidBBox.t - gXL,
+            kidBBox.b + gXL,
+          );
+        }
         if (merged === null) {
           merged = kidBBox;
         } else {
@@ -55,7 +68,7 @@ export const useBBoxMap = (
 
     setBBoxMap(map);
     bboxMapRef.current = map;
-  }, [idx2sbj, idx2family, dxy, camera, bboxMapRef, itemsRef]);
+  }, [idx2sbj, idx2family, dxy, camera, bboxMapRef, itemsRef, horizontal]);
 
   return bboxMap;
 };

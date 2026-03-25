@@ -76,7 +76,7 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
               <TextEditor
                 value={info.title}
                 onChange={onTitleChange}
-                singleLine
+                maxLines={3}
               />
             </div>
             <div className="sbj-edit-row">

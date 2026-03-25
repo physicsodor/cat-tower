@@ -186,6 +186,7 @@ const refreshItemBounds = (ctx: LayoutCtx, item: LayoutItem): void => {
   item.levelRight = fresh.levelRight;
 };
 
+// Row-by-row required shift: how much b must move right so it doesn't overlap a.
 const requiredShift = (
   ctx: LayoutCtx,
   a: LayoutItem,
@@ -228,8 +229,6 @@ const groupedProjection = (
   // Compact-pack items in a group and center them at `center` (mean of positions).
   const packGroup = (g: Group, center: number): void => {
     const items = orderedItems.slice(g.start, g.end + 1);
-    // Place items[0] at 0, each subsequent at (0 + requiredShift from previous).
-    // requiredShift(prev, cur) with cur placed at 0 gives exactly the tight-pack position.
     items[0].setCenterX(0);
     refreshItemBounds(ctx, items[0]);
     for (let k = 1; k < items.length; k++) {
@@ -283,7 +282,6 @@ const groupedProjection = (
   }
 
   // Final uniform shift: move all items so mean(positions) = mean(ideals).
-  // This minimises Σ(pos_i − ideal_i)² over a uniform translation.
   const meanIdeal =
     orderedItems.reduce((s, it) => s + idealMap.get(it.id)!, 0) /
     orderedItems.length;
@@ -318,7 +316,7 @@ const originalCenterX = (ctx: LayoutCtx, nodeIds: number[]): number => {
   return Number.isFinite(l) ? (l + r) / 2 : centerOfBbox(ctx.result, nodeIds).x;
 };
 
-const childMedian = (ctx: LayoutCtx, layout: BlockLayout): number => {
+const subBlockMedian = (ctx: LayoutCtx, layout: BlockLayout): number => {
   const topLevel = layout.minLevel;
   const xs: number[] = [];
   for (const idx of layout.nodeIds) {
@@ -338,13 +336,14 @@ const kinship = (idx2chain: ChainMap, a: number, b: number): number => {
   return cnt;
 };
 
-const orderChildren = (
+// Order sub-blocks within a block by their median x position.
+const orderSubBlocks = (
   ctx: LayoutCtx,
-  children: BlockLayout[],
+  subBlocks: BlockLayout[],
 ): BlockLayout[] => {
-  return [...children].sort((a, b) => {
-    const ma = childMedian(ctx, a);
-    const mb = childMedian(ctx, b);
+  return [...subBlocks].sort((a, b) => {
+    const ma = subBlockMedian(ctx, a);
+    const mb = subBlockMedian(ctx, b);
     if (Math.abs(ma - mb) > EPS_MEDIAN) return ma - mb;
     const xa = originalCenterX(ctx, a.nodeIds);
     const xb = originalCenterX(ctx, b.nodeIds);
@@ -355,15 +354,16 @@ const orderChildren = (
   });
 };
 
-const compactPlaceChildren = (
+// Compact-place sub-blocks using row-by-row overlap check.
+const compactPlaceSubBlocks = (
   ctx: LayoutCtx,
-  children: BlockLayout[],
+  subBlocks: BlockLayout[],
 ): void => {
-  if (children.length === 0) return;
-  const items = children.map((child) => {
+  if (subBlocks.length === 0) return;
+  const items = subBlocks.map((subBlock) => {
     const id = ctx.nextBlockId++;
-    ctx.blockId2layout.set(id, child);
-    return makeBlockItem(ctx, child, id);
+    ctx.blockId2layout.set(id, subBlock);
+    return makeBlockItem(ctx, subBlock, id);
   });
 
   for (const item of items) item.setCenterX(0);
@@ -443,11 +443,12 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
   );
   const rest = blockNodeIds.filter((idx) => !parentNodes.includes(idx));
 
-  const childrenComps = getPartition(ctx.idx2chain, rest);
-  const childLayouts = childrenComps.map((comp) => layoutBlock(ctx, comp));
+  // Split `rest` into sub-blocks (connected components within the block).
+  const subBlockComps = getPartition(ctx.idx2chain, rest);
+  const subBlockLayouts = subBlockComps.map((comp) => layoutBlock(ctx, comp));
 
-  const orderedChildren = orderChildren(ctx, childLayouts);
-  compactPlaceChildren(ctx, orderedChildren);
+  const orderedSubBlocks = orderSubBlocks(ctx, subBlockLayouts);
+  compactPlaceSubBlocks(ctx, orderedSubBlocks);
 
   const orderedParent = orderParentNodes(ctx, parentNodes);
   const items = orderedParent.map((idx) => makeNodeItem(ctx, idx));
@@ -465,7 +466,6 @@ const layoutBlock = (ctx: LayoutCtx, blockNodeIds: number[]): BlockLayout => {
       maxR = Math.max(maxR, ctx.result.get(j)!.r);
     }
     const childIdeal = xs.length === 0 ? undefined : (minL + maxR) / 2;
-    // Fall back to original bbox x if no child constraint; dummy nodes have no bboxMap entry so use current position
     idealMap.set(idx, childIdeal ?? ctx.bboxMap.get(idx)?.x ?? ctx.result.get(idx)!.x);
   }
 
@@ -544,10 +544,11 @@ const computeAutoLayout = (
   const nodeIds = [...bboxMap.keys()];
   const realNodeIdSet = new Set(nodeIds);
 
-  const partitionIdsInit = getPartition(idx2chain, nodeIds);
+  // connComps: top-level connected components (partitions).
+  const connComps = getPartition(idx2chain, nodeIds);
 
   const idx2level = new Map<number, number>();
-  partitionIdsInit.forEach((ids) => {
+  connComps.forEach((ids) => {
     const partLevels = computeLevelsForPartition(idx2chain, ids);
     for (const [idx, lv] of partLevels) idx2level.set(idx, lv);
   });
@@ -558,7 +559,7 @@ const computeAutoLayout = (
   }
 
   // Assign Y coordinates (real nodes only).
-  partitionIdsInit.forEach((ids) => {
+  connComps.forEach((ids) => {
     const rowMap = new Map<number, number[]>();
     for (const idx of ids) {
       const lv = idx2level.get(idx) ?? 0;
@@ -606,15 +607,15 @@ const computeAutoLayout = (
     result.set(dId, bboxFromXYWH(0, 0, -LAYOUT_COL_GAP, 0));
   const allLayoutIds = [...nodeIds, ...dummyIds];
 
-  // Assign partition IDs: real nodes from partitionIdsInit, dummy nodes directly from dummyToReal.
+  // Assign partition index: real nodes from connComps, dummy nodes from dummyToReal.
   const idx2part = new Map<number, number>();
-  partitionIdsInit.forEach((ids, partId) => {
+  connComps.forEach((ids, partId) => {
     for (const idx of ids) idx2part.set(idx, partId);
   });
   for (const [dId, realId] of dummyToReal)
     idx2part.set(dId, idx2part.get(realId)!);
-  const partitionIds: number[][] = partitionIdsInit.map(() => []);
-  for (const idx of allLayoutIds) partitionIds[idx2part.get(idx)!].push(idx);
+  const partAllIds: number[][] = connComps.map(() => []);
+  for (const idx of allLayoutIds) partAllIds[idx2part.get(idx)!].push(idx);
 
   const ctx: LayoutCtx = {
     result,
@@ -625,13 +626,14 @@ const computeAutoLayout = (
     bboxMap,
   };
 
-  const partitionLayouts: BlockLayout[] = [];
-  for (let partId = 0; partId < partitionIds.length; partId++) {
-    partitionLayouts.push(layoutBlock(ctx, partitionIds[partId]));
+  // Layout each partition independently.
+  const partLayouts: BlockLayout[] = [];
+  for (let partId = 0; partId < partAllIds.length; partId++) {
+    partLayouts.push(layoutBlock(ctx, partAllIds[partId]));
   }
 
-  // Place partitions left-to-right.
-  const orderedPartitions = [...partitionLayouts].sort((a, b) => {
+  // Place partitions left-to-right using full bbox comparison.
+  const orderedPartitions = [...partLayouts].sort((a, b) => {
     const xa = centerOfBbox(result, a.nodeIds).x;
     const xb = centerOfBbox(result, b.nodeIds).x;
     if (Math.abs(xa - xb) > EPS_MEDIAN) return xa - xb;
@@ -645,36 +647,10 @@ const computeAutoLayout = (
   });
 
   for (let i = 1; i < orderedPartitions.length; i++) {
-    const prev = buildBlockLayout(
-      result,
-      idx2level,
-      orderedPartitions[i - 1].nodeIds,
-    );
-    const cur = buildBlockLayout(
-      result,
-      idx2level,
-      orderedPartitions[i].nodeIds,
-    );
-    const prevItem = makeBlockItem(ctx, prev, ctx.nextBlockId++);
-    ctx.blockId2layout.set(prevItem.id, prev);
-    const curItem = makeBlockItem(ctx, cur, ctx.nextBlockId++);
-    ctx.blockId2layout.set(curItem.id, cur);
-
-    const common = prevItem.levels.filter((lv) => curItem.levels.includes(lv));
-    let req = 0;
-    if (common.length === 0) {
-      req = prev.bboxRight + LAYOUT_PART_GAP - cur.bboxLeft;
-    } else {
-      for (const lv of common) {
-        req = Math.max(
-          req,
-          (prevItem.levelRight.get(lv) ?? -Infinity) +
-            LAYOUT_PART_GAP -
-            (curItem.levelLeft.get(lv) ?? Infinity),
-        );
-      }
-    }
-    curItem.shiftX(Math.max(0, req));
+    const prev = buildBlockLayout(result, idx2level, orderedPartitions[i - 1].nodeIds);
+    const cur = buildBlockLayout(result, idx2level, orderedPartitions[i].nodeIds);
+    const req = prev.bboxRight + LAYOUT_PART_GAP - cur.bboxLeft;
+    shiftNodes(result, cur.nodeIds, req, 0);
   }
 
   // Final normalize to center (0, 0). Bounds from real nodes only.

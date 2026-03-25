@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { renderLatex } from "./markup";
+import { Toggle } from "../Toggle/Toggle";
 
 export type MathKind = "math" | "dmath";
 
 export type MathEditState =
   | { mode: "edit"; el: HTMLElement; kind: MathKind; latex: string }
   | { mode: "insert"; kind: MathKind; savedRange: Range };
+
+const PREVIEW_DELAY = 200;
 
 const MathEditorPopup = ({
   state,
@@ -19,22 +22,33 @@ const MathEditorPopup = ({
   onConfirm: (latex: string, kind: MathKind) => void;
   inlineOnly?: boolean;
 }) => {
-  const [draft, setDraft] = useState(state.mode === "edit" ? state.latex : "");
+  const initialLatex = state.mode === "edit" ? state.latex : "";
+  const [draft, setDraft] = useState(initialLatex);
+  const [preview, setPreview] = useState(initialLatex);
   const [kind, setKind] = useState<MathKind>(inlineOnly ? "math" : state.kind);
   const display = kind === "dmath";
+
+  useEffect(() => {
+    const id = setTimeout(() => setPreview(draft), PREVIEW_DELAY);
+    return () => clearTimeout(id);
+  }, [draft]);
 
   return createPortal(
     <div className="math-edit-overlay" onPointerDown={onCancel}>
       <div className="math-edit-modal" onPointerDown={(e) => e.stopPropagation()}>
         {!inlineOnly && (
           <div className="math-edit-kind-toggle">
-            <button className={`math-kind-btn${kind === "math" ? " -active" : ""}`} onClick={() => setKind("math")}>inline</button>
-            <button className={`math-kind-btn${kind === "dmath" ? " -active" : ""}`} onClick={() => setKind("dmath")}>display</button>
+            <Toggle
+              offLabel="inline"
+              onLabel="display"
+              defaultOn={kind === "dmath"}
+              onChange={(on) => setKind(on ? "dmath" : "math")}
+            />
           </div>
         )}
         <div className="math-edit-preview">
-          {draft
-            ? <span dangerouslySetInnerHTML={{ __html: renderLatex(draft, display) }} />
+          {preview
+            ? <span dangerouslySetInnerHTML={{ __html: renderLatex(preview, display) }} />
             : <span className="math-placeholder">(수식)</span>}
         </div>
         <textarea

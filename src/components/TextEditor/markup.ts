@@ -2,11 +2,11 @@ import { createElement, Fragment, type ReactNode } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
-// Supported tags: \bf{...} \if{...} \sub{...} \sup{...} \math{...} \dmath{...}
-type TagKind = "bf" | "if" | "sub" | "sup" | "math" | "dmath";
+// Supported tags: \bf{...} \if{...} \ul{...} \sub{...} \sup{...} \math{...} \dmath{...}
+type TagKind = "bf" | "if" | "ul" | "sub" | "sup" | "math" | "dmath";
 type MNode = { kind: "text"; value: string } | { kind: TagKind; children: MNode[] };
 
-const TAG_RE = /^\\(bf|if|sub|sup|math|dmath)\{/;
+const TAG_RE = /^\\(bf|if|ul|sub|sup|math|dmath)\{/;
 
 function parseNodes(s: string): MNode[] {
   const nodes: MNode[] = [];
@@ -72,6 +72,7 @@ function toReact(nodes: MNode[], prefix: string): ReactNode[] {
     switch (n.kind) {
       case "bf":  return [createElement("strong", { key }, ...ch)];
       case "if":  return [createElement("em",     { key }, ...ch)];
+      case "ul":  return [createElement("u",      { key }, ...ch)];
       case "sub": return [createElement("sub",    { key }, ...ch)];
       case "sup": return [createElement("sup",    { key }, ...ch)];
     }
@@ -191,6 +192,7 @@ function nodeToHtml(n: MNode): string {
   switch (n.kind) {
     case "bf":  return `<strong>${inner}</strong>`;
     case "if":  return `<em>${inner}</em>`;
+    case "ul":  return `<u>${inner}</u>`;
     case "sub": return `<sub>${inner}</sub>`;
     case "sup": return `<sup>${inner}</sup>`;
   }
@@ -230,6 +232,7 @@ function domNodeToMarkup(node: ChildNode): string {
   switch (tag) {
     case "b": case "strong": return `\\bf{${inner}}`;
     case "i": case "em":     return `\\if{${inner}}`;
+    case "u":                return `\\ul{${inner}}`;
     case "sub":              return `\\sub{${inner}}`;
     case "sup":              return `\\sup{${inner}}`;
     default:                 return inner;
