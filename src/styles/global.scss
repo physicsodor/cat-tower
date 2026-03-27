@@ -32,6 +32,7 @@
   --math-edit-z: 600;
 
   --z-proj-picker: 600;
+  --z-proj-dialog: 650;
   --z-share: 700;
 }
 
@@ -173,7 +174,6 @@
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  pointer-events: none;
   font-weight: bold;
   font-size: 1rem;
   color: var(--C-DD);
@@ -464,18 +464,12 @@
 // ─── Project Picker ──────────────────────────────────────────────────────────
 
 .proj-picker-overlay {
-  position: fixed;
-  inset: 0;
   z-index: var(--z-proj-picker);
   background: cs.black-a(0.45);
   backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .proj-picker-modal {
-  position: relative;
   background: var(--C-LL);
   border: 1.5px solid var(--C-D);
   width: min(900px, 94vw);
@@ -727,14 +721,9 @@
 
 // ─── New Project Name Dialog ──────────────────────────────────────────────────
 
-.proj-name-dialog-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
+.proj-dialog-overlay {
+  z-index: var(--z-proj-dialog);
   background: cs.black-a(0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .proj-name-dialog {
@@ -823,8 +812,8 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-sbj-edit);
-  backdrop-filter: blur(4px);
-  background: cs.black-a(0.35);
+  // backdrop-filter: blur(4px);
+  background: cs.black-a(0.5);
   display: flex;
   align-items: center;
   justify-content: center;

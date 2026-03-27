@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSbjSyncCtx } from "../../store/SbjSyncContext";
 import { ProjectThumbnail } from "./ProjectThumbnail";
+import { Popup } from "../../../../components/Popup/Popup";
 import type { Project } from "../../model/Project";
 import type { PublicProject } from "../../model/publicProject";
 
@@ -36,8 +37,8 @@ const PublishDialog = ({ defaultSlug = "", defaultTitle, onConfirm, onCancel }: 
   const confirm = () => { if (slug.trim()) onConfirm(slug.trim(), title.trim() || defaultTitle); };
 
   return (
-    <div className="proj-name-dialog-overlay" onClick={onCancel}>
-      <div className="proj-name-dialog" onClick={(e) => e.stopPropagation()}>
+    <Popup className="proj-dialog-overlay" onClose={onCancel}>
+      <div className="proj-name-dialog">
         <p className="proj-name-dialog-label">공개 페이지 설정</p>
         <label className="proj-publish-label">URL 경로</label>
         <input
@@ -62,7 +63,7 @@ const PublishDialog = ({ defaultSlug = "", defaultTitle, onConfirm, onCancel }: 
           </button>
         </div>
       </div>
-    </div>
+    </Popup>
   );
 };
 
@@ -309,8 +310,8 @@ export const ProjectPickerModal = () => {
   );
 
   return (
-    <div className="proj-picker-overlay" onClick={closePicker}>
-      <div className="proj-picker-modal" onClick={(e) => e.stopPropagation()}>
+    <Popup className="proj-picker-overlay" onClose={closePicker}>
+      <div className="proj-picker-modal">
         {/* Header */}
         <div className="proj-picker-header">
           <h2 className="proj-picker-heading">내 프로젝트</h2>
@@ -334,8 +335,8 @@ export const ProjectPickerModal = () => {
 
         {/* Name input dialog */}
         {nameDialogOpen && (
-          <div className="proj-name-dialog-overlay" onClick={handleNameCancel}>
-            <div className="proj-name-dialog" onClick={(e) => e.stopPropagation()}>
+          <Popup className="proj-dialog-overlay" onClose={handleNameCancel}>
+            <div className="proj-name-dialog">
               <p className="proj-name-dialog-label">새 프로젝트 이름</p>
               <input
                 ref={nameInputRef}
@@ -352,7 +353,7 @@ export const ProjectPickerModal = () => {
                 <button className="proj-name-dialog-confirm" onClick={handleNameConfirm}>만들기</button>
               </div>
             </div>
-          </div>
+          </Popup>
         )}
 
         {/* Admin: 공개 프로젝트 섹션 */}
@@ -401,6 +402,6 @@ export const ProjectPickerModal = () => {
           </div>
         )}
       </div>
-    </div>
+    </Popup>
   );
 };

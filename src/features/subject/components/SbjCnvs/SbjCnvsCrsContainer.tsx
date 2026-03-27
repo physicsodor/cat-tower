@@ -18,7 +18,7 @@ type CrsCtxMenu = {
 };
 
 const SbjCnvsCrsContainer = ({ bboxMap, items, back = false, anyHovered = false }: Props) => {
-  const { idx2family, idx2sbj, delCrs, setTreeMom } = useSbjData();
+  const { idx2family, idx2sbj, delCrs, setTreeMom, openEdit } = useSbjData();
   const { selectedSet } = useSbjSelect();
   const [ctxMenu, setCtxMenu] = useState<CrsCtxMenu | null>(null);
 
@@ -84,6 +84,7 @@ const SbjCnvsCrsContainer = ({ bboxMap, items, back = false, anyHovered = false 
             back={back}
             anyHovered={anyHovered}
             onContextMenu={back ? undefined : onContextMenu}
+            onLabelDoubleClick={back ? undefined : () => openEdit(idx)}
           />
         );
       })}

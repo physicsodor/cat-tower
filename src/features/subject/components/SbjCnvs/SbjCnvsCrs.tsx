@@ -10,9 +10,10 @@ type Props = {
   back?: boolean;
   anyHovered?: boolean;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onLabelDoubleClick?: () => void;
 };
 
-const SbjCnvsCrs = ({ setRef, idx, bbox, label, back = false, anyHovered = false, onContextMenu }: Props) => {
+const SbjCnvsCrs = ({ setRef, idx, bbox, label, back = false, anyHovered = false, onContextMenu, onLabelDoubleClick }: Props) => {
   return (
     <div
       ref={setRef}
@@ -28,7 +29,15 @@ const SbjCnvsCrs = ({ setRef, idx, bbox, label, back = false, anyHovered = false
       onContextMenu={onContextMenu}
       data-crs-idx={back ? undefined : String(idx)}
     >
-      {!back && <span className="sbj-cnvs-crs-lbl">{label}</span>}
+      {!back && (
+        <span
+          className="sbj-cnvs-crs-lbl"
+          onPointerDown={(e) => e.stopPropagation()}
+          onDoubleClick={onLabelDoubleClick}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 };

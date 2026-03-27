@@ -135,14 +135,9 @@
 // ── Math editor popup ─────────────────────────────────────────────────────────
 
 .math-edit-overlay {
-  position: fixed;
-  inset: 0;
   z-index: var(--math-edit-z, 600);
-  backdrop-filter: blur(2px);
+  // backdrop-filter: blur(2px);
   background: cs.black-a(0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .math-edit-modal {
@@ -166,29 +161,21 @@
   align-self: flex-start;
 }
 
-.math-edit-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60px;
-  padding: var(--G-M, 8px);
-  border: 1px solid var(--C-D, #aaa);
-  background: white;
-  border-radius: 3px;
-  overflow-x: auto;
+// MathLive floaters — must be above the popup overlay
+#mathlive-suggestion-popover,
+body > .ML__keyboard {
+  z-index: calc(var(--math-edit-z, 600) + 10) !important;
 }
 
-.math-edit-input {
-  padding: var(--G-S, 4px) var(--G-M, 8px);
+.math-edit-field {
+  display: block;
   border: 1px solid var(--C-D, #aaa);
-  outline: none;
-  font-family: monospace;
-  font-size: 0.9em;
-  resize: vertical;
-  line-height: 1.5;
   background: white;
-  &:focus {
+  min-height: 3rem;
+  font-size: 1.2rem;
+  &:focus-within {
     border-color: var(--C-B, steelblue);
+    outline: none;
   }
 }
 

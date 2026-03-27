@@ -14,6 +14,7 @@
     "fractional-indexing": "^3.2.0",
     "katex": "^0.16.38",
     "lz-string": "^1.5.0",
+    "mathlive": "^0.109.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

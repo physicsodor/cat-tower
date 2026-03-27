@@ -29,11 +29,11 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeEdit();
+      if (e.key === "Escape" && !isEditing) closeEdit();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeEdit]);
+  }, [closeEdit, isEditing]);
 
   const startEdit = () => {
     titleRef.current = info.title;
@@ -151,11 +151,11 @@ const CrsEditForm = ({ idx, info, closeEdit, updateCrs }: CrsFormProps) => {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeEdit();
+      if (e.key === "Escape" && !isEditing) closeEdit();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeEdit]);
+  }, [closeEdit, isEditing]);
 
   const startEdit = () => {
     setDraftTitle(info.title);

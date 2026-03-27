@@ -1,15 +1,14 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { renderLatex } from "./markup";
+import { useEffect, useRef, useState } from "react";
+import { MathfieldElement } from "mathlive";
 import { Toggle } from "../Toggle/Toggle";
+import { Popup } from "../Popup/Popup";
+
 
 export type MathKind = "math" | "dmath";
 
 export type MathEditState =
   | { mode: "edit"; el: HTMLElement; kind: MathKind; latex: string }
   | { mode: "insert"; kind: MathKind; savedRange: Range };
-
-const PREVIEW_DELAY = 200;
 
 const MathEditorPopup = ({
   state,
@@ -23,19 +22,35 @@ const MathEditorPopup = ({
   inlineOnly?: boolean;
 }) => {
   const initialLatex = state.mode === "edit" ? state.latex : "";
-  const [draft, setDraft] = useState(initialLatex);
-  const [preview, setPreview] = useState(initialLatex);
   const [kind, setKind] = useState<MathKind>(inlineOnly ? "math" : state.kind);
-  const display = kind === "dmath";
+  const kindRef = useRef(kind);
+  const mfRef = useRef<HTMLElement>(null);
+
+  useEffect(() => { kindRef.current = kind; }, [kind]);
 
   useEffect(() => {
-    const id = setTimeout(() => setPreview(draft), PREVIEW_DELAY);
-    return () => clearTimeout(id);
-  }, [draft]);
+    const mf = mfRef.current as MathfieldElement | null;
+    if (!mf) return;
+    mf.value = initialLatex;
+    mf.focus();
 
-  return createPortal(
-    <div className="math-edit-overlay" onPointerDown={onCancel}>
-      <div className="math-edit-modal" onPointerDown={(e) => e.stopPropagation()}>
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopPropagation(); }
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        onConfirm(mf.value, kindRef.current);
+      }
+    };
+    mf.addEventListener("keydown", handleKeyDown);
+    return () => mf.removeEventListener("keydown", handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const confirm = () => onConfirm((mfRef.current as MathfieldElement | null)?.value ?? "", kind);
+
+  return (
+    <Popup className="math-edit-overlay" onClose={onCancel}>
+      <div className="math-edit-modal">
         {!inlineOnly && (
           <div className="math-edit-kind-toggle">
             <Toggle
@@ -46,30 +61,13 @@ const MathEditorPopup = ({
             />
           </div>
         )}
-        <div className="math-edit-preview">
-          {preview
-            ? <span dangerouslySetInnerHTML={{ __html: renderLatex(preview, display) }} />
-            : <span className="math-placeholder">(수식)</span>}
-        </div>
-        <textarea
-          className="math-edit-input"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="LaTeX 수식을 입력하세요 (예: x^2 + y^2 = r^2)"
-          autoFocus
-          rows={3}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onConfirm(draft, kind); }
-            if (e.key === "Escape") { e.stopPropagation(); onCancel(); }
-          }}
-        />
+        <math-field ref={mfRef} className="math-edit-field" />
         <div className="te-btns">
           <button className="te-btn" onClick={onCancel}>취소</button>
-          <button className="te-btn -confirm" onClick={() => onConfirm(draft, kind)}>확인</button>
+          <button className="te-btn -confirm" onClick={confirm}>확인</button>
         </div>
       </div>
-    </div>,
-    document.body
+    </Popup>
   );
 };
 

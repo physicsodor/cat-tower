@@ -1,11 +1,12 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-const SYNC_DELAY = 200;
 import {
   markupToHtml, htmlToMarkup, updateMathBlock, buildMathEl,
 } from "./markup";
-import MathEditorPopup, { type MathKind, type MathEditState } from "./MathEditorPopup";
+import { type MathKind, type MathEditState } from "./MathEditorPopup";
 import "./TextEditor.scss";
+
+const MathEditorPopup = lazy(() => import("./MathEditorPopup"));
 
 // ── Toolbar definition ────────────────────────────────────────────────────────
 
@@ -36,7 +37,6 @@ const getLineCount = (div: HTMLDivElement): number => {
 
 const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v: string) => void; maxLines?: number }) => {
   const divRef = useRef<HTMLDivElement>(null);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
   const isSingleLine = maxLines === 1;
 
@@ -46,20 +46,18 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => () => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-  }, []);
-
   const syncMarkup = useCallback(() => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = null;
     if (divRef.current) onChange(htmlToMarkup(divRef.current.innerHTML));
   }, [onChange]);
 
-  const debouncedSyncMarkup = useCallback(() => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(syncMarkup, SYNC_DELAY);
-  }, [syncMarkup]);
+  const normalizeAndSync = useCallback(() => {
+    if (!divRef.current) return;
+    let markup = htmlToMarkup(divRef.current.innerHTML);
+    markup = markup.replace(/\n[ \t]*(\n[ \t]*)*/g, "\n");
+    markup = markup.replace(/  +/g, " ");
+    divRef.current.innerHTML = markupToHtml(markup);
+    onChange(markup);
+  }, [onChange]);
 
   const handleMathConfirm = useCallback((latex: string, kind: MathKind) => {
     if (!mathEdit || !divRef.current) return;
@@ -146,8 +144,7 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
         style={maxLines && !isSingleLine ? { "--max-lines-height": `calc(${maxLines} * 1.8em + 0.5rem)` } as React.CSSProperties : undefined}
         contentEditable
         suppressContentEditableWarning
-        onInput={debouncedSyncMarkup}
-        onBlur={syncMarkup}
+        onBlur={normalizeAndSync}
         onClick={handleClick}
         onKeyDown={(e) => {
           if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
@@ -155,31 +152,46 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
             if (e.key === "i" || e.key === "I") { e.preventDefault(); exec("italic"); return; }
             if (e.key === "u" || e.key === "U") { e.preventDefault(); exec("underline"); return; }
           }
-          if (maxLines && e.key === "Enter") {
-            if (isSingleLine || (divRef.current && getLineCount(divRef.current) >= maxLines))
+          if (e.key === "Enter") {
+            if (e.shiftKey) {
               e.preventDefault();
+              if (!maxLines || (!isSingleLine && !(divRef.current && getLineCount(divRef.current) >= maxLines))) {
+                document.execCommand("insertParagraph", false);
+              }
+              return;
+            }
+            if (maxLines) {
+              if (isSingleLine || (divRef.current && getLineCount(divRef.current) >= maxLines))
+                e.preventDefault();
+            }
           }
         }}
-        onPaste={maxLines ? (e) => {
+        onPaste={(e) => {
           e.preventDefault();
           const pasted = e.clipboardData.getData("text/plain");
-          if (isSingleLine) {
-            document.execCommand("insertText", false, pasted.replace(/[\r\n]+/g, " "));
+          if (maxLines) {
+            if (isSingleLine) {
+              document.execCommand("insertText", false, pasted.replace(/[\r\n]+/g, " "));
+            } else {
+              const div = divRef.current!;
+              const remaining = maxLines - getLineCount(div);
+              const lines = pasted.split(/\r?\n/).slice(0, Math.max(remaining, 1));
+              document.execCommand("insertText", false, lines.join("\n"));
+            }
           } else {
-            const div = divRef.current!;
-            const remaining = maxLines - getLineCount(div);
-            const lines = pasted.split(/\r?\n/).slice(0, Math.max(remaining, 1));
-            document.execCommand("insertText", false, lines.join("\n"));
+            document.execCommand("insertText", false, pasted.replace(/\r\n/g, "\n").replace(/\r/g, "\n"));
           }
-        } : undefined}
+        }}
       />
       {mathEdit && (
-        <MathEditorPopup
-          state={mathEdit}
-          onCancel={() => setMathEdit(null)}
-          onConfirm={handleMathConfirm}
-          inlineOnly={!!maxLines}
-        />
+        <Suspense>
+          <MathEditorPopup
+            state={mathEdit}
+            onCancel={() => setMathEdit(null)}
+            onConfirm={handleMathConfirm}
+            inlineOnly={!!maxLines}
+          />
+        </Suspense>
       )}
     </div>
   );
