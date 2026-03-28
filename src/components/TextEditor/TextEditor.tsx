@@ -1,14 +1,72 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  markupToHtml, htmlToMarkup, updateMathBlock, buildMathEl,
+  markupToHtml, htmlToMarkup, updateMathBlock, buildMathEl, stripDmathNewlines,
 } from "./markup";
-import { type MathKind, type MathEditState } from "./MathEditorPopup";
+import { Toggle } from "../Toggle/Toggle";
+import { Popup } from "../Popup/Popup";
+import MathEditor, { type MathEditorHandle } from "../MathEditor";
 import "./TextEditor.scss";
 
-const MathEditorPopup = lazy(() => import("./MathEditorPopup"));
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-// ── Toolbar definition ────────────────────────────────────────────────────────
+type MathKind = "math" | "dmath";
+
+type MathEditState =
+  | { mode: "edit"; el: HTMLElement; kind: MathKind; latex: string }
+  | { mode: "insert"; kind: MathKind; savedRange: Range };
+
+// ── MathEditorPopup ────────────────────────────────────────────────────────────
+
+const MathEditorPopup = ({
+  state,
+  onCancel,
+  onConfirm,
+  inlineOnly,
+}: {
+  state: MathEditState;
+  onCancel: () => void;
+  onConfirm: (latex: string, kind: MathKind) => void;
+  inlineOnly?: boolean;
+}) => {
+  const initialLatex = state.mode === "edit" ? state.latex : "";
+  const [kind, setKind] = useState<MathKind>(inlineOnly ? "math" : state.kind);
+  const kindRef = useRef(kind);
+  const mathEditorRef = useRef<MathEditorHandle>(null);
+
+  useEffect(() => { kindRef.current = kind; }, [kind]);
+
+  const confirm = () =>
+    onConfirm(mathEditorRef.current?.getValue() ?? "", kindRef.current);
+
+  return (
+    <Popup className="math-edit-overlay" onClose={onCancel}>
+      <div className="math-edit-modal">
+        {!inlineOnly && (
+          <div className="math-edit-kind-toggle">
+            <Toggle
+              offLabel="inline"
+              onLabel="display"
+              defaultOn={kind === "dmath"}
+              onChange={(on) => setKind(on ? "dmath" : "math")}
+            />
+          </div>
+        )}
+        <MathEditor
+          ref={mathEditorRef}
+          initialLatex={initialLatex}
+          onConfirm={(latex) => onConfirm(latex, kindRef.current)}
+        />
+        <div className="te-btns">
+          <button className="te-btn" onClick={onCancel}>취소</button>
+          <button className="te-btn -confirm" onClick={confirm}>확인</button>
+        </div>
+      </div>
+    </Popup>
+  );
+};
+
+// ── Toolbar definition ─────────────────────────────────────────────────────────
 
 const TOOLS: { cmd: string; label: React.ReactNode; title: string }[] = [
   { cmd: "bold",        label: <strong>B</strong>,             title: "Bold" },
@@ -17,7 +75,7 @@ const TOOLS: { cmd: string; label: React.ReactNode; title: string }[] = [
   { cmd: "math",        label: <span>∑</span>,                 title: "수식" },
 ];
 
-// ── TextEditor ────────────────────────────────────────────────────────────────
+// ── TextEditor ─────────────────────────────────────────────────────────────────
 
 /**
  * WYSIWYG markup editor with KaTeX math support.
@@ -38,6 +96,7 @@ const getLineCount = (div: HTMLDivElement): number => {
 const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v: string) => void; maxLines?: number }) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [mathEdit, setMathEdit] = useState<MathEditState | null>(null);
+  const mathInsertingRef = useRef(false);
   const isSingleLine = maxLines === 1;
 
   // Set initial HTML once on mount (uncontrolled after that)
@@ -52,9 +111,11 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
 
   const normalizeAndSync = useCallback(() => {
     if (!divRef.current) return;
+    if (mathInsertingRef.current) return;
     let markup = htmlToMarkup(divRef.current.innerHTML);
     markup = markup.replace(/\n[ \t]*(\n[ \t]*)*/g, "\n");
     markup = markup.replace(/  +/g, " ");
+    markup = stripDmathNewlines(markup);
     divRef.current.innerHTML = markupToHtml(markup);
     onChange(markup);
   }, [onChange]);
@@ -91,6 +152,7 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
       }
     }
 
+    mathInsertingRef.current = false;
     syncMarkup();
     setMathEdit(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +165,10 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
       div.focus();
       const sel = window.getSelection();
       const savedRange = sel?.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
-      if (savedRange) setMathEdit({ mode: "insert", kind: "math", savedRange });
+      if (savedRange) {
+        mathInsertingRef.current = true;
+        setMathEdit({ mode: "insert", kind: "math", savedRange });
+      }
     } else {
       div.focus();
       document.execCommand(cmd, false);
@@ -184,14 +249,12 @@ const TextEditor = ({ value, onChange, maxLines }: { value: string; onChange: (v
         }}
       />
       {mathEdit && (
-        <Suspense>
-          <MathEditorPopup
-            state={mathEdit}
-            onCancel={() => setMathEdit(null)}
-            onConfirm={handleMathConfirm}
-            inlineOnly={!!maxLines}
-          />
-        </Suspense>
+        <MathEditorPopup
+          state={mathEdit}
+          onCancel={() => { mathInsertingRef.current = false; setMathEdit(null); }}
+          onConfirm={handleMathConfirm}
+          inlineOnly={!!maxLines}
+        />
       )}
     </div>
   );

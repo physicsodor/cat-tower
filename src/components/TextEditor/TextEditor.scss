@@ -161,24 +161,6 @@
   align-self: flex-start;
 }
 
-// MathLive floaters — must be above the popup overlay
-#mathlive-suggestion-popover,
-body > .ML__keyboard {
-  z-index: calc(var(--math-edit-z, 600) + 10) !important;
-}
-
-.math-edit-field {
-  display: block;
-  border: 1px solid var(--C-D, #aaa);
-  background: white;
-  min-height: 3rem;
-  font-size: 1.2rem;
-  &:focus-within {
-    border-color: var(--C-B, steelblue);
-    outline: none;
-  }
-}
-
 // ── Math kind toggle buttons ──────────────────────────────────────────────────
 
 .math-kind-btn {

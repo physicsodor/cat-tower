@@ -244,3 +244,28 @@ export const htmlToMarkup = (html: string): string => {
   tmp.innerHTML = html;
   return Array.from(tmp.childNodes).map(domNodeToMarkup).join("").trimEnd();
 };
+
+/** Remove \n immediately before and after \dmath{...} blocks. */
+export const stripDmathNewlines = (markup: string): string => {
+  let s = markup.replace(/\n(\\dmath\{)/g, "$1");
+  let out = "";
+  let i = 0;
+  while (i < s.length) {
+    if (s.startsWith("\\dmath{", i)) {
+      let j = i + 7;
+      let depth = 1;
+      while (j < s.length && depth > 0) {
+        if (s[j] === "{") depth++;
+        else if (s[j] === "}") depth--;
+        j++;
+      }
+      out += s.slice(i, j);
+      i = j;
+      if (s[i] === "\n") i++;
+    } else {
+      out += s[i];
+      i++;
+    }
+  }
+  return out;
+};
