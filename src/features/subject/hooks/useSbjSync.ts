@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Curriculum } from "@/features/subject/model/Curriculum/curriculum";
 import { supabase } from "@/features/auth/supabase";
-import { decodeList, decodeListCompact, encodeList, encodeListCompact } from "../model/Curriculum/curriculumCodec";
+import { decodeList, decodeListCompact, encodeList } from "../model/Curriculum/curriculumCodec";
 import type { Project } from "../model/Project";
 import { LAST_PROJECT_KEY } from "@/features/subject/constants";
 import { buildExampleCurriculum } from "../model/exampleProject";
@@ -12,19 +12,13 @@ import {
   isAdminEmail,
   fetchPublicProjectBySlug,
   savePublicProject as savePublicProjectToDb,
-  createPublicProject,
-  deletePublicProject,
-  updatePublicProject,
   listPublicProjects,
 } from "../model/publicProject";
+import { useShareLink } from "./useShareLink";
+import { usePublicProjectAdmin } from "./usePublicProjectAdmin";
 
 const PRE_LOGIN_KEY = "sbj_pre_login_state";
 const DRAFT_KEY = "sbj_draft";
-const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-function genShareId(): string {
-  return Array.from({ length: 7 }, () => SHARE_ID_CHARS[Math.floor(Math.random() * SHARE_ID_CHARS.length)]).join("");
-}
 
 function consumeShareParam(): Curriculum[] | null {
   const params = new URLSearchParams(window.location.search);
@@ -36,7 +30,7 @@ function consumeShareParam(): Curriculum[] | null {
   window.history.replaceState(
     null,
     "",
-    `${window.location.pathname}${newSearch ? "?" + newSearch : ""}`
+    `${window.location.pathname}${newSearch ? "?" + newSearch : ""}`,
   );
   return decoded;
 }
@@ -65,7 +59,7 @@ function normalizeCenter(list: ReadonlyArray<Curriculum>): ReadonlyArray<Curricu
 
 export const useSbjSync = (
   list: ReadonlyArray<Curriculum>,
-  loadList: (v: ReadonlyArray<Curriculum>) => void
+  loadList: (v: ReadonlyArray<Curriculum>) => void,
 ) => {
   const [loading, setLoading] = useState(true);
   const [savePending, setSavePending] = useState(false);
@@ -78,8 +72,6 @@ export const useSbjSync = (
   const currentPublicProjectRef = useRef<PublicProject | null>(null);
   const [publicProjects, setPublicProjects] = useState<PublicProject[]>([]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareLoading, setShareLoading] = useState(false);
 
   // Refs for use inside callbacks / event handlers
   const userIdRef = useRef<string | null>(null);
@@ -141,6 +133,25 @@ export const useSbjSync = (
     currentPublicProjectRef.current = pub;
     _setCurrentPublicProject(pub);
   }, []);
+
+  // ─── Share link ───────────────────────────────────────────────────────────
+
+  const { shareUrl, shareLoading, openShare, closeShare } = useShareLink(listRef);
+
+  // ─── Public project admin ─────────────────────────────────────────────────
+
+  const onCurrentUnpublished = useCallback(() => {
+    lastSavedRef.current = "[]";
+  }, []);
+
+  const { publishProject, unpublishPublicProject, editPublicProject } = usePublicProjectAdmin(
+    projects,
+    setPublicProjects,
+    currentPublicProjectRef,
+    setCurrentPublicProject,
+    setCurrentProjectTitle,
+    onCurrentUnpublished,
+  );
 
   // ─── Fetch projects & hydrate ─────────────────────────────────────────────
 
@@ -257,7 +268,6 @@ export const useSbjSync = (
           setCurrentProjectTitle(pub.title);
           setDirty(false);
         } else if (!preLoginUsedRef.current) {
-          // Slug이 공개 프로젝트에 없으면 마지막 개인 프로젝트 로드
           const lastId = sessionStorage.getItem(LAST_PROJECT_KEY) ?? localStorage.getItem(LAST_PROJECT_KEY);
           const target = fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
           if (target) {
@@ -290,7 +300,7 @@ export const useSbjSync = (
       setLoading(false);
       fetchingRef.current = false;
     },
-    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty]
+    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── Auth watcher ─────────────────────────────────────────────────────────
@@ -359,7 +369,6 @@ export const useSbjSync = (
           void fetchAndHydrate(uid);
         }
       } else {
-        // Logged out
         preLoginUsedRef.current = false;
         userEmailRef.current = null;
         setProjects([]);
@@ -415,8 +424,8 @@ export const useSbjSync = (
           prev.map((p) =>
             p.id === currentProjectIdRef.current
               ? { ...p, data: encoded, updated_at: new Date().toISOString() }
-              : p
-          )
+              : p,
+          ),
         );
       } else {
         // 현재 프로젝트 없음 — 새 개인 프로젝트로 저장 (공개 프로젝트 보던 일반 유저도 여기로)
@@ -449,7 +458,7 @@ export const useSbjSync = (
     (project: Project) => {
       if (dirtyRef.current) {
         const ok = window.confirm(
-          "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?"
+          "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?",
         );
         if (!ok) return;
       }
@@ -464,7 +473,7 @@ export const useSbjSync = (
       setDirty(false);
       setIsPickerOpen(false);
     },
-    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty]
+    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── Load a public project ────────────────────────────────────────────────
@@ -473,7 +482,7 @@ export const useSbjSync = (
     (pub: PublicProject) => {
       if (dirtyRef.current) {
         const ok = window.confirm(
-          "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?"
+          "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?",
         );
         if (!ok) return;
       }
@@ -486,7 +495,7 @@ export const useSbjSync = (
       setDirty(false);
       setIsPickerOpen(false);
     },
-    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty]
+    [loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── New project ─────────────────────────────────────────────────────────
@@ -494,7 +503,7 @@ export const useSbjSync = (
   const newProject = useCallback(async (title: string) => {
     if (dirtyRef.current) {
       const ok = window.confirm(
-        "저장되지 않은 변경이 있습니다.\n새 프로젝트를 시작하면 변경 내용이 사라집니다.\n계속하시겠습니까?"
+        "저장되지 않은 변경이 있습니다.\n새 프로젝트를 시작하면 변경 내용이 사라집니다.\n계속하시겠습니까?",
       );
       if (!ok) return;
     }
@@ -541,7 +550,7 @@ export const useSbjSync = (
         localStorage.removeItem(LAST_PROJECT_KEY);
       }
     },
-    [setCurrentProjectId, setCurrentProjectTitle]
+    [setCurrentProjectId, setCurrentProjectTitle],
   );
 
   // ─── Rename project ───────────────────────────────────────────────────────
@@ -554,45 +563,7 @@ export const useSbjSync = (
       setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
       if (currentProjectIdRef.current === id) setCurrentProjectTitle(title);
     },
-    [setCurrentProjectTitle]
-  );
-
-  // ─── Publish / Unpublish / Edit public project (admin) ───────────────────
-
-  const publishProject = useCallback(
-    async (projectId: string, slug: string, title?: string): Promise<PublicProject | null> => {
-      const proj = projects.find((p) => p.id === projectId);
-      if (!proj) return null;
-      const pub = await createPublicProject(slug, title ?? proj.title, proj.data);
-      if (pub) setPublicProjects((prev) => [...prev, pub].sort((a, b) => a.slug.localeCompare(b.slug)));
-      return pub;
-    },
-    [projects]
-  );
-
-  const unpublishPublicProject = useCallback(
-    async (publicId: string) => {
-      await deletePublicProject(publicId);
-      setPublicProjects((prev) => prev.filter((p) => p.id !== publicId));
-      if (currentPublicProjectRef.current?.id === publicId) {
-        setCurrentPublicProject(null);
-        setCurrentProjectTitle(null);
-        lastSavedRef.current = "[]";
-      }
-    },
-    [setCurrentPublicProject, setCurrentProjectTitle]
-  );
-
-  const editPublicProject = useCallback(
-    async (publicId: string, slug: string, title: string) => {
-      await updatePublicProject(publicId, slug, title);
-      setPublicProjects((prev) => prev.map((p) => (p.id === publicId ? { ...p, slug, title } : p)));
-      if (currentPublicProjectRef.current?.id === publicId) {
-        setCurrentPublicProject({ ...currentPublicProjectRef.current, slug, title });
-        setCurrentProjectTitle(title);
-      }
-    },
-    [setCurrentPublicProject, setCurrentProjectTitle]
+    [setCurrentProjectTitle],
   );
 
   // ─── Picker open/close ────────────────────────────────────────────────────
@@ -637,24 +608,6 @@ export const useSbjSync = (
       options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
     });
   }, []);
-
-  // ─── Share URL ────────────────────────────────────────────────────────────
-
-  const openShare = useCallback(async () => {
-    setShareLoading(true);
-    try {
-      const encoded = encodeListCompact(listRef.current);
-      const id = genShareId();
-      await supabase.from("share_links").insert({ id, data: encoded });
-      const url = new URL(window.location.href);
-      url.searchParams.set("s", id);
-      setShareUrl(url.toString());
-    } finally {
-      setShareLoading(false);
-    }
-  }, []);
-
-  const closeShare = useCallback(() => setShareUrl(null), []);
 
   return {
     loading,
