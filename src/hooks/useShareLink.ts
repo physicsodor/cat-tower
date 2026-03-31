@@ -1,0 +1,36 @@
+import { useCallback, useState } from "react";
+import type { RefObject } from "react";
+import { supabase } from "@/lib/supabase";
+import { encodeListCompact } from "@/lib/Curriculum/curriculumCodec";
+import type { Curriculum } from "@/lib/Curriculum/curriculum";
+
+const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function genShareId(): string {
+  return Array.from({ length: 7 }, () =>
+    SHARE_ID_CHARS[Math.floor(Math.random() * SHARE_ID_CHARS.length)]
+  ).join("");
+}
+
+export const useShareLink = (listRef: RefObject<ReadonlyArray<Curriculum>>) => {
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+
+  const openShare = useCallback(async () => {
+    setShareLoading(true);
+    try {
+      const encoded = encodeListCompact(listRef.current ?? []);
+      const id = genShareId();
+      await supabase.from("share_links").insert({ id, data: encoded });
+      const url = new URL(window.location.href);
+      url.searchParams.set("s", id);
+      setShareUrl(url.toString());
+    } finally {
+      setShareLoading(false);
+    }
+  }, [listRef]);
+
+  const closeShare = useCallback(() => setShareUrl(null), []);
+
+  return { shareUrl, shareLoading, openShare, closeShare };
+};

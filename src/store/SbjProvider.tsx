@@ -1,0 +1,272 @@
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { buildSbjMap } from "@/lib/Curriculum/curriculum";
+import { buildFamilyMap } from "@/lib/Family/family";
+import { buildChainMap } from "@/lib/Chain/chain";
+import { useSbjCrud } from "@/hooks/useSbjCrud";
+import { useSbjTree } from "@/hooks/useSbjTree";
+import { useSbjCnvs } from "@/hooks/useSbjCnvs";
+import { useSbjSync } from "@/hooks/useSbjSync";
+import { useSbjClipboard } from "@/hooks/useSbjClipboard";
+import { useHistory } from "@/hooks/useHistory";
+import { SbjDataContext } from "./SbjDataContext";
+import { SbjSelectContext } from "./SbjSelectContext";
+import { SbjSyncContext } from "./SbjSyncContext";
+import type { GetSet } from "@/utils/GetSet";
+import type { Camera } from "@/components/InfiniteCanvas";
+
+export const SbjProvider = ({ children }: { children: ReactNode }) => {
+  const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } =
+    useHistory();
+  const [selectedSet, setSelectedSet] = useState(new Set<number>());
+
+  // Ref bridge: CRUD callbacks read selection without reactive deps
+  const selectedSetRef = useRef<ReadonlySet<number>>(selectedSet);
+  useEffect(() => {
+    selectedSetRef.current = selectedSet;
+  }, [selectedSet]);
+  const getSelected = useCallback(() => selectedSetRef.current, []);
+
+  // Ref bridge: clipboard callbacks read list without reactive deps
+  const getList = useCallback(() => listRef.current, [listRef]);
+
+  // Camera ref — updated by SbjCnvs via syncCamera
+  const cameraRef = useRef<Camera>({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+    zoom: 1,
+  });
+  const syncCamera = useCallback((c: Camera) => {
+    cameraRef.current = c;
+  }, []);
+  const getCamera = useCallback(() => cameraRef.current, []);
+  const setCamera = useCallback((c: Camera) => {
+    cameraRef.current = c;
+  }, []);
+
+  // GetSet wrappers (ref-based, never trigger re-renders)
+  const treeDragRef = useRef(new Set<number>());
+  const cnvsDragRef = useRef(new Set<number>());
+  const preSourceRef = useRef(-1);
+  const treeDrag = useMemo<GetSet<Set<number>>>(
+    () => ({
+      get: () => treeDragRef.current,
+      set: (s) => {
+        treeDragRef.current = s;
+      },
+    }),
+    [],
+  );
+  const cnvsDrag = useMemo<GetSet<Set<number>>>(
+    () => ({
+      get: () => cnvsDragRef.current,
+      set: (s) => {
+        cnvsDragRef.current = s;
+      },
+    }),
+    [],
+  );
+  const preSource = useMemo<GetSet<number>>(
+    () => ({
+      get: () => preSourceRef.current,
+      set: (s) => {
+        preSourceRef.current = s;
+      },
+    }),
+    [],
+  );
+
+  // Derived maps — recomputed only when list changes
+  const idx2sbj = useMemo(() => buildSbjMap(list), [list]);
+  const idx2family = useMemo(() => buildFamilyMap(list), [list]);
+  const idx2chain = useMemo(() => buildChainMap(list), [list]);
+
+  // Edit modal state
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const openEdit = useCallback((idx: number) => setEditingIdx(idx), []);
+  const closeEdit = useCallback(() => setEditingIdx(null), []);
+  const updateSbj = useCallback(
+    (
+      idx: number,
+      fields: { title: string; short?: string; content: string },
+    ) => {
+      setList((prev) =>
+        prev.map((item) =>
+          item.idx === idx && item.sbjType === "SUBJECT"
+            ? { ...item, ...fields }
+            : item,
+        ),
+      );
+    },
+    [setList],
+  );
+  const updateCrs = useCallback(
+    (idx: number, fields: { title: string; short?: string }) => {
+      setList((prev) =>
+        prev.map((item) =>
+          item.idx === idx && item.sbjType === "COURSE"
+            ? { ...item, ...fields }
+            : item,
+        ),
+      );
+    },
+    [setList],
+  );
+  const removePreLink = useCallback(
+    (idxA: number, idxB: number) => {
+      setList((prev) =>
+        prev.map((item) => {
+          if (item.idx !== idxA || item.sbjType !== "SUBJECT") return item;
+          const pre = new Set(item.pre);
+          pre.delete(idxB);
+          return { ...item, pre };
+        }),
+      );
+    },
+    [setList],
+  );
+
+  // Operations
+  const { addSbj, addCrs, delSbj, delSbjOne, delCrs } = useSbjCrud(
+    idx2family,
+    getSelected,
+    setList,
+    setSelectedSet,
+    cameraRef,
+  );
+  const { setTreeMom, setTreeBro, exitTreeMom } = useSbjTree(idx2family, setList, treeDrag);
+  const { setCnvsPre, setCnvsPos, autoLayout } = useSbjCnvs(
+    idx2chain,
+    setList,
+    preSource,
+  );
+  const sync = useSbjSync(list, loadList);
+  const ctrlS = useCallback(
+    () => (sync.isLoggedIn ? sync.saveNow() : sync.openShare()),
+    [sync],
+  );
+  const { copy, paste, cut, hasClip } = useSbjClipboard(
+    getList,
+    idx2family,
+    getSelected,
+    setList,
+    setSelectedSet,
+    delSbj,
+    ctrlS,
+    undo,
+    redo,
+  );
+
+  const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
+
+  // selectItem depends on selectedSet — lives in SbjSelectContext
+  const selectItem = useCallback(
+    (e: PointerEvent | React.PointerEvent, idx: number) => {
+      let s = new Set(selectedSet);
+      if (e.ctrlKey) s.add(idx);
+      else if (e.shiftKey) s.delete(idx);
+      else if (!selectedSet.has(idx)) s = new Set([idx]);
+      setSelectedSet(s);
+      return s;
+    },
+    [selectedSet, setSelectedSet],
+  );
+
+  // SbjDataContext: stable unless list changes
+  const dataValue = useMemo(
+    () => ({
+      idx2sbj,
+      idx2family,
+      idx2chain,
+      addSbj,
+      addCrs,
+      delSbj,
+      delSbjOne,
+      delCrs,
+      copy,
+      paste,
+      cut,
+      hasClip,
+      setTreeMom,
+      setTreeBro,
+      exitTreeMom,
+      setCnvsPre,
+      setCnvsPos,
+      autoLayout,
+      treeDrag,
+      cnvsDrag,
+      preSource,
+      syncCamera,
+      getCamera,
+      setCamera,
+      editingIdx,
+      openEdit,
+      closeEdit,
+      updateSbj,
+      updateCrs,
+      removePreLink,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
+    }),
+    [
+      idx2sbj,
+      idx2family,
+      idx2chain,
+      addSbj,
+      addCrs,
+      delSbj,
+      delSbjOne,
+      delCrs,
+      copy,
+      paste,
+      cut,
+      hasClip,
+      setTreeMom,
+      setTreeBro,
+      exitTreeMom,
+      setCnvsPre,
+      setCnvsPos,
+      autoLayout,
+      treeDrag,
+      cnvsDrag,
+      preSource,
+      syncCamera,
+      getCamera,
+      setCamera,
+      editingIdx,
+      openEdit,
+      closeEdit,
+      updateSbj,
+      updateCrs,
+      removePreLink,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
+    ],
+  );
+
+  // SbjSelectContext: changes when user clicks to select
+  const selectValue = useMemo(
+    () => ({ selectedSet, selectItem, selectMany }),
+    [selectedSet, selectItem, selectMany],
+  );
+
+  return (
+    <SbjSyncContext.Provider value={sync}>
+      <SbjDataContext.Provider value={dataValue}>
+        <SbjSelectContext.Provider value={selectValue}>
+          {children}
+        </SbjSelectContext.Provider>
+      </SbjDataContext.Provider>
+    </SbjSyncContext.Provider>
+  );
+};

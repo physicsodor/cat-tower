@@ -1,4 +1,4 @@
-import SbjContainer from "@/features/subject/components/SbjContainer";
+import SbjContainer from "@/components/subject/SbjContainer";
 
 function App() {
   return (
