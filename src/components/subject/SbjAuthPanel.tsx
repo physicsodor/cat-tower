@@ -43,8 +43,11 @@ const SbjAuthPanel = () => {
           <button className="sbj-auth-btn" onClick={openShare} disabled={shareLoading}>
             {shareLoading ? "공유 중..." : "공유"}
           </button>
-          <button className="sbj-auth-btn" onClick={signIn}>
+          <button className="sbj-auth-btn" onClick={() => signIn("google")}>
             Google 로그인
+          </button>
+          <button className="sbj-auth-btn" onClick={() => signIn("kakao")}>
+            카카오 로그인
           </button>
         </>
       )}
@@ -52,7 +55,7 @@ const SbjAuthPanel = () => {
         <SbjShareModal
           url={shareUrl}
           onClose={closeShare}
-          onLogin={user ? undefined : signIn}
+          onLogin={user ? undefined : (provider) => signIn(provider)}
         />
       )}
     </div>

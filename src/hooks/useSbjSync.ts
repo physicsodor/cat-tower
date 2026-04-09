@@ -601,10 +601,10 @@ export const useSbjSync = (
 
   // ─── Sign in ─────────────────────────────────────────────────────────────
 
-  const signIn = useCallback(() => {
+  const signIn = useCallback((provider: "google" | "kakao") => {
     sessionStorage.setItem(PRE_LOGIN_KEY, encodeList(listRef.current));
     supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
     });
   }, []);

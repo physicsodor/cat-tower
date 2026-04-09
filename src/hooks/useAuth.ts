@@ -19,9 +19,9 @@ export const useAuth = () => {
     };
   }, []);
 
-  const signIn = () =>
+  const signIn = (provider: "google" | "kakao") =>
     supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },
     });
 

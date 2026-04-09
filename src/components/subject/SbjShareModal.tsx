@@ -5,7 +5,7 @@ import BttnCopy from "@/components/Bttn/BttnCopy";
 type Props = {
   url: string;
   onClose: () => void;
-  onLogin?: () => void;
+  onLogin?: (provider: "google" | "kakao") => void;
 };
 
 const SbjShareModal = ({ url, onClose, onLogin }: Props) => {
@@ -29,7 +29,8 @@ const SbjShareModal = ({ url, onClose, onLogin }: Props) => {
         {onLogin && (
           <div className="share-login-row">
             <span className="share-or">또는</span>
-            <button className="sbj-auth-btn" onClick={onLogin}>Google 로그인</button>
+            <button className="sbj-auth-btn" onClick={() => onLogin("google")}>Google 로그인</button>
+            <button className="sbj-auth-btn" onClick={() => onLogin("kakao")}>카카오 로그인</button>
           </div>
         )}
         <div className="share-btns">
