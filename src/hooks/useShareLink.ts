@@ -7,9 +7,9 @@ import type { Curriculum } from "@/lib/Curriculum/curriculum";
 const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function genShareId(): string {
-  return Array.from({ length: 7 }, () =>
-    SHARE_ID_CHARS[Math.floor(Math.random() * SHARE_ID_CHARS.length)]
-  ).join("");
+  const arr = new Uint32Array(7);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (v) => SHARE_ID_CHARS[v % SHARE_ID_CHARS.length]).join("");
 }
 
 export const useShareLink = (listRef: RefObject<ReadonlyArray<Curriculum>>) => {

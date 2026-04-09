@@ -162,7 +162,7 @@ function mathBlockHtml(kind: "math" | "dmath", latex: string): string {
   const inner = latex
     ? renderLatex(latex, display)
     : `<span class="math-placeholder">(수식)</span>`;
-  const escapedLatex = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const escapedLatex = latex.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const cls = display ? "math-block -display" : "math-block";
   const mathSpan = `<span contenteditable="false" class="${cls}" data-kind="${kind}" data-latex="${escapedLatex}">${inner}</span>`;
   return display ? `<span class="dmath-line">${mathSpan}</span>` : mathSpan;
