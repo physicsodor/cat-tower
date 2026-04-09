@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import BttnCopy from "@/components/Bttn/BttnCopy";
+import { BttnCopy } from "button-bundle";
 
 type Props = {
   url: string;

@@ -7,10 +7,10 @@ import { useSbjSelect } from "@/store/SbjSelectContext";
 import InfiniteCanvas, {
   useInfiniteCanvas,
   type Camera,
-} from "@/components/InfiniteCanvas";
+} from "infinite-canvas";
 import { useBBoxMap } from "@/hooks/useBBoxMap";
 import { bboxFromXYWH, type BBox } from "@/lib/rect";
-import BttnAutoLayout from "@/components/Bttn/BttnAutoLayout";
+import { BttnAutoLayout } from "button-bundle";
 import { Toggle } from "@/components/Toggle/Toggle";
 import { useSbjSyncCtx } from "@/store/SbjSyncContext";
 import { HORIZONTAL_MODE_KEY } from "@/lib/constants";

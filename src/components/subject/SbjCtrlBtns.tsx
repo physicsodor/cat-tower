@@ -1,11 +1,6 @@
 import { useSbjData } from "@/store/SbjDataContext";
 import { useSbjSelect } from "@/store/SbjSelectContext";
-import BttnPM from "@/components/Bttn/BttnPM";
-import BttnDel from "@/components/Bttn/BttnDel";
-import BttnGrp from "@/components/Bttn/BttnGrp";
-import BttnCopy from "@/components/Bttn/BttnCopy";
-import BttnCut from "@/components/Bttn/BttnCut";
-import BttnPaste from "@/components/Bttn/BttnPaste";
+import { BttnPM, BttnDel, BttnGrp, BttnCopy, BttnCut, BttnPaste } from "button-bundle";
 const LabeledBttn = ({
   label,
   children,

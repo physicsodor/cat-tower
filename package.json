@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
+    "button-bundle": "github:physicsodor/button-bundle",
     "fractional-indexing": "^3.2.0",
+    "infinite-canvas": "github:physicsodor/infinite-canvas",
     "katex": "^0.16.38",
     "lz-string": "^1.5.0",
     "mathlive": "^0.109.0",

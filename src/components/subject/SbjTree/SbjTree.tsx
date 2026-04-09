@@ -5,8 +5,7 @@ import {
   CTRL_HANDLE as HANDLE,
   CTRL_DRAG_THRESHOLD,
 } from "@/lib/constants";
-import BttnUndo from "@/components/Bttn/BttnUndo";
-import BttnRedo from "@/components/Bttn/BttnRedo";
+import { BttnUndo, BttnRedo } from "button-bundle";
 import { useSbjData } from "@/store/SbjDataContext";
 
 const clampPos = (x: number, y: number) => ({

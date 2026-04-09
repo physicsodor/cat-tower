@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSbjData } from "@/store/SbjDataContext";
 import { useSbjSelect } from "@/store/SbjSelectContext";
-import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
+import { useInfiniteCanvas } from "infinite-canvas";
 import SbjCnvsItem from "./SbjCnvsItem";
 
 type Props = {

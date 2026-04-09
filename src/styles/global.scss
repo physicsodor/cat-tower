@@ -15,6 +15,14 @@
   --z-sbj-edit: 500;
   --z-ghost: 999;
 
+  // button-bundle design-token overrides
+  --bttn-bg: var(--C-LL);
+  --bttn-hover-bg: var(--C-L);
+  --bttn-active-bg: var(--C-DD);
+  --bttn-stroke: var(--C-DD);
+  --bttn-active-stroke: var(--C-LL);
+  --bttn-pinned-bg: var(--C-D);
+
   // InfiniteCanvas design-token overrides
   --ic-z-controls: var(--z-sbj-ctrl);
   --ic-z-marquee: 5;

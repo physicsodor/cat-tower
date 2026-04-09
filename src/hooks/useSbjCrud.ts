@@ -7,7 +7,7 @@ import {
   deleteSubject,
 } from "@/lib/Curriculum/curriculum";
 import type { FamilyMap } from "@/lib/Family/family";
-import type { Camera } from "@/components/InfiniteCanvas";
+import type { Camera } from "infinite-canvas";
 
 export const useSbjCrud = (
   idx2family: FamilyMap,

@@ -10,7 +10,7 @@ import {
   truncateBytes,
 } from "@/components/TextEditor/markup";
 import { CONTENT_PREVIEW_BYTES } from "@/lib/constants";
-import BttnPin from "@/components/Bttn/BttnPin";
+import { BttnPin } from "button-bundle";
 
 type PE = React.PointerEvent | PointerEvent;
 

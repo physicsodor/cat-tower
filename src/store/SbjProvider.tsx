@@ -19,7 +19,7 @@ import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
 import type { GetSet } from "@/utils/GetSet";
-import type { Camera } from "@/components/InfiniteCanvas";
+import type { Camera } from "infinite-canvas";
 
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } =

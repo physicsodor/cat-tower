@@ -1,7 +1,7 @@
 import { renderMarkup } from "@/components/TextEditor";
 import { useSbjData } from "@/store/SbjDataContext";
 import { useSbjSelect } from "@/store/SbjSelectContext";
-import { useInfiniteCanvas } from "@/components/InfiniteCanvas";
+import { useInfiniteCanvas } from "infinite-canvas";
 
 type PE = React.PointerEvent | PointerEvent;
 type Props = { idx: number; title: string };

@@ -3,7 +3,7 @@ import type { SbjMap } from "@/lib/Curriculum/curriculum";
 import type { FamilyMap, BroDir } from "@/lib/Family/family";
 import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
-import type { Camera } from "@/components/InfiniteCanvas";
+import type { Camera } from "infinite-canvas";
 import type { BBox } from "@/lib/rect";
 
 type SbjDataContextValue = {

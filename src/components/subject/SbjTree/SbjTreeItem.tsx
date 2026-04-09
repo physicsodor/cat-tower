@@ -5,8 +5,7 @@ import type { BroDir } from "@/lib/Family/family";
 import { useSbjData } from "@/store/SbjDataContext";
 import { useSbjSelect } from "@/store/SbjSelectContext";
 import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
-import BttnEdt from "@/components/Bttn/BttnEdt";
-import BttnDel from "@/components/Bttn/BttnDel";
+import { BttnEdt, BttnDel } from "button-bundle";
 import { renderMarkup } from "@/components/TextEditor";
 
 type Props = { idx: number; title: string; numPrefix?: string };
