@@ -2,7 +2,7 @@ import { useLayoutEffect, useState } from "react";
 import type { Camera } from "infinite-canvas";
 import type { SbjMap } from "@/lib/Curriculum/curriculum";
 import type { FamilyMap } from "@/lib/Family/family";
-import { bboxFromLRTB, type BBox } from "@/lib/rect";
+import { bboxFromLRTB, type BBox } from "@/lib/BBox/bbox";
 
 export const useBBoxMap = (
   itemsRef: React.RefObject<Map<number, HTMLDivElement | null>>,

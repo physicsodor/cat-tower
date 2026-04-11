@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Curriculum } from "@/lib/Curriculum/curriculum";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
 import { supabase } from "@/lib/supabase";
-import { decodeData, encodeData } from "@/lib/Curriculum/curriculumCodec";
+import { decodeData, decodeListCompact, encodeData } from "@/lib/Project/projectCodec";
 import { normalizeCenter } from "@/lib/Curriculum/curriculumOp";
 import { pruneTagTypes } from "@/lib/TagItem/tagItemOp";
-import type { Project } from "@/lib/Project";
+import type { ProjectRecord } from "@/lib/Project/project";
 import { LAST_PROJECT_KEY } from "@/lib/constants";
-import { buildExampleCurriculum } from "@/lib/exampleProject";
+import { buildExampleCurriculum } from "@/lib/Project/exampleProject";
 import {
   type PublicProject,
   EXAMPLE_SLUG,
@@ -16,14 +17,14 @@ import {
   fetchPublicProjectBySlug,
   savePublicProject as savePublicProjectToDb,
   listPublicProjects,
-} from "@/lib/publicProject";
+} from "@/lib/Project/publicProject";
 import { useShareLink } from "./useShareLink";
 import { usePublicProjectAdmin } from "./usePublicProjectAdmin";
 
 const PRE_LOGIN_KEY = "sbj_pre_login_state";
 const DRAFT_KEY = "sbj_draft";
 
-function consumeShareParam(): Curriculum[] | null {
+function consumeShareParam(): import("@/lib/Project/project").ProjectData | null {
   const params = new URLSearchParams(window.location.search);
   const shared = params.get("share");
   if (!shared) return null;
@@ -52,13 +53,15 @@ function consumeShareId(): string | null {
 export const useSbjSync = (
   list: ReadonlyArray<Curriculum>,
   tagTypes: ReadonlyArray<TagType>,
+  spcTypes: ReadonlyArray<SpeciesType>,
   loadList: (v: ReadonlyArray<Curriculum>) => void,
   loadTagTypes: (v: TagType[]) => void,
+  loadSpcTypes: (v: SpeciesType[]) => void,
 ) => {
   const [loading, setLoading] = useState(true);
   const [savePending, setSavePending] = useState(false);
   const [dirty, _setDirty] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [currentProjectId, _setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectTitle, _setCurrentProjectTitle] = useState<string | null>(null);
   const currentProjectTitleRef = useRef<string | null>(null);
@@ -79,7 +82,7 @@ export const useSbjSync = (
   const sessionTokenRef = useRef<string | null>(null);
 
   // Shared data from URL ?share= param — consumed once on first render
-  const sharedDataRef = useRef<Curriculum[] | null | undefined>(undefined);
+  const sharedDataRef = useRef<import("@/lib/Project/project").ProjectData | null | undefined>(undefined);
   if (sharedDataRef.current === undefined) {
     sharedDataRef.current = consumeShareParam();
   }
@@ -106,10 +109,12 @@ export const useSbjSync = (
   const preLoginUsedRef = useRef(false);
 
   const tagTypesRef = useRef(tagTypes);
+  const spcTypesRef = useRef(spcTypes);
 
   // Keep refs in sync with state
   useEffect(() => { listRef.current = list; }, [list]);
   useEffect(() => { tagTypesRef.current = tagTypes; }, [tagTypes]);
+  useEffect(() => { spcTypesRef.current = spcTypes; }, [spcTypes]);
 
   const setDirty = useCallback((v: boolean) => {
     dirtyRef.current = v;
@@ -133,7 +138,7 @@ export const useSbjSync = (
 
   // ─── Share link ───────────────────────────────────────────────────────────
 
-  const { shareUrl, shareLoading, openShare, closeShare } = useShareLink(listRef, tagTypesRef);
+  const { shareUrl, shareLoading, openShare, closeShare } = useShareLink(listRef, tagTypesRef, spcTypesRef);
 
   // ─── Public project admin ─────────────────────────────────────────────────
 
@@ -150,9 +155,19 @@ export const useSbjSync = (
     onCurrentUnpublished,
   );
 
+  // ─── Helper: load decoded data ────────────────────────────────────────────
+
+  const loadDecoded = useCallback((encoded: string) => {
+    const { currList, tagList, spcList } = decodeData(encoded);
+    loadList(currList);
+    loadTagTypes(tagList);
+    loadSpcTypes(spcList);
+    lastSavedRef.current = encodeData({ currList, tagList, spcList });
+  }, [loadList, loadTagTypes, loadSpcTypes]);
+
   // ─── Fetch projects & hydrate ─────────────────────────────────────────────
 
-  const fetchProjects = useCallback(async (): Promise<Project[]> => {
+  const fetchProjects = useCallback(async (): Promise<ProjectRecord[]> => {
     const uid = userIdRef.current;
     if (!uid) return [];
     const { data } = await supabase
@@ -160,17 +175,17 @@ export const useSbjSync = (
       .select("*")
       .eq("user_id", uid)
       .order("updated_at", { ascending: false });
-    let list = (data ?? []) as Project[];
+    let list = (data ?? []) as ProjectRecord[];
     if (list.length === 0) {
       const pubExample = await fetchPublicProjectBySlug(EXAMPLE_SLUG);
       const exampleTitle = pubExample?.title ?? "예시 프로젝트";
-      const exampleData = pubExample ? pubExample.data : encodeData(buildExampleCurriculum(), []);
+      const exampleData = pubExample ? pubExample.data : encodeData({ currList: buildExampleCurriculum(), tagList: [], spcList: [] });
       const { data: created } = await supabase
         .from("projects")
         .insert({ user_id: uid, title: exampleTitle, data: exampleData })
         .select()
         .single();
-      if (created) list = [created as Project];
+      if (created) list = [created as ProjectRecord];
     }
     setProjects(list);
     return list;
@@ -188,7 +203,7 @@ export const useSbjSync = (
           .select("*")
           .eq("user_id", uid)
           .order("updated_at", { ascending: false });
-        return (data ?? []) as Project[];
+        return (data ?? []) as ProjectRecord[];
       })();
 
       // Migration: if no projects yet, auto-import from legacy sbj_lists
@@ -204,7 +219,7 @@ export const useSbjSync = (
             .insert({ user_id: uid, title: "내 커리큘럼", data: legacy.data })
             .select()
             .single();
-          if (created) fetchedProjects = [created as Project];
+          if (created) fetchedProjects = [created as ProjectRecord];
         }
       }
 
@@ -212,13 +227,13 @@ export const useSbjSync = (
       if (fetchedProjects.length === 0) {
         const pubExample = await fetchPublicProjectBySlug(EXAMPLE_SLUG);
         const exampleTitle = pubExample?.title ?? "예시 프로젝트";
-        const exampleData = pubExample ? pubExample.data : encodeData(buildExampleCurriculum(), []);
+        const exampleData = pubExample ? pubExample.data : encodeData({ currList: buildExampleCurriculum(), tagList: [], spcList: [] });
         const { data: created } = await supabase
           .from("projects")
           .insert({ user_id: uid, title: exampleTitle, data: exampleData })
           .select()
           .single();
-        if (created) fetchedProjects = [created as Project];
+        if (created) fetchedProjects = [created as ProjectRecord];
       }
 
       setProjects(fetchedProjects);
@@ -238,32 +253,26 @@ export const useSbjSync = (
       if (shareId) {
         const { data: linkRow } = await supabase.from("share_links").select("data").eq("id", shareId).single();
         if (linkRow?.data) {
-          const { list: decoded, tagTypes: decodedTags } = decodeData(linkRow.data as string);
-          loadList(decoded);
-          loadTagTypes(decodedTags);
-          lastSavedRef.current = encodeData(decoded, decodedTags);
+          loadDecoded(linkRow.data as string);
           setDirty(false);
         }
       } else if (sharedDataRef.current) {
-        loadList(sharedDataRef.current);
-        loadTagTypes([]);
-        lastSavedRef.current = encodeData(sharedDataRef.current, []);
+        const { currList, tagList, spcList } = sharedDataRef.current;
+        loadList(currList);
+        loadTagTypes(tagList);
+        loadSpcTypes(spcList);
+        lastSavedRef.current = encodeData({ currList, tagList, spcList });
         sharedDataRef.current = null;
         setDirty(false);
       } else if (preLogin) {
         preLoginUsedRef.current = true;
-        const { list: decoded, tagTypes: decodedTags } = decodeData(preLogin);
-        loadList(decoded);
-        loadTagTypes(decodedTags);
+        loadDecoded(preLogin);
         lastSavedRef.current = "[]";
         setDirty(true);
       } else if (urlSlugRef.current) {
         const pub = await fetchPublicProjectBySlug(urlSlugRef.current);
         if (pub) {
-          const { list: decoded, tagTypes: decodedTags } = decodeData(pub.data);
-          loadList(decoded);
-          loadTagTypes(decodedTags);
-          lastSavedRef.current = encodeData(decoded, decodedTags);
+          loadDecoded(pub.data);
           setCurrentPublicProject(pub);
           setCurrentProjectId(null);
           setCurrentProjectTitle(pub.title);
@@ -272,10 +281,7 @@ export const useSbjSync = (
           const lastId = sessionStorage.getItem(LAST_PROJECT_KEY) ?? localStorage.getItem(LAST_PROJECT_KEY);
           const target = fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
           if (target) {
-            const { list: decoded, tagTypes: decodedTags } = decodeData(target.data);
-            loadList(decoded);
-            loadTagTypes(decodedTags);
-            lastSavedRef.current = encodeData(decoded, decodedTags);
+            loadDecoded(target.data);
             setCurrentProjectId(target.id);
             setCurrentProjectTitle(target.title);
             sessionStorage.setItem(LAST_PROJECT_KEY, target.id);
@@ -287,10 +293,7 @@ export const useSbjSync = (
         const lastId = sessionStorage.getItem(LAST_PROJECT_KEY) ?? localStorage.getItem(LAST_PROJECT_KEY);
         const target = fetchedProjects.find((p) => p.id === lastId) ?? fetchedProjects[0] ?? null;
         if (target) {
-          const { list: decoded, tagTypes: decodedTags } = decodeData(target.data);
-          loadList(decoded);
-          loadTagTypes(decodedTags);
-          lastSavedRef.current = encodeData(decoded, decodedTags);
+          loadDecoded(target.data);
           setCurrentProjectId(target.id);
           setCurrentProjectTitle(target.title);
           sessionStorage.setItem(LAST_PROJECT_KEY, target.id);
@@ -303,7 +306,7 @@ export const useSbjSync = (
       setLoading(false);
       fetchingRef.current = false;
     },
-    [loadList, loadTagTypes, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
+    [loadDecoded, loadList, loadTagTypes, loadSpcTypes, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── Auth watcher ─────────────────────────────────────────────────────────
@@ -328,29 +331,22 @@ export const useSbjSync = (
           const { data: linkRow } = await supabase.from("share_links").select("data").eq("id", shareId).single();
           if (!active) return;
           if (linkRow?.data) {
-            const decoded = decodeListCompact(linkRow.data as string);
-            loadList(decoded);
-            loadTagTypes([]);
-            lastSavedRef.current = encodeData(decoded, []);
+            loadDecoded(linkRow.data as string);
           }
         } else if (sharedDataRef.current) {
-          loadList(sharedDataRef.current);
-          loadTagTypes([]);
-          lastSavedRef.current = encodeData(sharedDataRef.current, []);
+          const { currList, tagList, spcList } = sharedDataRef.current;
+          loadList(currList);
+          loadTagTypes(tagList);
+          loadSpcTypes(spcList);
+          lastSavedRef.current = encodeData({ currList, tagList, spcList });
           sharedDataRef.current = null;
         } else if (preLogin) {
-          const { list: decoded, tagTypes: decodedTags } = decodeData(preLogin);
-          loadList(decoded);
-          loadTagTypes(decodedTags);
-          lastSavedRef.current = encodeData(decoded, decodedTags);
+          loadDecoded(preLogin);
         } else if (urlSlugRef.current) {
           const pub = await fetchPublicProjectBySlug(urlSlugRef.current);
           if (!active) return;
           if (pub) {
-            const { list: decoded, tagTypes: decodedTags } = decodeData(pub.data);
-            loadList(decoded);
-            loadTagTypes(decodedTags);
-            lastSavedRef.current = encodeData(decoded, decodedTags);
+            loadDecoded(pub.data);
             setCurrentPublicProject(pub);
             setCurrentProjectId(null);
             setCurrentProjectTitle(pub.title);
@@ -358,10 +354,7 @@ export const useSbjSync = (
         } else {
           const draft = localStorage.getItem(DRAFT_KEY);
           if (draft) {
-            const { list: decoded, tagTypes: decodedTags } = decodeData(draft);
-            loadList(decoded);
-            loadTagTypes(decodedTags);
-            lastSavedRef.current = encodeData(decoded, decodedTags);
+            loadDecoded(draft);
           }
         }
         setDirty(false);
@@ -394,15 +387,15 @@ export const useSbjSync = (
       active = false;
       authListener.subscription.unsubscribe();
     };
-  }, [fetchAndHydrate, loadList, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty]);
+  }, [fetchAndHydrate, loadDecoded, loadList, loadTagTypes, loadSpcTypes, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty]);
 
   // ─── Dirty tracking ───────────────────────────────────────────────────────
 
   useEffect(() => {
     if (loading) return;
-    const cur = encodeData(list, tagTypes);
+    const cur = encodeData({ currList: list, tagList: tagTypes, spcList: spcTypes });
     setDirty(cur !== lastSavedRef.current);
-  }, [list, tagTypes, loading, setDirty]);
+  }, [list, tagTypes, spcTypes, loading, setDirty]);
 
   // ─── Save ─────────────────────────────────────────────────────────────────
 
@@ -411,7 +404,7 @@ export const useSbjSync = (
     if (!uid) return;
     const payload = normalizeCenter(listRef.current);
     const prunedTagTypes = pruneTagTypes(payload, tagTypesRef.current);
-    const encoded = encodeData(payload, prunedTagTypes);
+    const encoded = encodeData({ currList: payload, tagList: prunedTagTypes, spcList: spcTypesRef.current });
     setSavePending(true);
     try {
       // 관리자가 공개 프로젝트를 저장 → public_projects 테이블 업데이트
@@ -446,7 +439,7 @@ export const useSbjSync = (
           .select()
           .single();
         if (created) {
-          const proj = created as Project;
+          const proj = created as ProjectRecord;
           setProjects((prev) => [proj, ...prev]);
           setCurrentProjectId(proj.id);
           setCurrentProjectTitle(proj.title);
@@ -466,17 +459,14 @@ export const useSbjSync = (
   // ─── Load a project ───────────────────────────────────────────────────────
 
   const loadProject = useCallback(
-    (project: Project) => {
+    (project: ProjectRecord) => {
       if (dirtyRef.current) {
         const ok = window.confirm(
           "저장되지 않은 변경이 있습니다.\n다른 프로젝트를 열면 변경 내용이 사라집니다.\n계속하시겠습니까?",
         );
         if (!ok) return;
       }
-      const { list: decoded, tagTypes: decodedTags } = decodeData(project.data);
-      loadList(decoded);
-      loadTagTypes(decodedTags);
-      lastSavedRef.current = encodeData(decoded, decodedTags);
+      loadDecoded(project.data);
       setCurrentProjectId(project.id);
       setCurrentProjectTitle(project.title);
       setCurrentPublicProject(null);
@@ -485,7 +475,7 @@ export const useSbjSync = (
       setDirty(false);
       setIsPickerOpen(false);
     },
-    [loadList, loadTagTypes, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
+    [loadDecoded, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── Load a public project ────────────────────────────────────────────────
@@ -498,17 +488,14 @@ export const useSbjSync = (
         );
         if (!ok) return;
       }
-      const { list: decoded, tagTypes: decodedTags } = decodeData(pub.data);
-      loadList(decoded);
-      loadTagTypes(decodedTags);
-      lastSavedRef.current = encodeData(decoded, decodedTags);
+      loadDecoded(pub.data);
       setCurrentProjectId(null);
       setCurrentProjectTitle(pub.title);
       setCurrentPublicProject(pub);
       setDirty(false);
       setIsPickerOpen(false);
     },
-    [loadList, loadTagTypes, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
+    [loadDecoded, setCurrentProjectId, setCurrentProjectTitle, setCurrentPublicProject, setDirty],
   );
 
   // ─── New project ─────────────────────────────────────────────────────────
@@ -533,7 +520,7 @@ export const useSbjSync = (
         .select()
         .single();
       if (created) {
-        const proj = created as Project;
+        const proj = created as ProjectRecord;
         setProjects((prev) => [proj, ...prev]);
         setCurrentProjectId(proj.id);
         setCurrentProjectTitle(proj.title);
@@ -601,7 +588,7 @@ export const useSbjSync = (
     const emergencySave = () => {
       if (!dirtyRef.current) return;
       try {
-        localStorage.setItem(DRAFT_KEY, encodeData(listRef.current, tagTypesRef.current));
+        localStorage.setItem(DRAFT_KEY, encodeData({ currList: listRef.current, tagList: tagTypesRef.current, spcList: spcTypesRef.current }));
       } catch { /* ignore */ }
     };
     window.addEventListener("beforeunload", onBeforeUnload);
@@ -615,7 +602,7 @@ export const useSbjSync = (
   // ─── Sign in ─────────────────────────────────────────────────────────────
 
   const signIn = useCallback((provider: "google" | "kakao") => {
-    sessionStorage.setItem(PRE_LOGIN_KEY, encodeData(listRef.current, tagTypesRef.current));
+    sessionStorage.setItem(PRE_LOGIN_KEY, encodeData({ currList: listRef.current, tagList: tagTypesRef.current, spcList: spcTypesRef.current }));
     supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: window.location.origin + import.meta.env.BASE_URL },

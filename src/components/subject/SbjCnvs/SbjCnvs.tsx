@@ -9,7 +9,7 @@ import InfiniteCanvas, {
   type Camera,
 } from "infinite-canvas";
 import { useBBoxMap } from "@/hooks/useBBoxMap";
-import { bboxFromXYWH, type BBox } from "@/lib/rect";
+import { bboxFromXYWH, type BBox } from "@/lib/BBox/bbox";
 import { BttnAutoLayout } from "button-bundle";
 import { Toggle } from "@/components/Toggle/Toggle";
 import { useSbjSyncCtx } from "@/store/SbjSyncContext";

@@ -1,6 +1,6 @@
 import { type CSSProperties } from "react";
 import { makeClassName } from "@/utils/makeClassName";
-import type { BBox } from "@/lib/rect";
+import type { BBox } from "@/lib/BBox/bbox";
 
 type Props = {
   setRef: (e: HTMLDivElement) => void;

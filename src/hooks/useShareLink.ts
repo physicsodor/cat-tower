@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
 import type { RefObject } from "react";
 import { supabase } from "@/lib/supabase";
-import { encodeData } from "@/lib/Curriculum/curriculumCodec";
+import { encodeData } from "@/lib/Project/projectCodec";
 import { normalizeCenter } from "@/lib/Curriculum/curriculumOp";
 import { pruneTagTypes } from "@/lib/TagItem/tagItemOp";
 import type { Curriculum } from "@/lib/Curriculum/curriculum";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
 
 const SHARE_ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -18,6 +19,7 @@ function genShareId(): string {
 export const useShareLink = (
   listRef: RefObject<ReadonlyArray<Curriculum>>,
   tagTypesRef: RefObject<ReadonlyArray<TagType>>,
+  spcTypesRef: RefObject<ReadonlyArray<SpeciesType>>,
 ) => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
@@ -27,7 +29,7 @@ export const useShareLink = (
     try {
       const list = normalizeCenter(listRef.current ?? []);
       const tagTypes = pruneTagTypes(list, tagTypesRef.current ?? []);
-      const encoded = encodeData(list, tagTypes);
+      const encoded = encodeData({ currList: list, tagList: tagTypes, spcList: spcTypesRef.current ?? [] });
       const id = genShareId();
       await supabase.from("share_links").insert({ id, data: encoded });
       const url = new URL(window.location.href);
@@ -36,7 +38,7 @@ export const useShareLink = (
     } finally {
       setShareLoading(false);
     }
-  }, [listRef, tagTypesRef]);
+  }, [listRef, tagTypesRef, spcTypesRef]);
 
   const closeShare = useCallback(() => setShareUrl(null), []);
 

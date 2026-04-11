@@ -8,7 +8,7 @@ import { setPre } from "@/lib/Chain/chainOp";
 import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
 import { computeAutoLayout } from "@/utils/autoLayout";
-import type { BBox } from "@/lib/rect";
+import type { BBox } from "@/lib/BBox/bbox";
 
 export const useSbjCnvs = (
   idx2chain: ChainMap,

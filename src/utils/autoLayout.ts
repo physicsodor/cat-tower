@@ -1,7 +1,7 @@
 import { LAYOUT_COL_GAP, LAYOUT_PART_GAP, LAYOUT_ROW_GAP } from "@/lib/constants";
 import { getPartition } from "@/lib/Chain/chainOp";
 import type { ChainMap } from "@/lib/Chain/chain";
-import { bboxFromXYWH, type BBox } from "@/lib/rect";
+import { bboxFromXYWH, type BBox } from "@/lib/BBox/bbox";
 import { computeLevelsForPartition } from "./computeLevels";
 import { insertDummyNodes } from "./dummyNodes";
 import {

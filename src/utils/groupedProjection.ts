@@ -1,4 +1,4 @@
-import { bboxFromXYWH, type BBox } from "@/lib/rect";
+import { bboxFromXYWH, type BBox } from "@/lib/BBox/bbox";
 import { LAYOUT_COL_GAP } from "@/lib/constants";
 import type { ChainMap } from "@/lib/Chain/chain";
 

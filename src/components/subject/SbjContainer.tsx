@@ -6,6 +6,7 @@ import SbjEditModal from "./SbjEditModal";
 import { ProjectPickerModal } from "./ProjectPicker/ProjectPickerModal";
 import SbjCtrlBtns from "./SbjCtrlBtns";
 import TagTypePanel from "./TagTypePanel";
+import SpeciesPanel from "./SpeciesPanel";
 
 const SbjContainer = () => {
   return (
@@ -17,6 +18,7 @@ const SbjContainer = () => {
       <SbjEditModal />
       <ProjectPickerModal />
       <TagTypePanel />
+      <SpeciesPanel />
     </SbjProvider>
   );
 };

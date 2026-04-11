@@ -3,7 +3,9 @@ import { useSbjData } from "@/store/SbjDataContext";
 import { renderMarkup, countBytes, limitBytes } from "@/components/TextEditor";
 import TextEditor from "@/components/TextEditor";
 import { SHORT_MAX_BYTES } from "@/lib/constants";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
+import { DEFAULT_SPC_IDX } from "@/lib/Species/species";
 import { Popup } from "@/components/Popup/Popup";
 
 type Fields = {
@@ -99,16 +101,19 @@ const TagHashInput = ({ idx, tagTypes, tagSet, addTagType, renameTagType, toggle
 type FormProps = {
   idx: number;
   info: Fields;
+  spc: number;
   closeEdit: () => void;
   updateSbj: (idx: number, fields: Fields) => void;
   tagTypes: TagType[];
+  spcTypes: SpeciesType[];
   idx2tag: ReadonlyMap<number, Set<number>>;
   addTagType: () => number;
   renameTagType: (idx: number, title: string) => void;
   toggleTag: (itemIdx: number, tagIdx: number) => void;
+  setSpc: (targetSet: ReadonlySet<number>, spcIdx: number) => void;
 };
 
-const SbjEditForm = ({ idx, info, closeEdit, updateSbj, tagTypes, idx2tag, addTagType, renameTagType, toggleTag }: FormProps) => {
+const SbjEditForm = ({ idx, info, spc, closeEdit, updateSbj, tagTypes, spcTypes, idx2tag, addTagType, renameTagType, toggleTag, setSpc }: FormProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [draftShort, setDraftShort] = useState("");
   // Use refs — avoids re-render on every keystroke
@@ -217,6 +222,20 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj, tagTypes, idx2tag, addTa
             </div>
           </>
         )}
+        <div className="sbj-edit-row">
+          <label>분류</label>
+          <select
+            className="sbj-edit-spc-select"
+            value={spc}
+            onChange={(e) => setSpc(new Set([idx]), Number(e.target.value))}
+          >
+            {spcTypes.map((s) => (
+              <option key={s.idx} value={s.idx}>
+                {s.title || `분류 ${s.idx}`}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="sbj-edit-row">
           <label>태그</label>
           <div className="sbj-edit-tags">
@@ -351,7 +370,7 @@ const CrsEditForm = ({ idx, info, closeEdit, updateCrs }: CrsFormProps) => {
 // ── Modal wrapper ─────────────────────────────────────────────────────────────
 
 const SbjEditModal = () => {
-  const { editingIdx, closeEdit, updateSbj, updateCrs, idx2sbj, tagTypes, idx2tag, addTagType, renameTagType, toggleTag } = useSbjData();
+  const { editingIdx, closeEdit, updateSbj, updateCrs, idx2sbj, tagTypes, spcTypes, idx2tag, addTagType, renameTagType, toggleTag, setSpc } = useSbjData();
   if (editingIdx === null) return null;
   const info = idx2sbj.get(editingIdx);
   if (!info) return null;
@@ -370,13 +389,16 @@ const SbjEditModal = () => {
       key={editingIdx}
       idx={editingIdx}
       info={info}
+      spc={info.spc ?? DEFAULT_SPC_IDX}
       closeEdit={closeEdit}
       updateSbj={updateSbj}
       tagTypes={tagTypes}
+      spcTypes={spcTypes}
       idx2tag={idx2tag}
       addTagType={addTagType}
       renameTagType={renameTagType}
       toggleTag={toggleTag}
+      setSpc={setSpc}
     />
   );
 };

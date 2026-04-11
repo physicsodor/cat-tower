@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 import { generateNKeysBetween } from "fractional-indexing";
 import type { Curriculum, Subject, Course } from "@/lib/Curriculum/curriculum";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
 import type { FamilyMap } from "@/lib/Family/family";
 import { getNewIdx } from "@/lib/IdxItem/idxItemOp";
 import { removePre } from "@/lib/Chain/chainOp";
+import { mergeTagTypes } from "@/lib/TagItem/tagItemOp";
+import { mergeSpcTypes } from "@/lib/Species/speciesOp";
 import { PASTE_OFFSET } from "@/lib/constants";
+
+type Clip = {
+  items: ReadonlyArray<Curriculum>;
+  tagTypes: ReadonlyArray<TagType>;
+  spcTypes: ReadonlyArray<SpeciesType>;
+};
 
 export const isEditingText = () => {
   const el = document.activeElement;
@@ -18,43 +28,53 @@ export const useSbjClipboard = (
   getList: () => ReadonlyArray<Curriculum>,
   idx2family: FamilyMap,
   getSelected: () => ReadonlySet<number>,
-  setList: React.Dispatch<React.SetStateAction<ReadonlyArray<Curriculum>>>,
-  setSelectedSet: React.Dispatch<React.SetStateAction<Set<number>>>,
+  setList: Dispatch<SetStateAction<ReadonlyArray<Curriculum>>>,
+  setSelectedSet: Dispatch<SetStateAction<Set<number>>>,
   delSbj: () => void,
   saveNow: () => void,
   undo: () => void,
   redo: () => void,
+  getTagTypes: () => ReadonlyArray<TagType>,
+  getSpcTypes: () => ReadonlyArray<SpeciesType>,
+  setTagTypes: Dispatch<SetStateAction<TagType[]>>,
+  setSpcTypes: Dispatch<SetStateAction<SpeciesType[]>>,
 ) => {
-  const clipRef = useRef<ReadonlyArray<Curriculum>>([]);
+  const clipRef = useRef<Clip>({ items: [], tagTypes: [], spcTypes: [] });
   const [hasClip, setHasClip] = useState(false);
 
   const copy = useCallback(() => {
     const sel = getSelected();
     if (sel.size === 0) return;
     const items = getList().filter((x) => sel.has(x.idx));
-    clipRef.current = items;
+    clipRef.current = { items, tagTypes: getTagTypes(), spcTypes: getSpcTypes() };
     setHasClip(items.length > 0);
-  }, [getList, getSelected]);
+  }, [getList, getSelected, getTagTypes, getSpcTypes]);
 
   const paste = useCallback(() => {
     const clip = clipRef.current;
-    if (clip.length === 0) return;
+    if (clip.items.length === 0) return;
     const list = getList();
+    const currentTagTypes = getTagTypes();
+    const currentSpcTypes = getSpcTypes();
 
-    const clipIdxSet = new Set(clip.map((x) => x.idx));
+    // Merge TagTypes and SpcTypes from clipboard into current project
+    const { mergedTags, tagRemap } = mergeTagTypes(clip.tagTypes, currentTagTypes);
+    const { mergedSpcs, spcRemap } = mergeSpcTypes(clip.spcTypes, currentSpcTypes);
+
+    const clipIdxSet = new Set(clip.items.map((x) => x.idx));
 
     // Allocate new indices
     const tempMap = new Map<number, unknown>(list.map((x) => [x.idx, x]));
     const oldToNew = new Map<number, number>();
-    for (const item of clip) {
+    for (const item of clip.items) {
       const newIdx = getNewIdx(tempMap);
       oldToNew.set(item.idx, newIdx);
-      tempMap.set(newIdx, {}); // reserve
+      tempMap.set(newIdx, {});
     }
 
     // Group by new mom (always -1), sorted by original bro
     const momGroups = new Map<number, { item: Curriculum; bro: string }[]>();
-    for (const item of clip) {
+    for (const item of clip.items) {
       const newMom = -1;
       const g = momGroups.get(newMom) ?? [];
       g.push({ item, bro: item.bro });
@@ -83,12 +103,20 @@ export const useSbjClipboard = (
               if (mapped !== undefined) newPre.add(mapped);
             }
           }
+          const newTag = new Set<number>();
+          for (const t of item.tag) {
+            const mapped = tagRemap.get(t);
+            if (mapped !== undefined) newTag.add(mapped);
+          }
+          const newSpc = spcRemap.get(item.spc) ?? item.spc;
           newItems.push({
             ...item,
             idx: newIdx,
             mom: newMom,
             bro: bros[i],
             pre: newPre,
+            tag: newTag,
+            spc: newSpc,
             x: item.x + PASTE_OFFSET,
             y: item.y + PASTE_OFFSET,
           });
@@ -96,22 +124,24 @@ export const useSbjClipboard = (
       });
     }
 
+    setTagTypes(mergedTags);
+    setSpcTypes(mergedSpcs);
     setList((prev) => [...prev, ...newItems]);
     setSelectedSet(newIdxSet);
-  }, [getList, idx2family, setList, setSelectedSet]);
+  }, [getList, idx2family, getTagTypes, getSpcTypes, setTagTypes, setSpcTypes, setList, setSelectedSet]);
 
   const cut = useCallback(() => {
     const sel = getSelected();
     if (sel.size === 0) return;
     const items = getList().filter((x) => sel.has(x.idx));
-    clipRef.current = items;
+    clipRef.current = { items, tagTypes: getTagTypes(), spcTypes: getSpcTypes() };
     setHasClip(items.length > 0);
     const { updater: cleanPre } = removePre<Subject, Course>(sel);
     setList((prev) =>
       cleanPre(prev.filter((x) => !sel.has(x.idx))) as Curriculum[]
     );
     setSelectedSet(new Set());
-  }, [getList, getSelected, setList, setSelectedSet]);
+  }, [getList, getSelected, getTagTypes, getSpcTypes, setList, setSelectedSet]);
 
   // Keyboard shortcuts (disabled when text editor is focused)
   useEffect(() => {

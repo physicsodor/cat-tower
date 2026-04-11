@@ -17,7 +17,7 @@ const SbjTree = () => {
   const [pos, setPos] = useState({ x: 16, y: 16 });
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const { undo, redo, canUndo, canRedo, openTagPanel } = useSbjData();
+  const { undo, redo, canUndo, canRedo, openTagPanel, openSpcPanel } = useSbjData();
 
   const drag = useRef<{
     startX: number;
@@ -88,12 +88,15 @@ const SbjTree = () => {
         <BttnRedo onDown={redo} disabled={!canRedo} className="-lbig" />
       </div>
       <div className={`sbj-ctrl-panel${open ? " -opn" : ""}`}>
-        <div className="sbj-tree-scroll">
-          <SbjTreeBox />
-        </div>
         <button className="sbj-ctrl-tag-open-btn" onPointerDown={openTagPanel}>
           태그 관리
         </button>
+        <button className="sbj-ctrl-tag-open-btn" onPointerDown={openSpcPanel}>
+          유형 관리
+        </button>
+        <div className="sbj-tree-scroll">
+          <SbjTreeBox />
+        </div>
       </div>
     </div>
   );

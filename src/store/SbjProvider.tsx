@@ -6,7 +6,9 @@ import {
   useRef,
   useState,
 } from "react";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
+import { DEFAULT_SPC_IDX } from "@/lib/Species/species";
 import type { Subject } from "@/lib/Curriculum/curriculum";
 import { buildSbjMap } from "@/lib/Curriculum/curriculumOp";
 import { buildFamilyMap } from "@/lib/Family/familyOp";
@@ -18,21 +20,39 @@ import { useSbjSync } from "@/hooks/useSbjSync";
 import { useSbjClipboard } from "@/hooks/useSbjClipboard";
 import { useHistory } from "@/hooks/useHistory";
 import { useTagCrud } from "@/hooks/useTagCrud";
+import { useSpeciesCrud } from "@/hooks/useSpeciesCrud";
 import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
 import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "infinite-canvas";
 
+const DEFAULT_SPC_ENTRY: SpeciesType = { idx: DEFAULT_SPC_IDX, title: "없음", prefix: "", number: "NONE" };
+
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } =
     useHistory();
   const [tagTypes, setTagTypes] = useState<TagType[]>([]);
+  const tagTypesRef = useRef<ReadonlyArray<TagType>>(tagTypes);
+  useEffect(() => { tagTypesRef.current = tagTypes; }, [tagTypes]);
+  const getTagTypes = useCallback(() => tagTypesRef.current, []);
   const loadTagTypes = useCallback((v: TagType[]) => setTagTypes(v), []);
+  const [spcTypes, setSpcTypes] = useState<SpeciesType[]>([DEFAULT_SPC_ENTRY]);
+  const spcTypesRef = useRef<ReadonlyArray<SpeciesType>>(spcTypes);
+  useEffect(() => { spcTypesRef.current = spcTypes; }, [spcTypes]);
+  const getSpcTypes = useCallback(() => spcTypesRef.current, []);
+  const loadSpcTypes = useCallback((v: SpeciesType[]) => {
+    const hasDefault = v.some((s) => s.idx === DEFAULT_SPC_IDX);
+    setSpcTypes(hasDefault ? v : [DEFAULT_SPC_ENTRY, ...v]);
+  }, []);
   const { addTagType, renameTagType, deleteTagType, toggleTag } = useTagCrud(tagTypes, setTagTypes, setList);
+  const { addSpcType, removeSpcType, updateSpcType, setSpc } = useSpeciesCrud(setSpcTypes, setList);
   const [isTagPanelOpen, setIsTagPanelOpen] = useState(false);
   const openTagPanel = useCallback(() => setIsTagPanelOpen(true), []);
   const closeTagPanel = useCallback(() => setIsTagPanelOpen(false), []);
+  const [isSpcPanelOpen, setIsSpcPanelOpen] = useState(false);
+  const openSpcPanel = useCallback(() => setIsSpcPanelOpen(true), []);
+  const closeSpcPanel = useCallback(() => setIsSpcPanelOpen(false), []);
   const [selectedSet, setSelectedSet] = useState(new Set<number>());
 
   // Ref bridge: CRUD callbacks read selection without reactive deps
@@ -159,7 +179,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     setList,
     preSource,
   );
-  const sync = useSbjSync(list, tagTypes, loadList, loadTagTypes);
+  const sync = useSbjSync(list, tagTypes, spcTypes, loadList, loadTagTypes, loadSpcTypes);
   const ctrlS = useCallback(
     () => (sync.isLoggedIn ? sync.saveNow() : sync.openShare()),
     [sync],
@@ -174,6 +194,10 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     ctrlS,
     undo,
     redo,
+    getTagTypes,
+    getSpcTypes,
+    setTagTypes,
+    setSpcTypes,
   );
 
   const selectMany = useCallback((s: Set<number>) => setSelectedSet(s), []);
@@ -203,6 +227,14 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       isTagPanelOpen,
       openTagPanel,
       closeTagPanel,
+      spcTypes,
+      addSpcType,
+      removeSpcType,
+      updateSpcType,
+      setSpc,
+      isSpcPanelOpen,
+      openSpcPanel,
+      closeSpcPanel,
       idx2sbj,
       idx2family,
       idx2chain,
@@ -248,6 +280,14 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       isTagPanelOpen,
       openTagPanel,
       closeTagPanel,
+      spcTypes,
+      addSpcType,
+      removeSpcType,
+      updateSpcType,
+      setSpc,
+      isSpcPanelOpen,
+      openSpcPanel,
+      closeSpcPanel,
       idx2sbj,
       idx2family,
       idx2chain,

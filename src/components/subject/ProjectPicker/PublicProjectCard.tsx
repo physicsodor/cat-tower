@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ProjectThumbnail } from "./ProjectThumbnail";
 import { PublishDialog } from "./PublishDialog";
-import type { PublicProject } from "@/lib/publicProject";
+import type { PublicProject } from "@/lib/Project/publicProject";
 
 type PublicCardProps = {
   pub: PublicProject;

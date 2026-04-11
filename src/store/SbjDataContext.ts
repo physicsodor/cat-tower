@@ -1,14 +1,23 @@
 import { createContext, useContext } from "react";
 import type { SbjMap } from "@/lib/Curriculum/curriculum";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import type { SpeciesType } from "@/lib/Species/species";
 import type { FamilyMap, BroDir } from "@/lib/Family/family";
 import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "infinite-canvas";
-import type { BBox } from "@/lib/rect";
+import type { BBox } from "@/lib/BBox/bbox";
 
 type SbjDataContextValue = {
   tagTypes: TagType[];
+  spcTypes: SpeciesType[];
+  addSpcType: () => void;
+  removeSpcType: (idx: number) => void;
+  updateSpcType: (idx: number, patch: Partial<Omit<SpeciesType, "idx">>) => void;
+  setSpc: (targetSet: ReadonlySet<number>, spcIdx: number) => void;
+  isSpcPanelOpen: boolean;
+  openSpcPanel: () => void;
+  closeSpcPanel: () => void;
   idx2tag: ReadonlyMap<number, Set<number>>;
   addTagType: () => number;
   renameTagType: (idx: number, title: string) => void;

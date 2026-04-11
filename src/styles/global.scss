@@ -936,7 +936,9 @@
   padding: 0;
   font: inherit;
   line-height: 1;
-  &:hover { opacity: 0.7; }
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 .sbj-edit-tag-input-wrap {
@@ -949,7 +951,9 @@
   background: white;
   font: inherit;
   width: 7rem;
-  &::placeholder { color: var(--C-D); }
+  &::placeholder {
+    color: var(--C-D);
+  }
 }
 
 .sbj-edit-tag-suggestions {
@@ -973,8 +977,13 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
-  &:hover { background: var(--C-L); }
-  &.-new { color: var(--C-B); font-style: italic; }
+  &:hover {
+    background: var(--C-L);
+  }
+  &.-new {
+    color: var(--C-B);
+    font-style: italic;
+  }
 }
 
 .sbj-ctrl-tag-open-btn {
@@ -982,12 +991,17 @@
   padding: var(--G-M) var(--G-L);
   background: var(--C-L);
   border: none;
-  border-top: 1px solid var(--C-D);
+  border-bottom: 1px solid var(--C-D);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  &:hover { background: var(--C-LL); }
-  &:active { background: var(--C-D); color: var(--C-LL); }
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
 }
 
 // ─── Share Modal ──────────────────────────────────────────────────────────────
@@ -1156,7 +1170,9 @@
   background: white;
   padding: var(--G-S) var(--G-M);
   font: inherit;
-  &::placeholder { color: var(--C-D); }
+  &::placeholder {
+    color: var(--C-D);
+  }
 }
 
 .tag-panel-del {
@@ -1166,8 +1182,13 @@
   cursor: pointer;
   font: inherit;
   white-space: nowrap;
-  &:hover { background: var(--C-LL); }
-  &:active { background: var(--C-D); color: var(--C-LL); }
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
 }
 
 .tag-panel-footer {
@@ -1183,8 +1204,13 @@
   border: 1.5px solid var(--C-D);
   cursor: pointer;
   font: inherit;
-  &:hover { background: var(--C-LL); }
-  &:active { background: var(--C-D); color: var(--C-LL); }
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
 }
 
 .tag-panel-close {
@@ -1193,8 +1219,157 @@
   border: 1.5px solid var(--C-D);
   cursor: pointer;
   font: inherit;
-  &:hover { background: var(--C-LL); }
-  &:active { background: var(--C-D); color: var(--C-LL); }
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
+}
+
+// ─── Species Panel ───────────────────────────────────────────────────────────
+
+.spc-panel-overlay {
+  z-index: var(--z-sbj-edit);
+  background: cs.black-a(0.5);
+}
+
+.spc-panel-modal {
+  background: var(--C-LL);
+  border: 1.5px solid var(--C-D);
+  padding: var(--G-XL);
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-M);
+  width: 32rem;
+  max-width: 95vw;
+  max-height: 80vh;
+}
+
+.spc-panel-header {
+  display: flex;
+  align-items: center;
+}
+
+.spc-panel-title {
+  font-weight: bold;
+}
+
+.spc-panel-col-labels {
+  display: grid;
+  grid-template-columns: 1fr 6rem 5rem auto;
+  gap: var(--G-M);
+  padding: 0 var(--G-S);
+}
+
+.spc-panel-col-label {
+  font-size: 0.8rem;
+  color: var(--C-D);
+}
+
+.spc-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-S);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.spc-panel-row {
+  display: grid;
+  grid-template-columns: 1fr 6rem 5rem auto;
+  align-items: center;
+  gap: var(--G-M);
+  &.-default {
+    .spc-panel-del {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.spc-panel-input {
+  border: 1px solid var(--C-D);
+  background: white;
+  padding: var(--G-S) var(--G-M);
+  font: inherit;
+  min-width: 0;
+  &::placeholder {
+    color: var(--C-D);
+  }
+}
+
+.spc-panel-select {
+  border: 1px solid var(--C-D);
+  background: white;
+  padding: var(--G-S) var(--G-M);
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.spc-panel-del {
+  padding: var(--G-S) var(--G-M);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+  &:hover:not(:disabled) {
+    background: var(--C-LL);
+  }
+  &:active:not(:disabled) {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
+}
+
+.spc-panel-footer {
+  margin-top: var(--G-S);
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-S);
+}
+
+.spc-panel-add {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
+}
+
+.spc-panel-close {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  &:hover {
+    background: var(--C-LL);
+  }
+  &:active {
+    background: var(--C-D);
+    color: var(--C-LL);
+  }
+}
+
+// ─── Subject Edit — Species Selector ─────────────────────────────────────────
+
+.sbj-edit-spc-select {
+  border: 1px solid var(--C-D);
+  background: white;
+  padding: var(--G-S) var(--G-M);
+  font: inherit;
+  cursor: pointer;
 }
 
 // ─── Canvas Tag Filter ────────────────────────────────────────────────────────
@@ -1206,11 +1381,15 @@
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;
-  &:hover { background: var(--C-LL); }
+  &:hover {
+    background: var(--C-LL);
+  }
   &.-on {
     background: var(--C-B);
     color: var(--C-LL);
     border-color: var(--C-DD);
-    &:hover { background: var(--C-D); }
+    &:hover {
+      background: var(--C-D);
+    }
   }
 }

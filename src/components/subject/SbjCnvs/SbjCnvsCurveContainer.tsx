@@ -1,6 +1,6 @@
 import { useSbjData } from "@/store/SbjDataContext";
 import SbjCnvsCurve from "./SbjCnvsCurve";
-import type { BBox } from "@/lib/rect";
+import type { BBox } from "@/lib/BBox/bbox";
 
 type Props = { bboxMap: ReadonlyMap<number, BBox>; zoom: number; horizontal: boolean };
 

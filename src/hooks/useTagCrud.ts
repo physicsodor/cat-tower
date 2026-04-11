@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from "react";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { TagType } from "@/lib/TagItem/tagItem";
 import type { Curriculum } from "@/lib/Curriculum/curriculum";
 import {
   addTagType as addTagTypeFn,

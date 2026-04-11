@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ProjectThumbnail } from "./ProjectThumbnail";
 import { PublishDialog } from "./PublishDialog";
-import type { Project } from "@/lib/Project";
+import type { ProjectRecord } from "@/lib/Project/project";
 
 function formatDate(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -15,10 +15,10 @@ function formatDate(iso: string): string {
 }
 
 type CardProps = {
-  project: Project;
+  project: ProjectRecord;
   isActive: boolean;
   isAdmin: boolean;
-  onLoad: (p: Project) => void;
+  onLoad: (p: ProjectRecord) => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onPublish: (id: string, slug: string, title: string) => void;

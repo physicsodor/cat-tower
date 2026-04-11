@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSbjData } from "@/store/SbjDataContext";
 import { useSbjSelect } from "@/store/SbjSelectContext";
 import SbjCnvsCrs from "./SbjCnvsCrs";
-import type { BBox } from "@/lib/rect";
+import type { BBox } from "@/lib/BBox/bbox";
 
 type Props = {
   bboxMap: ReadonlyMap<number, BBox>;

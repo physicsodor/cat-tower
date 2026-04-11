@@ -1,15 +1,15 @@
 import { useCallback } from "react";
 import type { RefObject } from "react";
-import type { Project } from "@/lib/Project";
-import type { PublicProject } from "@/lib/publicProject";
+import type { ProjectRecord } from "@/lib/Project/project";
+import type { PublicProject } from "@/lib/Project/publicProject";
 import {
   createPublicProject,
   deletePublicProject,
   updatePublicProject,
-} from "@/lib/publicProject";
+} from "@/lib/Project/publicProject";
 
 export const usePublicProjectAdmin = (
-  projects: Project[],
+  projects: ProjectRecord[],
   setPublicProjects: React.Dispatch<React.SetStateAction<PublicProject[]>>,
   currentPublicProjectRef: RefObject<PublicProject | null>,
   setCurrentPublicProject: (pub: PublicProject | null) => void,

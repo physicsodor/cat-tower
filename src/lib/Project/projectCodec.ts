@@ -1,19 +1,19 @@
-import type { Course, Curriculum, Subject } from "./curriculum";
-import type { TagType } from "@/lib/TagItem/TagItem";
+import type { Course, Curriculum, Subject } from "@/lib/Curriculum/curriculum";
+import type { TagType } from "@/lib/TagItem/tagItem";
+import { DEFAULT_SPC_IDX, type SpeciesType } from "@/lib/Species/species";
 import { zipText, unzipText } from "@/utils/textZip";
 import {
   compressToEncodedURIComponent,
   decompressFromEncodedURIComponent,
 } from "lz-string";
+import type { ProjectData } from "./project";
 
 // Serialised form: Subject's Set fields become number[]
 type XCourse = Course;
 type XSubject = Omit<Subject, "pre" | "tag"> & { pre: number[]; tag: number[] };
 export type XCurriculum = XCourse | XSubject;
 
-type PayloadV1 = { v: 1; list: XCurriculum[]; tagTypes: TagType[] };
-
-export type DecodedData = { list: Curriculum[]; tagTypes: TagType[] };
+type PayloadV1 = { v: 1; list: XCurriculum[]; tagTypes: TagType[]; spcTypes?: SpeciesType[] };
 
 // ─── Encode/decode helpers ────────────────────────────────────────────────────
 
@@ -58,6 +58,7 @@ const safeDecodeSbj = (x: unknown): Curriculum[] => {
         ? (x["tag"] as unknown[]).filter((v): v is number => typeof v === "number")
         : [],
     );
+    const spc = typeof x["spc"] === "number" ? x["spc"] : DEFAULT_SPC_IDX;
     const cur: Subject = {
       idx,
       mom,
@@ -69,6 +70,7 @@ const safeDecodeSbj = (x: unknown): Curriculum[] => {
       sbjType: "SUBJECT",
       pre: new Set(pre as number[]),
       tag,
+      spc,
     };
     if (typeof x["short"] === "string") cur.short = x["short"];
     return [cur];
@@ -76,45 +78,49 @@ const safeDecodeSbj = (x: unknown): Curriculum[] => {
   return [];
 };
 
+const EMPTY: ProjectData = { currList: [], tagList: [], spcList: [] };
+
 // ─── Main encode/decode ───────────────────────────────────────────────────────
 
-export const encodeData = (
-  list: ReadonlyArray<Curriculum>,
-  tagTypes: ReadonlyArray<TagType>,
-): string => {
-  const payload: PayloadV1 = { v: 1, list: list.map(encodeSbj), tagTypes: [...tagTypes] };
+export const encodeData = (data: ProjectData): string => {
+  const payload: PayloadV1 = {
+    v: 1,
+    list: data.currList.map(encodeSbj),
+    tagTypes: [...data.tagList],
+    spcTypes: [...data.spcList],
+  };
   return zipText(JSON.stringify(payload));
 };
 
-export const decodeData = (s: string): DecodedData => {
+export const decodeData = (s: string): ProjectData => {
   if (s.startsWith(COMPACT_MARK)) {
-    return { list: decodeListCompact(s), tagTypes: [] };
+    return decodeListCompact(s);
   }
   try {
     const raw: unknown = JSON.parse(unzipText(s));
     if (isRecord(raw) && "v" in raw) {
       if (raw["v"] === 1) {
         const items = Array.isArray(raw["list"]) ? raw["list"] : [];
-        const tags = Array.isArray(raw["tagTypes"]) ? (raw["tagTypes"] as TagType[]) : [];
-        return { list: (items as unknown[]).flatMap(safeDecodeSbj), tagTypes: tags };
+        const tagList = Array.isArray(raw["tagTypes"]) ? (raw["tagTypes"] as TagType[]) : [];
+        const spcList = Array.isArray(raw["spcTypes"]) ? (raw["spcTypes"] as SpeciesType[]) : [];
+        return { currList: (items as unknown[]).flatMap(safeDecodeSbj), tagList, spcList };
       }
-      return { list: [], tagTypes: [] };
+      return EMPTY;
     }
     // v0: no version field — array of Curriculum
     const items = Array.isArray(raw) ? raw : [];
-    return { list: (items as unknown[]).flatMap(safeDecodeSbj), tagTypes: [] };
+    return { currList: (items as unknown[]).flatMap(safeDecodeSbj), tagList: [], spcList: [] };
   } catch {
-    return { list: [], tagTypes: [] };
+    return EMPTY;
   }
 };
 
 // ─── Compact encoding for share URLs ─────────────────────────────────────────
-// tag is intentionally excluded — share recipients lack the TagType list
 
 const COMPACT_MARK = "~c~";
 
 type CCompact = { t: "C"; i: number; m: number; b: string; T: string; s?: string };
-type SCompact = { t: "S"; i: number; m: number; b: string; T: string; s?: string; c: string; x: number; y: number; p: number[] };
+type SCompact = { t: "S"; i: number; m: number; b: string; T: string; s?: string; c: string; x: number; y: number; p: number[]; g?: number[]; sp?: number };
 type Compact = CCompact | SCompact;
 
 const toCompact = (x: Curriculum): Compact => {
@@ -123,7 +129,7 @@ const toCompact = (x: Curriculum): Compact => {
     if (x.short !== undefined) r.s = x.short;
     return r;
   }
-  const r: SCompact = { t: "S", i: x.idx, m: x.mom, b: x.bro, T: x.title, c: x.content, x: x.x, y: x.y, p: [...x.pre] };
+  const r: SCompact = { t: "S", i: x.idx, m: x.mom, b: x.bro, T: x.title, c: x.content, x: x.x, y: x.y, p: [...x.pre], g: [...x.tag], sp: x.spc };
   if (x.short !== undefined) r.s = x.short;
   return r;
 };
@@ -143,30 +149,48 @@ const fromCompact = (x: unknown): Curriculum | null => {
     const c = r["c"], xx = r["x"], yy = r["y"], p = r["p"];
     if (typeof c !== "string" || typeof xx !== "number" || typeof yy !== "number") return null;
     if (!Array.isArray(p) || !p.every((v) => typeof v === "number")) return null;
-    const cur: Subject = { sbjType: "SUBJECT", idx: i, mom: m, bro: b, title: T, content: c, x: xx, y: yy, pre: new Set(p), tag: new Set() };
+    const tag = new Set<number>(
+      Array.isArray(r["g"]) ? (r["g"] as unknown[]).filter((v): v is number => typeof v === "number") : [],
+    );
+    const spc = typeof r["sp"] === "number" ? r["sp"] : DEFAULT_SPC_IDX;
+    const cur: Subject = { sbjType: "SUBJECT", idx: i, mom: m, bro: b, title: T, content: c, x: xx, y: yy, pre: new Set(p), tag, spc };
     if (s !== undefined) cur.short = s;
     return cur;
   }
   return null;
 };
 
-export const encodeListCompact = (list: ReadonlyArray<Curriculum>): string =>
-  COMPACT_MARK + compressToEncodedURIComponent(JSON.stringify(list.map(toCompact)));
+export const encodeListCompact = (data: ProjectData): string => {
+  const payload = { items: data.currList.map(toCompact), tts: [...data.tagList], sts: [...data.spcList] };
+  return COMPACT_MARK + compressToEncodedURIComponent(JSON.stringify(payload));
+};
 
-export const decodeListCompact = (s: string): Curriculum[] => {
+export const decodeListCompact = (s: string): ProjectData => {
   if (s.startsWith(COMPACT_MARK)) {
     try {
-      const raw = JSON.parse(decompressFromEncodedURIComponent(s.slice(COMPACT_MARK.length)) ?? "[]");
-      if (!Array.isArray(raw)) return [];
-      const out: Curriculum[] = [];
-      for (const item of raw) {
-        const cur = fromCompact(item);
-        if (cur) out.push(cur);
+      const raw: unknown = JSON.parse(decompressFromEncodedURIComponent(s.slice(COMPACT_MARK.length)) ?? "null");
+      let items: unknown[];
+      let tagList: TagType[] = [];
+      let spcList: SpeciesType[] = [];
+      if (Array.isArray(raw)) {
+        // 구버전: raw array (tag/species 없음)
+        items = raw;
+      } else if (isRecord(raw) && Array.isArray(raw["items"])) {
+        items = raw["items"] as unknown[];
+        if (Array.isArray(raw["tts"])) tagList = raw["tts"] as TagType[];
+        if (Array.isArray(raw["sts"])) spcList = raw["sts"] as SpeciesType[];
+      } else {
+        return EMPTY;
       }
-      return out;
+      const currList: Curriculum[] = [];
+      for (const item of items) {
+        const cur = fromCompact(item);
+        if (cur) currList.push(cur);
+      }
+      return { currList, tagList, spcList };
     } catch {
-      return [];
+      return EMPTY;
     }
   }
-  return decodeData(s).list;
+  return decodeData(s);
 };

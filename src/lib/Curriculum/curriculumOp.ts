@@ -23,8 +23,8 @@ export const buildSbjMap = (list: ReadonlyArray<Curriculum>): SbjMap => {
     if (sbjType === "COURSE")
       idx2sbj.set(item.idx, { title, sbjType, short: item.short });
     else {
-      const { content, x, y, short } = item;
-      idx2sbj.set(item.idx, { title, sbjType, content, x, y, short });
+      const { content, x, y, short, spc } = item;
+      idx2sbj.set(item.idx, { title, sbjType, content, x, y, short, spc });
     }
   }
   return idx2sbj;
@@ -128,5 +128,6 @@ const getNewItem = (
         y,
         sbjType,
         tag: new Set(),
+        spc: -1,
       };
 };

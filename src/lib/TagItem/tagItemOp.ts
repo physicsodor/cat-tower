@@ -57,6 +57,32 @@ export const pruneTagTypes = <T>(
   return tagTypes.filter((t) => used.has(t.idx));
 };
 
+export const mergeTagTypes = (
+  srcTags: ReadonlyArray<TagType>,
+  dstTags: ReadonlyArray<TagType>,
+): { mergedTags: TagType[]; tagRemap: ReadonlyMap<number, number> } => {
+  const titleToIdx = new Map(dstTags.map((t) => [t.title, t.idx]));
+  const mergedTags: TagType[] = [...dstTags];
+  const tagRemap = new Map<number, number>();
+  const tempMap = new Map(dstTags.map((t) => [t.idx, t]));
+
+  for (const src of srcTags) {
+    const dstIdx = titleToIdx.get(src.title);
+    if (dstIdx !== undefined) {
+      tagRemap.set(src.idx, dstIdx);
+    } else {
+      const newIdx = getNewIdx(tempMap);
+      const newTag: TagType = { ...src, idx: newIdx };
+      mergedTags.push(newTag);
+      tempMap.set(newIdx, newTag);
+      titleToIdx.set(src.title, newIdx);
+      tagRemap.set(src.idx, newIdx);
+    }
+  }
+
+  return { mergedTags, tagRemap };
+};
+
 export const toggleTag = <T extends TagItem>(
   itemIdx: number,
   tagIdx: number,
