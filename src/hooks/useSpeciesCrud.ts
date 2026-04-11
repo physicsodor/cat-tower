@@ -12,7 +12,7 @@ export const useSpeciesCrud = (
   setList: Dispatch<SetStateAction<ReadonlyArray<Curriculum>>>,
 ) => {
   const addSpcType = useCallback(() => {
-    setSpcTypes((prev) => addSpcFn(prev, { title: "", prefix: "", number: "NONE" }));
+    setSpcTypes((prev) => addSpcFn(prev, { title: "", prefix: "", number: "NONE", colorCode: 0 }));
   }, [setSpcTypes]);
 
   const removeSpcType = useCallback(

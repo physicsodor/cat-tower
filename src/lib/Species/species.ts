@@ -9,6 +9,7 @@ export interface SpeciesType extends IdxItem {
   title: string;
   prefix: string;
   number: SpcNum;
+  colorCode: number; // 0-8
 }
 
 export type SpeciesMap = ReadonlyMap<number, SpeciesType>;

@@ -13,6 +13,7 @@ import type { Subject } from "@/lib/Curriculum/curriculum";
 import { buildSbjMap } from "@/lib/Curriculum/curriculumOp";
 import { buildFamilyMap } from "@/lib/Family/familyOp";
 import { buildChainMap } from "@/lib/Chain/chainOp";
+import { buildSpeciesMap } from "@/lib/Species/speciesOp";
 import { useSbjCrud } from "@/hooks/useSbjCrud";
 import { useSbjTree } from "@/hooks/useSbjTree";
 import { useSbjCnvs } from "@/hooks/useSbjCnvs";
@@ -27,7 +28,7 @@ import { SbjSyncContext } from "./SbjSyncContext";
 import type { GetSet } from "@/utils/GetSet";
 import type { Camera } from "infinite-canvas";
 
-const DEFAULT_SPC_ENTRY: SpeciesType = { idx: DEFAULT_SPC_IDX, title: "없음", prefix: "", number: "NONE" };
+const DEFAULT_SPC_ENTRY: SpeciesType = { idx: DEFAULT_SPC_IDX, title: "없음", prefix: "", number: "NONE", colorCode: 0 };
 
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } =
@@ -115,6 +116,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const idx2sbj = useMemo(() => buildSbjMap(list), [list]);
   const idx2family = useMemo(() => buildFamilyMap(list), [list]);
   const idx2chain = useMemo(() => buildChainMap(list), [list]);
+  const idx2spc = useMemo(() => buildSpeciesMap(spcTypes), [spcTypes]);
   const idx2tag = useMemo(
     () => new Map(list.filter((x): x is Subject => x.sbjType === "SUBJECT").map((x) => [x.idx, x.tag])),
     [list],
@@ -228,6 +230,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       openTagPanel,
       closeTagPanel,
       spcTypes,
+      idx2spc,
       addSpcType,
       removeSpcType,
       updateSpcType,
@@ -281,6 +284,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       openTagPanel,
       closeTagPanel,
       spcTypes,
+      idx2spc,
       addSpcType,
       removeSpcType,
       updateSpcType,

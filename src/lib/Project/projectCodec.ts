@@ -102,7 +102,12 @@ export const decodeData = (s: string): ProjectData => {
       if (raw["v"] === 1) {
         const items = Array.isArray(raw["list"]) ? raw["list"] : [];
         const tagList = Array.isArray(raw["tagTypes"]) ? (raw["tagTypes"] as TagType[]) : [];
-        const spcList = Array.isArray(raw["spcTypes"]) ? (raw["spcTypes"] as SpeciesType[]) : [];
+        const spcList = Array.isArray(raw["spcTypes"])
+          ? (raw["spcTypes"] as unknown[]).map((s) => ({
+              ...(s as SpeciesType),
+              colorCode: typeof (s as SpeciesType).colorCode === "number" ? (s as SpeciesType).colorCode : 0,
+            }))
+          : [];
         return { currList: (items as unknown[]).flatMap(safeDecodeSbj), tagList, spcList };
       }
       return EMPTY;

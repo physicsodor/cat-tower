@@ -71,6 +71,7 @@ const SbjCnvsItem = ({
     exitTreeMom,
     idx2chain,
     idx2sbj,
+    idx2spc,
     idx2family,
   } = useSbjData();
   const { selectedSet } = useSbjSelect();
@@ -94,6 +95,12 @@ const SbjCnvsItem = ({
   const longPressStart = useRef<{ x: number; y: number } | null>(null);
   const hasMoved = useRef(false);
   const desc = useMemo(() => getDesc(info), [info]);
+  const spcColorClass = useMemo(() => {
+    const sbjInfo = idx2sbj.get(idx);
+    if (!sbjInfo || sbjInfo.sbjType !== "SUBJECT") return null;
+    const colorCode = idx2spc.get(sbjInfo.spc)?.colorCode;
+    return colorCode !== undefined ? `spc-c-${colorCode}` : null;
+  }, [idx, idx2sbj, idx2spc]);
 
   const getSourcePos = useCallback(() => {
     if (!outRef.current) return { x: 0, y: 0 };
@@ -275,6 +282,7 @@ const SbjCnvsItem = ({
           isNon && "-non",
           isPinned && "-pin",
           horizontal && "-h",
+          spcColorClass,
         )}
         style={{
           transform: `translate(${viewX}px, ${viewY}px) scale(${camera.zoom}) translate(-50%, -50%)`,

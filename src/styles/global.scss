@@ -125,6 +125,13 @@
   padding: var(--G-L);
 }
 
+.sbj-cnvs-item-spc-label {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
 .sbj-cnvs-item-in,
 .sbj-cnvs-item-out {
   width: var(--sz);
@@ -1258,7 +1265,7 @@
 
 .spc-panel-col-labels {
   display: grid;
-  grid-template-columns: 1fr 6rem 5rem auto;
+  grid-template-columns: 1.5rem 1fr 6rem 5rem auto;
   gap: var(--G-M);
   padding: 0 var(--G-S);
 }
@@ -1278,7 +1285,7 @@
 
 .spc-panel-row {
   display: grid;
-  grid-template-columns: 1fr 6rem 5rem auto;
+  grid-template-columns: 1.5rem 1fr 6rem 5rem auto;
   align-items: center;
   gap: var(--G-M);
   &.-default {
@@ -1360,6 +1367,62 @@
     background: var(--C-D);
     color: var(--C-LL);
   }
+}
+
+// ─── Species Color Classes ────────────────────────────────────────────────────
+
+@for $i from 0 through 8 {
+  .spc-c-#{$i} {
+    @include cs.C-setting($i);
+  }
+}
+
+.spc-prefix {
+  display: inline-block;
+  background: var(--C-D);
+  color: white;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.spc-num {
+  color: var(--C-D);
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.spc-swatch {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 0.2rem;
+  background: var(--C-B);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  &:hover {
+    background: var(--C-D);
+  }
+}
+
+.spc-panel-color-wrap {
+  position: relative;
+}
+
+.spc-palette {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.2rem;
+  padding: 0.3rem;
+  background: var(--C-LLL);
+  border: 1px solid var(--C-LL);
+  border-radius: 0.4rem;
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 0.15);
+  z-index: 9999;
 }
 
 // ─── Subject Edit — Species Selector ─────────────────────────────────────────

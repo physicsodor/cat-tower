@@ -1,7 +1,7 @@
 import { getNewIdx } from "@/lib/IdxItem/idxItemOp";
 import type { FamilyMap } from "@/lib/Family/family";
-import { DEFAULT_SPC_IDX } from "./Species";
-import type { Species, SpeciesMap, SpeciesType } from "./Species";
+import { DEFAULT_SPC_IDX } from "./species";
+import type { Species, SpeciesMap, SpeciesType } from "./species";
 
 export const buildSpeciesMap = (spcs: ReadonlyArray<SpeciesType>): SpeciesMap => {
   const map = new Map<number, SpeciesType>();
@@ -78,6 +78,73 @@ export const mergeSpcTypes = (
   }
 
   return { mergedSpcs, spcRemap };
+};
+
+export const getLabelParts = (
+  itemIdx: number,
+  spcMap: SpeciesMap,
+  idx2sbj: { get(key: number): unknown },
+  familyMap: FamilyMap,
+): { prefix: string; num: string } | null => {
+  const itemInfo = idx2sbj.get(itemIdx);
+  if (!itemInfo || typeof itemInfo !== "object") return null;
+  const itemSpc = (itemInfo as { spc?: number }).spc;
+  if (itemSpc === undefined) return null;
+  const spcType = spcMap.get(itemSpc);
+  if (!spcType) return null;
+
+  const prefix = spcType.prefix ?? "";
+  const hasNumber = spcType.number !== "NONE";
+  if (!prefix && !hasNumber) return null;
+
+  let num = "";
+  if (hasNumber) {
+    const inOrder: number[] = [];
+    const dfs = (mom: number) => {
+      for (const kid of familyMap.get(mom)?.kids ?? []) {
+        inOrder.push(kid);
+        dfs(kid);
+      }
+    };
+    dfs(-1);
+
+    const getSpc = (x: unknown): number | undefined =>
+      x && typeof x === "object" ? (x as { spc?: number }).spc : undefined;
+
+    if (spcType.number === "INDEP") {
+      let count = 0;
+      for (const idx of inOrder) {
+        if (getSpc(idx2sbj.get(idx)) !== itemSpc) continue;
+        count++;
+        if (idx === itemIdx) break;
+      }
+      num = String(count);
+    } else {
+      const getTopAnc = (idx: number): number => {
+        const mom = familyMap.get(idx)?.mom;
+        if (mom === undefined || mom === -1) return idx;
+        return getTopAnc(mom);
+      };
+      const topAncIdx = getTopAnc(itemIdx);
+      const topLevel = inOrder.filter((idx) => (familyMap.get(idx)?.mom ?? -1) === -1);
+      const chapterNum = topLevel.indexOf(topAncIdx) + 1;
+      const chapterItems: number[] = [];
+      const dfsChapter = (idx: number) => {
+        chapterItems.push(idx);
+        for (const kid of familyMap.get(idx)?.kids ?? []) dfsChapter(kid);
+      };
+      dfsChapter(topAncIdx);
+      let itemNum = 0;
+      for (const idx of chapterItems) {
+        if (getSpc(idx2sbj.get(idx)) !== itemSpc) continue;
+        itemNum++;
+        if (idx === itemIdx) break;
+      }
+      num = `${chapterNum}.${itemNum}`;
+    }
+  }
+
+  return { prefix, num };
 };
 
 export const getLabel = <T extends Species>(

@@ -1,5 +1,5 @@
 import { useDragGhost } from "@/hooks/useDragGhost";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { makeClassName } from "@/utils/makeClassName";
 import type { BroDir } from "@/lib/Family/family";
 import { useSbjData } from "@/store/SbjDataContext";
@@ -7,11 +7,12 @@ import { useSbjSelect } from "@/store/SbjSelectContext";
 import { treeRegistry, findDropTarget, clearAllDirs } from "./treeRegistry";
 import { BttnEdt, BttnDel } from "button-bundle";
 import { renderMarkup } from "@/components/TextEditor";
+import { getLabelParts } from "@/lib/Species/speciesOp";
 
 type Props = { idx: number; title: string; numPrefix?: string };
 
 const SbjTreeItem = ({ idx, title, numPrefix }: Props) => {
-  const { treeDrag, setTreeBro, openEdit, delSbjOne } = useSbjData();
+  const { treeDrag, setTreeBro, openEdit, delSbjOne, idx2sbj, idx2family, idx2spc } = useSbjData();
   const { selectedSet, selectItem } = useSbjSelect();
   const { ref, down: ghost_down } = useDragGhost<HTMLDivElement>();
   const [dir, setDir] = useState<BroDir | null>(null);
@@ -19,6 +20,18 @@ const SbjTreeItem = ({ idx, title, numPrefix }: Props) => {
   const hasMoved = useRef(false);
   const downPos = useRef<{ x: number; y: number } | null>(null);
   const lastUpTime = useRef(0);
+
+  const labelParts = useMemo(
+    () => getLabelParts(idx, idx2spc, idx2sbj, idx2family),
+    [idx, idx2spc, idx2sbj, idx2family],
+  );
+
+  const spcColorClass = useMemo(() => {
+    const sbjInfo = idx2sbj.get(idx);
+    if (!sbjInfo || sbjInfo.sbjType !== "SUBJECT") return null;
+    const colorCode = idx2spc.get(sbjInfo.spc)?.colorCode;
+    return colorCode !== undefined ? `spc-c-${colorCode}` : null;
+  }, [idx, idx2sbj, idx2spc]);
 
   useEffect(() => {
     if (ref.current)
@@ -107,6 +120,7 @@ const SbjTreeItem = ({ idx, title, numPrefix }: Props) => {
         selectedSet.has(idx) && "-slc",
         dir === "LEFT" && "-pre",
         dir === "RIGHT" && "-nxt",
+        spcColorClass,
       )}
     >
       <div
@@ -115,7 +129,14 @@ const SbjTreeItem = ({ idx, title, numPrefix }: Props) => {
         onPointerUp={onUp}
         onPointerCancel={onCancel}
       >
-        {numPrefix && <span className="sbj-tree-num">{numPrefix}.</span>}
+        {labelParts ? (
+          <>
+            {labelParts.prefix && <span className="spc-prefix">{labelParts.prefix}</span>}
+            {labelParts.num && <span className="spc-num">{labelParts.num}</span>}
+          </>
+        ) : (
+          numPrefix && <span className="sbj-tree-num">{numPrefix}.</span>
+        )}
         {renderMarkup(title)}
       </div>
       <BttnEdt

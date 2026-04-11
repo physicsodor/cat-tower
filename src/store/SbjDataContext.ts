@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { SbjMap } from "@/lib/Curriculum/curriculum";
 import type { TagType } from "@/lib/TagItem/tagItem";
-import type { SpeciesType } from "@/lib/Species/species";
+import type { SpeciesType, SpeciesMap } from "@/lib/Species/species";
 import type { FamilyMap, BroDir } from "@/lib/Family/family";
 import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
@@ -11,6 +11,7 @@ import type { BBox } from "@/lib/BBox/bbox";
 type SbjDataContextValue = {
   tagTypes: TagType[];
   spcTypes: SpeciesType[];
+  idx2spc: SpeciesMap;
   addSpcType: () => void;
   removeSpcType: (idx: number) => void;
   updateSpcType: (idx: number, patch: Partial<Omit<SpeciesType, "idx">>) => void;
