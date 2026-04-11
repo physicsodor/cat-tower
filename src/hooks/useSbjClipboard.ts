@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { generateNKeysBetween } from "fractional-indexing";
 import type { Curriculum, Subject, Course } from "@/lib/Curriculum/curriculum";
 import type { FamilyMap } from "@/lib/Family/family";
-import { getNewIdx } from "@/lib/IdxItem/idxItem";
-import { removePre } from "@/lib/Chain/chain";
+import { getNewIdx } from "@/lib/IdxItem/idxItemOp";
+import { removePre } from "@/lib/Chain/chainOp";
 import { PASTE_OFFSET } from "@/lib/constants";
 
 export const isEditingText = () => {

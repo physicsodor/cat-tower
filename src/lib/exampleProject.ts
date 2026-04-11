@@ -12,6 +12,7 @@ export function buildExampleCurriculum(): Curriculum[] {
       x: -270,
       y: 0,
       sbjType: "SUBJECT",
+      tag: new Set(),
     },
     {
       idx: 2,
@@ -23,6 +24,7 @@ export function buildExampleCurriculum(): Curriculum[] {
       x: 0,
       y: 0,
       sbjType: "SUBJECT",
+      tag: new Set(),
     },
     {
       idx: 3,
@@ -34,6 +36,7 @@ export function buildExampleCurriculum(): Curriculum[] {
       x: 270,
       y: 0,
       sbjType: "SUBJECT",
+      tag: new Set(),
     },
   ];
 }

@@ -6,15 +6,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { buildSbjMap } from "@/lib/Curriculum/curriculum";
-import { buildFamilyMap } from "@/lib/Family/family";
-import { buildChainMap } from "@/lib/Chain/chain";
+import type { TagType } from "@/lib/TagItem/TagItem";
+import type { Subject } from "@/lib/Curriculum/curriculum";
+import { buildSbjMap } from "@/lib/Curriculum/curriculumOp";
+import { buildFamilyMap } from "@/lib/Family/familyOp";
+import { buildChainMap } from "@/lib/Chain/chainOp";
 import { useSbjCrud } from "@/hooks/useSbjCrud";
 import { useSbjTree } from "@/hooks/useSbjTree";
 import { useSbjCnvs } from "@/hooks/useSbjCnvs";
 import { useSbjSync } from "@/hooks/useSbjSync";
 import { useSbjClipboard } from "@/hooks/useSbjClipboard";
 import { useHistory } from "@/hooks/useHistory";
+import { useTagCrud } from "@/hooks/useTagCrud";
 import { SbjDataContext } from "./SbjDataContext";
 import { SbjSelectContext } from "./SbjSelectContext";
 import { SbjSyncContext } from "./SbjSyncContext";
@@ -24,6 +27,12 @@ import type { Camera } from "infinite-canvas";
 export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const { list, listRef, setList, loadList, undo, redo, canUndo, canRedo } =
     useHistory();
+  const [tagTypes, setTagTypes] = useState<TagType[]>([]);
+  const loadTagTypes = useCallback((v: TagType[]) => setTagTypes(v), []);
+  const { addTagType, renameTagType, deleteTagType, toggleTag } = useTagCrud(tagTypes, setTagTypes, setList);
+  const [isTagPanelOpen, setIsTagPanelOpen] = useState(false);
+  const openTagPanel = useCallback(() => setIsTagPanelOpen(true), []);
+  const closeTagPanel = useCallback(() => setIsTagPanelOpen(false), []);
   const [selectedSet, setSelectedSet] = useState(new Set<number>());
 
   // Ref bridge: CRUD callbacks read selection without reactive deps
@@ -86,6 +95,10 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   const idx2sbj = useMemo(() => buildSbjMap(list), [list]);
   const idx2family = useMemo(() => buildFamilyMap(list), [list]);
   const idx2chain = useMemo(() => buildChainMap(list), [list]);
+  const idx2tag = useMemo(
+    () => new Map(list.filter((x): x is Subject => x.sbjType === "SUBJECT").map((x) => [x.idx, x.tag])),
+    [list],
+  );
 
   // Edit modal state
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -146,7 +159,7 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
     setList,
     preSource,
   );
-  const sync = useSbjSync(list, loadList);
+  const sync = useSbjSync(list, tagTypes, loadList, loadTagTypes);
   const ctrlS = useCallback(
     () => (sync.isLoggedIn ? sync.saveNow() : sync.openShare()),
     [sync],
@@ -181,6 +194,15 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
   // SbjDataContext: stable unless list changes
   const dataValue = useMemo(
     () => ({
+      tagTypes,
+      idx2tag,
+      addTagType,
+      renameTagType,
+      deleteTagType,
+      toggleTag,
+      isTagPanelOpen,
+      openTagPanel,
+      closeTagPanel,
       idx2sbj,
       idx2family,
       idx2chain,
@@ -217,6 +239,15 @@ export const SbjProvider = ({ children }: { children: ReactNode }) => {
       canRedo,
     }),
     [
+      tagTypes,
+      idx2tag,
+      addTagType,
+      renameTagType,
+      deleteTagType,
+      toggleTag,
+      isTagPanelOpen,
+      openTagPanel,
+      closeTagPanel,
       idx2sbj,
       idx2family,
       idx2chain,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SbjCnvsCurveContainer from "./SbjCnvsCurveContainer";
 import SbjCnvsCrsContainer from "./SbjCnvsCrsContainer";
 import SbjCnvsItemContainer from "./SbjCnvsItemContainer";
@@ -21,9 +21,10 @@ type InnerProps = {
   itemsRef: React.RefObject<Map<number, HTMLDivElement | null>>;
   bboxMapRef: React.RefObject<Map<number, BBox>>;
   horizontal: boolean;
+  tagFilterSet: ReadonlySet<number>;
 };
 
-const SbjCnvsInner = ({ itemsRef, bboxMapRef, horizontal }: InnerProps) => {
+const SbjCnvsInner = ({ itemsRef, bboxMapRef, horizontal, tagFilterSet }: InnerProps) => {
   const { camera, dxy } = useInfiniteCanvas();
   const { idx2sbj, idx2family, syncCamera } = useSbjData();
   const { selectMany } = useSbjSelect();
@@ -98,6 +99,7 @@ const SbjCnvsInner = ({ itemsRef, bboxMapRef, horizontal }: InnerProps) => {
         horizontal={horizontal}
         activeHoveredIdx={activeHoveredIdx}
         pinnedSet={pinnedSet}
+        tagFilterSet={tagFilterSet}
         onHoverChange={setHoveredIdx}
         onPinToggle={onPinToggle}
       />
@@ -116,6 +118,8 @@ const SbjCnvs = () => {
     autoLayout,
     getCamera,
     addCrs,
+    tagTypes,
+    idx2tag,
   } = useSbjData();
   const { selectMany, selectedSet } = useSbjSelect();
 
@@ -167,6 +171,30 @@ const SbjCnvs = () => {
     },
     [currentProjectId],
   );
+
+  const [tagFilterSet, setTagFilterSet] = useState<ReadonlySet<number>>(new Set());
+
+  const toggleTagFilter = useCallback((tagIdx: number) => {
+    setTagFilterSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(tagIdx)) next.delete(tagIdx);
+      else next.add(tagIdx);
+      return next;
+    });
+  }, []);
+
+  const topTagTypes = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const tagSet of idx2tag.values()) {
+      for (const tagIdx of tagSet) {
+        counts.set(tagIdx, (counts.get(tagIdx) ?? 0) + 1);
+      }
+    }
+    return [...tagTypes]
+      .filter((t) => (counts.get(t.idx) ?? 0) > 0)
+      .sort((a, b) => (counts.get(b.idx) ?? 0) - (counts.get(a.idx) ?? 0))
+      .slice(0, 10);
+  }, [tagTypes, idx2tag]);
 
   const itemsRef = useRef(new Map<number, HTMLDivElement | null>());
   const bboxMapRef = useRef(new Map<number, BBox>());
@@ -283,6 +311,15 @@ const SbjCnvs = () => {
       onFitRequest={onFitRequest}
       controls={
         <>
+          {topTagTypes.map((t) => (
+            <button
+              key={t.idx}
+              className={`sbj-cnvs-tag-chip${tagFilterSet.has(t.idx) ? " -on" : ""}`}
+              onPointerDown={() => toggleTagFilter(t.idx)}
+            >
+              {t.title || "—"}
+            </button>
+          ))}
           <Toggle key={currentProjectId ?? "draft"} offLabel="세로" onLabel="가로" defaultOn={horizontal} onChange={setHorizontal} />
           <BttnAutoLayout onDown={onAutoLayout} className="-big" />
         </>
@@ -292,6 +329,7 @@ const SbjCnvs = () => {
         itemsRef={itemsRef}
         bboxMapRef={bboxMapRef}
         horizontal={horizontal}
+        tagFilterSet={tagFilterSet}
       />
     </InfiniteCanvas>
   );

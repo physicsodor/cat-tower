@@ -3,6 +3,8 @@ import { useSbjData } from "@/store/SbjDataContext";
 import { renderMarkup, countBytes, limitBytes } from "@/components/TextEditor";
 import TextEditor from "@/components/TextEditor";
 import { SHORT_MAX_BYTES } from "@/lib/constants";
+import type { TagType } from "@/lib/TagItem/TagItem";
+import { Popup } from "@/components/Popup/Popup";
 
 type Fields = {
   title: string;
@@ -11,6 +13,87 @@ type Fields = {
 };
 type CrsFields = { title: string; short?: string };
 
+// ── Tag Hash Input ────────────────────────────────────────────────────────────
+
+type TagHashInputProps = {
+  idx: number;
+  tagTypes: TagType[];
+  tagSet: Set<number> | undefined;
+  addTagType: () => number;
+  renameTagType: (idx: number, title: string) => void;
+  toggleTag: (itemIdx: number, tagIdx: number) => void;
+};
+
+const TagHashInput = ({ idx, tagTypes, tagSet, addTagType, renameTagType, toggleTag }: TagHashInputProps) => {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const available = tagTypes.filter(
+    (t) => !tagSet?.has(t.idx) && t.title.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  const applyExisting = (tagIdx: number) => {
+    toggleTag(idx, tagIdx);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const createAndApply = () => {
+    if (!query.trim()) return;
+    const newIdx = addTagType();
+    renameTagType(newIdx, query.trim());
+    toggleTag(idx, newIdx);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (available.length > 0) applyExisting(available[0].idx);
+      else createAndApply();
+    } else if (e.key === "Escape") {
+      setQuery("");
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="sbj-edit-tag-input-wrap">
+      <input
+        className="sbj-edit-tag-input"
+        placeholder="# 추가"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={onKeyDown}
+      />
+      {open && (available.length > 0 || query.trim()) && (
+        <div className="sbj-edit-tag-suggestions">
+          {available.map((t) => (
+            <button
+              key={t.idx}
+              className="sbj-edit-tag-suggestion"
+              onPointerDown={() => applyExisting(t.idx)}
+            >
+              {t.title || "—"}
+            </button>
+          ))}
+          {query.trim() && !tagTypes.find((t) => t.title === query.trim()) && (
+            <button
+              className="sbj-edit-tag-suggestion -new"
+              onPointerDown={createAndApply}
+            >
+              '{query.trim()}' 새 태그로 추가
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Edit Form ─────────────────────────────────────────────────────────────────
 
 type FormProps = {
@@ -18,9 +101,14 @@ type FormProps = {
   info: Fields;
   closeEdit: () => void;
   updateSbj: (idx: number, fields: Fields) => void;
+  tagTypes: TagType[];
+  idx2tag: ReadonlyMap<number, Set<number>>;
+  addTagType: () => number;
+  renameTagType: (idx: number, title: string) => void;
+  toggleTag: (itemIdx: number, tagIdx: number) => void;
 };
 
-const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
+const SbjEditForm = ({ idx, info, closeEdit, updateSbj, tagTypes, idx2tag, addTagType, renameTagType, toggleTag }: FormProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [draftShort, setDraftShort] = useState("");
   // Use refs — avoids re-render on every keystroke
@@ -63,12 +151,11 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
 
   const shortBytes = countBytes(draftShort);
 
+  const tagSet = idx2tag.get(idx);
+
   return (
-    <div className="sbj-edit-overlay" onPointerDown={closeEdit}>
-      <div
-        className="sbj-edit-modal"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+    <Popup className="sbj-edit-overlay" onClose={closeEdit}>
+      <div className="sbj-edit-modal">
         {isEditing ? (
           <>
             <div className="sbj-edit-row -top">
@@ -130,8 +217,34 @@ const SbjEditForm = ({ idx, info, closeEdit, updateSbj }: FormProps) => {
             </div>
           </>
         )}
+        <div className="sbj-edit-row">
+          <label>태그</label>
+          <div className="sbj-edit-tags">
+            {tagSet && [...tagSet].map((tagIdx) => {
+              const t = tagTypes.find((x) => x.idx === tagIdx);
+              if (!t) return null;
+              return (
+                <span key={tagIdx} className="sbj-edit-tag-chip">
+                  {t.title || "—"}
+                  <button
+                    className="sbj-edit-tag-chip-x"
+                    onPointerDown={() => toggleTag(idx, tagIdx)}
+                  >×</button>
+                </span>
+              );
+            })}
+            <TagHashInput
+              idx={idx}
+              tagTypes={tagTypes}
+              tagSet={tagSet}
+              addTagType={addTagType}
+              renameTagType={renameTagType}
+              toggleTag={toggleTag}
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </Popup>
   );
 };
 
@@ -176,11 +289,8 @@ const CrsEditForm = ({ idx, info, closeEdit, updateCrs }: CrsFormProps) => {
   const shortBytes = countBytes(draftShort);
 
   return (
-    <div className="sbj-edit-overlay" onPointerDown={closeEdit}>
-      <div
-        className="sbj-edit-modal"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+    <Popup className="sbj-edit-overlay" onClose={closeEdit}>
+      <div className="sbj-edit-modal">
         {isEditing ? (
           <>
             <div className="sbj-edit-row">
@@ -234,14 +344,14 @@ const CrsEditForm = ({ idx, info, closeEdit, updateCrs }: CrsFormProps) => {
           </>
         )}
       </div>
-    </div>
+    </Popup>
   );
 };
 
 // ── Modal wrapper ─────────────────────────────────────────────────────────────
 
 const SbjEditModal = () => {
-  const { editingIdx, closeEdit, updateSbj, updateCrs, idx2sbj } = useSbjData();
+  const { editingIdx, closeEdit, updateSbj, updateCrs, idx2sbj, tagTypes, idx2tag, addTagType, renameTagType, toggleTag } = useSbjData();
   if (editingIdx === null) return null;
   const info = idx2sbj.get(editingIdx);
   if (!info) return null;
@@ -262,6 +372,11 @@ const SbjEditModal = () => {
       info={info}
       closeEdit={closeEdit}
       updateSbj={updateSbj}
+      tagTypes={tagTypes}
+      idx2tag={idx2tag}
+      addTagType={addTagType}
+      renameTagType={renameTagType}
+      toggleTag={toggleTag}
     />
   );
 };

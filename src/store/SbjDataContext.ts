@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { SbjMap } from "@/lib/Curriculum/curriculum";
+import type { TagType } from "@/lib/TagItem/TagItem";
 import type { FamilyMap, BroDir } from "@/lib/Family/family";
 import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
@@ -7,6 +8,15 @@ import type { Camera } from "infinite-canvas";
 import type { BBox } from "@/lib/rect";
 
 type SbjDataContextValue = {
+  tagTypes: TagType[];
+  idx2tag: ReadonlyMap<number, Set<number>>;
+  addTagType: () => number;
+  renameTagType: (idx: number, title: string) => void;
+  deleteTagType: (idx: number) => void;
+  toggleTag: (itemIdx: number, tagIdx: number) => void;
+  isTagPanelOpen: boolean;
+  openTagPanel: () => void;
+  closeTagPanel: () => void;
   idx2sbj: SbjMap;
   idx2family: FamilyMap;
   idx2chain: ChainMap;

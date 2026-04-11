@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { BttnCopy } from "button-bundle";
+import { Popup } from "@/components/Popup/Popup";
 
 type Props = {
   url: string;
@@ -18,9 +18,9 @@ const SbjShareModal = ({ url, onClose, onLogin }: Props) => {
     });
   };
 
-  return createPortal(
-    <div className="share-overlay" onPointerDown={onClose}>
-      <div className="share-modal" onPointerDown={(e) => e.stopPropagation()}>
+  return (
+    <Popup className="share-overlay" onClose={onClose}>
+      <div className="share-modal">
         <div className="share-url-row">
           <span className="share-url">{url}</span>
           <BttnCopy onDown={handleCopy} />
@@ -37,8 +37,7 @@ const SbjShareModal = ({ url, onClose, onLogin }: Props) => {
           <button className="sbj-auth-btn" onClick={onClose}>닫기</button>
         </div>
       </div>
-    </div>,
-    document.body
+    </Popup>
   );
 };
 

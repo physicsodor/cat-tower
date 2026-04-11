@@ -167,3 +167,6 @@ vite.config.ts.timestamp-*
 
 # Claude Code instructions (local only)
 CLAUDE.md
+
+# Internal documentation (not for public)
+docs/db-versions.md

@@ -9,12 +9,13 @@ type Props = {
   horizontal: boolean;
   activeHoveredIdx: number | null;
   pinnedSet: ReadonlySet<number>;
+  tagFilterSet: ReadonlySet<number>;
   onHoverChange: (idx: number | null) => void;
   onPinToggle: (idx: number) => void;
 };
 
-const SbjCnvsItemContainer = ({ items, horizontal, activeHoveredIdx, pinnedSet, onHoverChange, onPinToggle }: Props) => {
-  const { idx2sbj, idx2chain } = useSbjData();
+const SbjCnvsItemContainer = ({ items, horizontal, activeHoveredIdx, pinnedSet, tagFilterSet, onHoverChange, onPinToggle }: Props) => {
+  const { idx2sbj, idx2chain, idx2tag } = useSbjData();
   const { selectedSet } = useSbjSelect();
   const { camera, dxy } = useInfiniteCanvas();
 
@@ -34,10 +35,13 @@ const SbjCnvsItemContainer = ({ items, horizontal, activeHoveredIdx, pinnedSet, 
           const rawIsNxt = rawIsHvr ? false : [...effectiveSources].some(src => idx2chain.get(src)?.nxtSet?.has(idx));
           const rawIsPre = (rawIsHvr || rawIsNxt) ? false : [...effectiveSources].some(src => idx2chain.get(src)?.preSet?.has(idx));
 
-          const isHovered = rawIsHvr;
-          const isNxt = !rawIsHvr && rawIsNxt;
-          const isPre = !rawIsHvr && !rawIsNxt && rawIsPre;
-          const isNon = effectiveSources.size > 0 && !rawIsHvr && !rawIsNxt && !rawIsPre;
+          const isTagFiltered = tagFilterSet.size > 0 &&
+            ![...tagFilterSet].some((t) => idx2tag.get(idx)?.has(t));
+
+          const isHovered = rawIsHvr && !isTagFiltered;
+          const isNxt = !rawIsHvr && rawIsNxt && !isTagFiltered;
+          const isPre = !rawIsHvr && !rawIsNxt && rawIsPre && !isTagFiltered;
+          const isNon = (effectiveSources.size > 0 && !rawIsHvr && !rawIsNxt && !rawIsPre) || isTagFiltered;
           const isPinned = pinnedSet.has(idx);
 
           return (

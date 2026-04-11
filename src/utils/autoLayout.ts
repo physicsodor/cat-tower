@@ -1,5 +1,5 @@
 import { LAYOUT_COL_GAP, LAYOUT_PART_GAP, LAYOUT_ROW_GAP } from "@/lib/constants";
-import { getPartition } from "@/lib/Chain/chain";
+import { getPartition } from "@/lib/Chain/chainOp";
 import type { ChainMap } from "@/lib/Chain/chain";
 import { bboxFromXYWH, type BBox } from "@/lib/rect";
 import { computeLevelsForPartition } from "./computeLevels";

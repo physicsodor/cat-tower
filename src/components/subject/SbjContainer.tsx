@@ -5,6 +5,7 @@ import SbjAuthPanel from "./SbjAuthPanel";
 import SbjEditModal from "./SbjEditModal";
 import { ProjectPickerModal } from "./ProjectPicker/ProjectPickerModal";
 import SbjCtrlBtns from "./SbjCtrlBtns";
+import TagTypePanel from "./TagTypePanel";
 
 const SbjContainer = () => {
   return (
@@ -15,6 +16,7 @@ const SbjContainer = () => {
       <SbjCtrlBtns />
       <SbjEditModal />
       <ProjectPickerModal />
+      <TagTypePanel />
     </SbjProvider>
   );
 };

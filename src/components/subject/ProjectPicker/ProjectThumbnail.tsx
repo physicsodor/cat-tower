@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { decodeList } from "@/lib/Curriculum/curriculumCodec";
+import { decodeData } from "@/lib/Curriculum/curriculumCodec";
 import type { Curriculum } from "@/lib/Curriculum/curriculum";
 import { THUMB_W as W, THUMB_H as H, THUMB_PAD as PAD } from "@/lib/constants";
 
@@ -7,7 +7,7 @@ type Props = { data: string };
 
 export const ProjectThumbnail = ({ data }: Props) => {
   const subjects = useMemo(() => {
-    const list = decodeList(data);
+    const { list } = decodeData(data);
     return list.filter(
       (c): c is Extract<Curriculum, { sbjType: "SUBJECT" }> => c.sbjType === "SUBJECT"
     );

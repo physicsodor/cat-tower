@@ -4,7 +4,8 @@ import type {
   Curriculum,
   Subject,
 } from "@/lib/Curriculum/curriculum";
-import { setPre, type ChainMap } from "@/lib/Chain/chain";
+import { setPre } from "@/lib/Chain/chainOp";
+import type { ChainMap } from "@/lib/Chain/chain";
 import type { GetSet } from "@/utils/GetSet";
 import { computeAutoLayout } from "@/utils/autoLayout";
 import type { BBox } from "@/lib/rect";

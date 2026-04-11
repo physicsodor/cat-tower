@@ -5,7 +5,7 @@ import {
   addSubject,
   deleteCourse,
   deleteSubject,
-} from "@/lib/Curriculum/curriculum";
+} from "@/lib/Curriculum/curriculumOp";
 import type { FamilyMap } from "@/lib/Family/family";
 import type { Camera } from "infinite-canvas";
 

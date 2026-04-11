@@ -817,14 +817,8 @@
 // ─── Subject Edit Modal ───────────────────────────────────────────────────────
 
 .sbj-edit-overlay {
-  position: fixed;
-  inset: 0;
   z-index: var(--z-sbj-edit);
-  // backdrop-filter: blur(4px);
   background: cs.black-a(0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .sbj-edit-modal {
@@ -915,17 +909,93 @@
   }
 }
 
+.sbj-edit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--G-M);
+  flex: 1;
+}
+
+.sbj-edit-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--G-S);
+  padding: var(--G-S) var(--G-M);
+  background: var(--C-B);
+  color: var(--C-LL);
+  border: 1.5px solid var(--C-DD);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.sbj-edit-tag-chip-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  &:hover { opacity: 0.7; }
+}
+
+.sbj-edit-tag-input-wrap {
+  position: relative;
+}
+
+.sbj-edit-tag-input {
+  padding: var(--G-S) var(--G-M);
+  border: 1px solid var(--C-D);
+  background: white;
+  font: inherit;
+  width: 7rem;
+  &::placeholder { color: var(--C-D); }
+}
+
+.sbj-edit-tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: var(--C-LL);
+  border: 1.5px solid var(--C-D);
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.sbj-edit-tag-suggestion {
+  padding: var(--G-S) var(--G-M);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  &:hover { background: var(--C-L); }
+  &.-new { color: var(--C-B); font-style: italic; }
+}
+
+.sbj-ctrl-tag-open-btn {
+  width: 100%;
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: none;
+  border-top: 1px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  &:hover { background: var(--C-LL); }
+  &:active { background: var(--C-D); color: var(--C-LL); }
+}
+
 // ─── Share Modal ──────────────────────────────────────────────────────────────
 
 .share-overlay {
-  position: fixed;
-  inset: 0;
   z-index: var(--z-share);
   background: cs.black-a(0.45);
   backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .share-modal {
@@ -1031,5 +1101,116 @@
     margin-right: 0.3rem;
     backdrop-filter: blur(4px);
     pointer-events: none;
+  }
+}
+
+// ─── Tag Panel ────────────────────────────────────────────────────────────────
+
+.tag-panel-overlay {
+  z-index: var(--z-sbj-edit);
+  background: cs.black-a(0.5);
+}
+
+.tag-panel-modal {
+  background: var(--C-LL);
+  border: 1.5px solid var(--C-D);
+  padding: var(--G-XL);
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-M);
+  width: 360px;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+
+.tag-panel-header {
+  display: flex;
+  align-items: center;
+}
+
+.tag-panel-title {
+  font-weight: bold;
+}
+
+.tag-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-M);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tag-panel-empty {
+  color: var(--C-D);
+}
+
+.tag-panel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--G-M);
+}
+
+.tag-panel-input {
+  flex: 1;
+  border: 1px solid var(--C-D);
+  background: white;
+  padding: var(--G-S) var(--G-M);
+  font: inherit;
+  &::placeholder { color: var(--C-D); }
+}
+
+.tag-panel-del {
+  padding: var(--G-S) var(--G-M);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+  &:hover { background: var(--C-LL); }
+  &:active { background: var(--C-D); color: var(--C-LL); }
+}
+
+.tag-panel-footer {
+  margin-top: var(--G-S);
+  display: flex;
+  flex-direction: column;
+  gap: var(--G-S);
+}
+
+.tag-panel-add {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  &:hover { background: var(--C-LL); }
+  &:active { background: var(--C-D); color: var(--C-LL); }
+}
+
+.tag-panel-close {
+  padding: var(--G-M) var(--G-L);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  &:hover { background: var(--C-LL); }
+  &:active { background: var(--C-D); color: var(--C-LL); }
+}
+
+// ─── Canvas Tag Filter ────────────────────────────────────────────────────────
+
+.sbj-cnvs-tag-chip {
+  padding: var(--G-S) var(--G-M);
+  background: var(--C-L);
+  border: 1.5px solid var(--C-D);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  &:hover { background: var(--C-LL); }
+  &.-on {
+    background: var(--C-B);
+    color: var(--C-LL);
+    border-color: var(--C-DD);
+    &:hover { background: var(--C-D); }
   }
 }
